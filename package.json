@@ -13,7 +13,10 @@
     "dev:server": "npm run dev -w server",
     "dev:webapp": "npm run dev -w webapp",
     "build:server": "npm run build -w server",
-    "build:webapp": "npm run build -w webapp"
+    "build:webapp": "npm run build -w webapp",
+    "check": "node check-all.js",
+    "typecheck": "npm run typecheck --workspaces",
+    "lint": "npm run lint --workspaces"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
