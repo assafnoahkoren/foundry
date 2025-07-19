@@ -120,10 +120,55 @@ mailService.sendTemplatedEmail({
 });
 ```
 
+## Previewing Email Templates in Development
+
+React Email provides a beautiful preview interface for developing and testing email templates:
+
+1. Start the email preview server:
+```bash
+cd server
+npm run email:preview
+```
+
+2. Open http://localhost:13006 in your browser
+
+3. You'll see all your email templates with:
+   - **Live hot reloading** - Edit templates and see changes instantly
+   - Responsive device preview (desktop, tablet, mobile)
+   - HTML source code view
+   - Plain text version
+   - Send test emails directly from the UI
+
+4. Edit templates in `server/src/services/mail/templates/` and changes will automatically sync and reload in the preview
+
+### Preview Features
+
+- **Hot Reload**: Changes to templates are reflected immediately
+- **Test Data**: Each template includes `PreviewProps` with sample data
+- **Multiple Viewports**: Test how emails look on different devices
+- **Dark Mode**: Preview how emails look in dark mode clients
+- **Send Test**: Send actual test emails to verify rendering
+
 ## Available Templates
 
 - `welcome` - Welcome email for new users
 - `reset-password` - Password reset email
+
+## Project Structure
+
+```
+server/src/services/mail/
+├── mail.service.ts          # Main mail service with SMTP configuration
+├── template.service.ts      # Template rendering logic
+├── email.config.js          # Email configuration
+├── watch-email-templates.js # Development preview script
+├── templates/               # React Email templates
+│   ├── welcome.tsx
+│   ├── reset-password.tsx
+│   └── index.ts
+├── emails/                  # Auto-generated (git ignored)
+└── README.md               # This file
+```
 
 ## Adding New Templates
 

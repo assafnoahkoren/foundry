@@ -18,6 +18,10 @@ build/
 .env.test.local
 .env.production.local
 
+# React Email
+server/src/services/mail/emails/
+server/src/services/mail/.react-email/
+
 # Logs
 npm-debug.log*
 yarn-debug.log*
