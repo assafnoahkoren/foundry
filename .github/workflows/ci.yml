@@ -26,6 +26,17 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+      
+      mailhog:
+        image: mailhog/mailhog:latest
+        ports:
+          - 13004:1025  # SMTP port
+          - 13005:8025  # Web UI port
+        options: >-
+          --health-cmd "echo 'EHLO mailhog' | nc localhost 1025"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout code
@@ -43,6 +54,9 @@ jobs:
       - name: Setup environment
         run: |
           cp .env.example .env || echo "No .env.example found, using defaults"
+          # Update mail configuration for CI
+          echo "MAIL_HOST=localhost" >> .env
+          echo "MAIL_PORT=13004" >> .env
           
       - name: Generate Prisma Client
         working-directory: ./server
@@ -69,6 +83,10 @@ jobs:
           DATABASE_URL: postgresql://foundry_user:foundry_password@localhost:13001/foundry
           JWT_SECRET: test-secret-key
           JWT_EXPIRATION: 1h
+          MAIL_HOST: localhost
+          MAIL_PORT: 13004
+          MAIL_FROM_EMAIL: test@foundry.local
+          MAIL_FROM_NAME: Foundry Test
 
       - name: Upload coverage reports
         uses: actions/upload-artifact@v4
