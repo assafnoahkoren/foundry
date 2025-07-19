@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: foundry-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: foundry
+      POSTGRES_USER: foundry_user
+      POSTGRES_PASSWORD: foundry_password
+    ports:
+      - "13001:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U foundry_user -d foundry"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    driver: local
