@@ -1,15 +1,16 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
-import { ConfigService } from '@foundry/shared'
-
-const config = ConfigService.getInstance()
-const clientPort = config.get('client').port
 
 // https://vite.dev/config/
-export default defineConfig({
-  plugins: [react()],
-  server: {
-    port: clientPort,
-    strictPort: true,
-  },
+export default defineConfig(({ mode }) => {
+  // Load env vars in the current working directory
+  const env = loadEnv(mode, process.cwd(), '')
+  
+  return {
+    plugins: [react()],
+    server: {
+      port: parseInt(env.VITE_CLIENT_PORT) || 13003,
+      strictPort: true,
+    },
+  }
 })
