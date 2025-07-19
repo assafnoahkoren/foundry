@@ -31,10 +31,10 @@ export const config = {
     port: parseInt(process.env.CLIENT_PORT || '13003', 10),
   },
   
-  // Security
-  security: {
-    jwtSecret: process.env.JWT_SECRET || 'default-secret-change-this',
-    jwtExpiration: process.env.JWT_EXPIRATION || '7d',
+  // JWT
+  jwt: {
+    secret: process.env.JWT_SECRET || 'default-secret-change-this',
+    expiresIn: process.env.JWT_EXPIRATION || '7d',
   },
   
   // Application
