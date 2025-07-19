@@ -14,6 +14,7 @@
     "prisma:migrate": "dotenv -e ../.env -- prisma migrate dev",
     "prisma:studio": "dotenv -e ../.env -- prisma studio",
     "prisma:push": "dotenv -e ../.env -- prisma db push",
+    "prisma:reset": "dotenv -e ../.env -- prisma migrate reset",
     "test": "dotenv -e ../.env -- vitest",
     "test:ui": "dotenv -e ../.env -- vitest --ui",
     "test:coverage": "dotenv -e ../.env -- vitest run --coverage"
