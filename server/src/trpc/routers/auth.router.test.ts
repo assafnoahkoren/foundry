@@ -44,7 +44,7 @@ describe('Auth Router', () => {
     it('should validate registration input', async () => {
       const invalidUser = {
         email: 'invalid-email',
-        password: 'short',
+        password: '', // Empty password
         name: 'T', // Too short
       };
 

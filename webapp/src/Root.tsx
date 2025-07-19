@@ -5,18 +5,26 @@ import { trpc } from './utils/trpc';
 import App from './App';
 
 export function Root() {
-  const [queryClient] = useState(() => new QueryClient());
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        refetchOnWindowFocus: false,
+        retry: 1,
+        staleTime: 5 * 60 * 1000, // 5 minutes
+      },
+    },
+  }));
   const [trpcClient] = useState(() =>
     trpc.createClient({
       links: [
         httpBatchLink({
           url: `${import.meta.env.VITE_SERVER_URL || 'http://localhost:13002'}/trpc`,
-          // You can add headers here for auth, etc.
-          // headers() {
-          //   return {
-          //     authorization: getAuthToken(),
-          //   };
-          // },
+          headers() {
+            const token = localStorage.getItem('authToken');
+            return {
+              authorization: token ? `Bearer ${token}` : '',
+            };
+          },
         }),
       ],
     })

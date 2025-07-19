@@ -37,8 +37,8 @@ class AuthService {
         id: user.id,
         email: user.email,
         name: user.name,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
+        createdAt: user.createdAt.toISOString(),
+        updatedAt: user.updatedAt.toISOString(),
       },
       token,
     };
@@ -72,8 +72,8 @@ class AuthService {
         id: user.id,
         email: user.email,
         name: user.name,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
+        createdAt: user.createdAt.toISOString(),
+        updatedAt: user.updatedAt.toISOString(),
       },
       token,
     };
@@ -95,7 +95,13 @@ class AuthService {
       throw new Error('User not found');
     }
 
-    return user;
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      createdAt: user.createdAt.toISOString(),
+      updatedAt: user.updatedAt.toISOString(),
+    };
   }
 }
 
