@@ -1,5 +1,7 @@
 # Fastify + tRPC + React Workspace
 
+[![CI](https://github.com/YOUR_USERNAME/foundry/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/foundry/actions/workflows/ci.yml)
+
 A modern full-stack TypeScript monorepo with end-to-end type safety using tRPC.
 
 ## Tech Stack

@@ -1,0 +1,108 @@
+name: Dependency Check
+
+on:
+  schedule:
+    # Run every Monday at 9 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  dependency-check:
+    name: Check Dependencies
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Check for outdated dependencies
+        run: |
+          echo "## Dependency Check Report 📦" >> $GITHUB_STEP_SUMMARY
+          echo "### Root Dependencies" >> $GITHUB_STEP_SUMMARY
+          npm outdated >> $GITHUB_STEP_SUMMARY || true
+          
+          echo "### Server Dependencies" >> $GITHUB_STEP_SUMMARY
+          cd server && npm outdated >> $GITHUB_STEP_SUMMARY || true
+          cd ..
+          
+          echo "### WebApp Dependencies" >> $GITHUB_STEP_SUMMARY
+          cd webapp && npm outdated >> $GITHUB_STEP_SUMMARY || true
+
+      - name: Run npm audit
+        run: |
+          echo "## Security Audit 🔒" >> $GITHUB_STEP_SUMMARY
+          echo "### Root" >> $GITHUB_STEP_SUMMARY
+          npm audit --json > audit-root.json || true
+          
+          echo "### Server" >> $GITHUB_STEP_SUMMARY
+          cd server && npm audit --json > ../audit-server.json || true
+          cd ..
+          
+          echo "### WebApp" >> $GITHUB_STEP_SUMMARY
+          cd webapp && npm audit --json > ../audit-webapp.json || true
+
+      - name: Create issue if vulnerabilities found
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            let hasVulnerabilities = false;
+            let issueBody = '## Security Vulnerabilities Found 🚨\n\n';
+            
+            // Check each audit file
+            const auditFiles = ['audit-root.json', 'audit-server.json', 'audit-webapp.json'];
+            const locations = ['Root', 'Server', 'WebApp'];
+            
+            for (let i = 0; i < auditFiles.length; i++) {
+              try {
+                const audit = JSON.parse(fs.readFileSync(auditFiles[i], 'utf8'));
+                if (audit.metadata && audit.metadata.vulnerabilities) {
+                  const vulns = audit.metadata.vulnerabilities;
+                  const total = vulns.info + vulns.low + vulns.moderate + vulns.high + vulns.critical;
+                  
+                  if (total > 0) {
+                    hasVulnerabilities = true;
+                    issueBody += `### ${locations[i]}\n`;
+                    issueBody += `- Critical: ${vulns.critical}\n`;
+                    issueBody += `- High: ${vulns.high}\n`;
+                    issueBody += `- Moderate: ${vulns.moderate}\n`;
+                    issueBody += `- Low: ${vulns.low}\n`;
+                    issueBody += `- Info: ${vulns.info}\n\n`;
+                  }
+                }
+              } catch (e) {
+                console.log(`Could not parse ${auditFiles[i]}`);
+              }
+            }
+            
+            if (hasVulnerabilities) {
+              // Check if issue already exists
+              const issues = await github.rest.issues.listForRepo({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                labels: 'security,dependencies',
+                state: 'open'
+              });
+              
+              if (issues.data.length === 0) {
+                await github.rest.issues.create({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  title: '🚨 Security vulnerabilities detected in dependencies',
+                  body: issueBody + '\nRun `npm audit fix` to attempt automatic fixes.',
+                  labels: ['security', 'dependencies']
+                });
+              }
+            }
