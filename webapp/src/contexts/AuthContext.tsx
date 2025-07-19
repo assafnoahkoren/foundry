@@ -20,7 +20,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const loginMutation = trpc.auth.login.useMutation();
   const registerMutation = trpc.auth.register.useMutation();
   
-  const { data: meData, isLoading: meLoading, error: meError, isError: meIsError } = trpc.auth.me.useQuery(undefined, {
+  const { data: meData, isLoading: meLoading, error: meError } = trpc.auth.me.useQuery(undefined, {
     enabled: !!token,
     retry: false,
     staleTime: Infinity, // Don't refetch on window focus
