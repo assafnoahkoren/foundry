@@ -1,9 +1,10 @@
-import { createServer } from './server.js';
+import { createServer } from './server';
+import { config } from './shared';
 
 const start = async () => {
   try {
     const server = await createServer();
-    const port = Number(process.env.PORT) || 3001;
+    const port = config.server.port;
     const host = process.env.HOST || '0.0.0.0';
 
     await server.listen({ port, host });

@@ -4,7 +4,6 @@
   "description": "Fastify + tRPC server",
   "main": "dist/index.js",
   "private": true,
-  "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",

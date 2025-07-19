@@ -1,4 +1,4 @@
-import { User, CreateUser, UpdateUser } from '@workspace/shared';
+import { User, CreateUser, UpdateUser } from '../shared';
 import crypto from 'crypto';
 
 // In-memory database for demo purposes

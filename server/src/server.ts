@@ -1,10 +1,10 @@
 import fastify from 'fastify';
 import cors from '@fastify/cors';
 import { fastifyTRPCPlugin, FastifyTRPCPluginOptions } from '@trpc/server/adapters/fastify';
-import { createContext } from './trpc/context.js';
-import { appRouter } from './trpc/routers/app.router.js';
+import { createContext } from './trpc/context';
+import { appRouter } from './trpc/routers/app.router';
 
-export type { AppRouter } from './trpc/routers/app.router.js';
+export type { AppRouter } from './trpc/routers/app.router';
 
 export async function createServer() {
   const server = fastify({

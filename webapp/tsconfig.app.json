@@ -21,7 +21,12 @@
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "noUncheckedSideEffectImports": true,
+
+    /* Module Resolution */
+    "paths": {
+      "@server/shared": ["../server/src/shared-export.ts"]
+    }
   },
   "include": ["src", "src/**/*.d.ts"]
 }

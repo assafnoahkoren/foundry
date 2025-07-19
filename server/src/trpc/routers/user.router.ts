@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { router, publicProcedure } from '../trpc.js';
-import { userService } from '../../services/user.service.js';
-import { createUserSchema, updateUserSchema } from '@workspace/shared';
+import { router, publicProcedure } from '../trpc';
+import { userService } from '../../services/user.service';
+import { createUserSchema, updateUserSchema } from '../../shared';
 
 export const userRouter = router({
   list: publicProcedure
