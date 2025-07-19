@@ -1,7 +1,7 @@
 import type { inferAsyncReturnType } from '@trpc/server';
 import type { CreateFastifyContextOptions } from '@trpc/server/adapters/fastify';
 import { verifyToken, extractTokenFromHeader } from '../lib/auth/token';
-import { TokenPayload } from '../shared/schemas/auth.schema';
+import type { TokenPayload } from '../shared/schemas/auth.schema';
 
 export async function createContext({ req, res }: CreateFastifyContextOptions) {
   // Try to extract and verify the token

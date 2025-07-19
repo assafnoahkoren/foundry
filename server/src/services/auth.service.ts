@@ -1,5 +1,5 @@
 import { prisma } from '../lib/prisma';
-import { RegisterInput, LoginInput, AuthResponse } from '../shared/schemas/auth.schema';
+import type { RegisterInput, LoginInput, AuthResponse } from '../shared/schemas/auth.schema';
 import { hashPassword, verifyPassword } from '../lib/auth/password';
 import { generateToken } from '../lib/auth/token';
 

@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { config } from '../../shared/config/config';
-import { TokenPayload } from '../../shared/schemas/auth.schema';
+import type { TokenPayload } from '../../shared/schemas/auth.schema';
 
 /**
  * Generate a JWT token
