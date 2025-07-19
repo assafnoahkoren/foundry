@@ -48,8 +48,8 @@ describe('AuthService', () => {
           id: createdUser.id,
           email: createdUser.email,
           name: createdUser.name,
-          createdAt: createdUser.createdAt,
-          updatedAt: createdUser.updatedAt,
+          createdAt: createdUser.createdAt.toISOString(),
+          updatedAt: createdUser.updatedAt.toISOString(),
         },
         token: mockToken,
       });
@@ -123,8 +123,8 @@ describe('AuthService', () => {
           id: existingUser.id,
           email: existingUser.email,
           name: existingUser.name,
-          createdAt: existingUser.createdAt,
-          updatedAt: existingUser.updatedAt,
+          createdAt: existingUser.createdAt.toISOString(),
+          updatedAt: existingUser.updatedAt.toISOString(),
         },
         token: mockToken,
       });
@@ -184,7 +184,13 @@ describe('AuthService', () => {
 
       const result = await authService.getMe(userId);
 
-      expect(result).toEqual(userData);
+      expect(result).toEqual({
+        id: userData.id,
+        email: userData.email,
+        name: userData.name,
+        createdAt: userData.createdAt.toISOString(),
+        updatedAt: userData.updatedAt.toISOString(),
+      });
       expect(prisma.user.findUnique).toHaveBeenCalledWith({
         where: { id: userId },
         select: {
