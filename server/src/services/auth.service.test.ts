@@ -178,7 +178,8 @@ describe('AuthService', () => {
         updatedAt: new Date(),
       };
 
-      // Mock Prisma to return user
+      // Mock Prisma to return user - only selected fields
+      // @ts-expect-error - Mocking partial user data for testing
       vi.spyOn(prisma.user, 'findUnique').mockResolvedValue(userData);
 
       const result = await authService.getMe(userId);

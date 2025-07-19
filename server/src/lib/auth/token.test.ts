@@ -33,7 +33,6 @@ describe('Token utilities', () => {
       const token = generateToken(mockPayload);
       const decoded = jwt.decode(token) as jwt.JwtPayload;
 
-      const now = Math.floor(Date.now() / 1000);
       const expirationTime = decoded.exp! - decoded.iat!;
       
       // Test setup sets expiration to 1h = 3600 seconds

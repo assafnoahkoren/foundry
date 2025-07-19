@@ -1,8 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { createCaller, createAuthenticatedContext, createTestContext } from '../../test/utils/trpc.utils';
-import { createTestUser, createTestLoginInput, createTestToken } from '../../test/utils/auth.utils';
+import { createCaller, createAuthenticatedContext } from '../../test/utils/trpc.utils';
+import { createTestUser, createTestLoginInput } from '../../test/utils/auth.utils';
 import { prisma } from '../../lib/prisma';
-import { hashPassword } from '../../lib/auth/password';
 
 describe('Auth Router', () => {
   let caller: Awaited<ReturnType<typeof createCaller>>;

@@ -1,5 +1,3 @@
-import { createTRPCMsw } from 'msw-trpc';
-import type { AppRouter } from '../../trpc/routers/app.router';
 import { appRouter } from '../../trpc/routers/app.router';
 import { createContext } from '../../trpc/context';
 import type { CreateFastifyContextOptions } from '@trpc/server/adapters/fastify';
