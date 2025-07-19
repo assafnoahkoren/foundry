@@ -2,6 +2,8 @@ import { prisma } from '../lib/prisma';
 import type { RegisterInput, LoginInput, AuthResponse } from '../shared/schemas/auth.schema';
 import { hashPassword, verifyPassword } from '../lib/auth/password';
 import { generateToken } from '../lib/auth/token';
+import { mailService } from './mail/mail.service';
+import { config } from '../shared/config/config';
 
 class AuthService {
   async register(input: RegisterInput): Promise<AuthResponse> {
@@ -30,6 +32,20 @@ class AuthService {
     const token = generateToken({
       userId: user.id,
       email: user.email,
+    });
+
+    // Send welcome email (don't await to avoid blocking registration)
+    mailService.sendTemplatedEmail({
+      to: { email: user.email, name: user.name },
+      template: 'welcome',
+      variables: {
+        name: user.name,
+        appName: config.app.name,
+        loginUrl: `${config.app.clientUrl}/login`,
+      },
+    }).catch(error => {
+      console.error('Failed to send welcome email:', error);
+      // Don't fail registration if email fails
     });
 
     return {
