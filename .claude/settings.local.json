@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(claude mcp:*)",
+      "Bash(npx @context-labs/context:*)",
+      "Bash(npm search:*)"
+    ],
+    "deny": []
+  }
+}

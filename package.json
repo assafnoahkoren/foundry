@@ -1,0 +1,22 @@
+{
+  "name": "my-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "server",
+    "webapp"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces",
+    "build": "npm run build --workspaces",
+    "start:server": "npm run start -w server",
+    "dev:server": "npm run dev -w server",
+    "dev:webapp": "npm run dev -w webapp",
+    "build:server": "npm run build -w server",
+    "build:webapp": "npm run build -w webapp"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}
