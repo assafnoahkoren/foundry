@@ -1,5 +1,5 @@
 import { initTRPC } from '@trpc/server';
-import { Context } from './context';
+import type { Context } from './context';
 import { ZodError } from 'zod';
 
 const t = initTRPC.context<Context>().create({
