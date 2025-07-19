@@ -36,6 +36,12 @@ export const WelcomeEmail = ({
               Get Started
             </Button>
           </Section>
+          <Text style={smallText}>
+            If you're having trouble clicking the button, here is the URL:
+          </Text>
+          <Text style={linkText}>
+            {loginUrl}
+          </Text>
           <Text style={text}>
             If you have any questions, feel free to reach out to our support team.
           </Text>
@@ -95,6 +101,26 @@ const button = {
   fontSize: '16px',
   textDecoration: 'none',
   textAlign: 'center' as const,
-  display: 'block',
+  display: 'inline-block',
   padding: '12px 20px',
+  width: 'auto',
+};
+
+const smallText = {
+  color: '#666',
+  fontSize: '14px',
+  lineHeight: '24px',
+  textAlign: 'center' as const,
+  marginTop: '16px',
+  marginBottom: '0',
+};
+
+const linkText = {
+  color: '#5469d4',
+  fontSize: '14px',
+  lineHeight: '24px',
+  textAlign: 'center' as const,
+  wordBreak: 'break-all' as const,
+  marginTop: '4px',
+  marginBottom: '24px',
 };
