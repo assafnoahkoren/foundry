@@ -28,5 +28,6 @@
       "@server/shared": ["../server/src/shared-export.ts"]
     }
   },
-  "include": ["src", "src/**/*.d.ts"]
+  "include": ["src", "src/**/*.d.ts"],
+  "exclude": ["../server/src/services/mail/templates/**/*"]
 }

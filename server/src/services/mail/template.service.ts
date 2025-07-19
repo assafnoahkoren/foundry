@@ -1,75 +1,79 @@
+import { render } from '@react-email/render';
+import { WelcomeEmail, ResetPasswordEmail } from './templates';
+
 interface TemplateData {
   subject: string;
   html: string;
   text: string;
 }
 
-// Simple template system - you can expand this to use handlebars, etc.
-const templates: Record<string, TemplateData> = {
+// Type-safe template mapping
+const templateMap = {
   'welcome': {
-    subject: 'Welcome to {{appName}}!',
-    html: `
-      <h1>Welcome to {{appName}}, {{name}}!</h1>
-      <p>We're excited to have you on board.</p>
-      <p>Get started by <a href="{{loginUrl}}">logging in</a>.</p>
-    `,
-    text: `
-      Welcome to {{appName}}, {{name}}!
-      
-      We're excited to have you on board.
-      
-      Get started by logging in at: {{loginUrl}}
-    `,
+    component: WelcomeEmail,
+    getSubject: (props: { appName: string }) => `Welcome to ${props.appName}!`,
   },
   'reset-password': {
-    subject: 'Reset your password',
-    html: `
-      <h1>Reset your password</h1>
-      <p>Hi {{name}},</p>
-      <p>Click the link below to reset your password:</p>
-      <p><a href="{{resetUrl}}">Reset Password</a></p>
-      <p>This link will expire in {{expiryHours}} hours.</p>
-      <p>If you didn't request this, please ignore this email.</p>
-    `,
-    text: `
-      Reset your password
-      
-      Hi {{name}},
-      
-      Click the link below to reset your password:
-      {{resetUrl}}
-      
-      This link will expire in {{expiryHours}} hours.
-      
-      If you didn't request this, please ignore this email.
-    `,
+    component: ResetPasswordEmail,
+    getSubject: () => 'Reset your password',
   },
-};
+} as const;
+
+export type TemplateName = keyof typeof templateMap;
 
 export async function renderTemplate(
-  templateName: string, 
+  templateName: TemplateName, 
   variables: Record<string, unknown>
 ): Promise<TemplateData> {
-  const template = templates[templateName];
+  const template = templateMap[templateName];
   
   if (!template) {
     throw new Error(`Template "${templateName}" not found`);
   }
 
-  // Simple variable replacement
-  const replaceVariables = (text: string): string => {
-    return text.replace(/\{\{(\w+)\}\}/g, (match, key) => {
-      return String(variables[key] || match);
+  try {
+    // Render the React component to HTML
+    const html = await render(template.component(variables as any), {
+      pretty: true,
     });
-  };
 
-  return {
-    subject: replaceVariables(template.subject),
-    html: replaceVariables(template.html),
-    text: replaceVariables(template.text),
-  };
+    // Render plain text version
+    const text = await render(template.component(variables as any), {
+      plainText: true,
+    });
+
+    // Get the subject
+    const subject = template.getSubject(variables as any);
+
+    return {
+      subject,
+      html,
+      text,
+    };
+  } catch (error) {
+    console.error(`Failed to render template "${templateName}":`, error);
+    throw new Error(`Failed to render email template: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
 }
 
-export function getAvailableTemplates(): string[] {
-  return Object.keys(templates);
+export function getAvailableTemplates(): TemplateName[] {
+  return Object.keys(templateMap) as TemplateName[];
 }
+
+// Type helpers for template variables
+export interface WelcomeTemplateVariables {
+  name: string;
+  appName: string;
+  loginUrl: string;
+}
+
+export interface ResetPasswordTemplateVariables {
+  name: string;
+  resetUrl: string;
+  expiryHours: number;
+}
+
+export type TemplateVariables = {
+  'welcome': WelcomeTemplateVariables;
+  'reset-password': ResetPasswordTemplateVariables;
+};

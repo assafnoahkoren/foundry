@@ -35,7 +35,7 @@ export const emailTemplateSchema = z.object({
 // Send templated email schema
 export const sendTemplatedEmailSchema = z.object({
   to: z.union([emailAddressSchema, z.array(emailAddressSchema)]),
-  template: z.string(),
+  template: z.enum(['welcome', 'reset-password']),
   variables: z.record(z.unknown()).optional(),
   from: emailAddressSchema.optional(),
   replyTo: emailAddressSchema.optional(),

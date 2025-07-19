@@ -7,8 +7,9 @@ A simple SMTP-based mail service for internal backend use. This service uses SMT
 - **Unified SMTP Configuration**: Uses SMTP for all environments (development and production)
 - **Development**: Uses Mailhog (local SMTP container) for email capture
 - **Production**: Works with any SMTP provider (Gmail, SendGrid SMTP, AWS SES SMTP, etc.)
-- **Templates**: Built-in email templates with variable substitution
+- **React Email Templates**: Beautiful, responsive email templates built with React components
 - **Type-safe**: Full TypeScript support with Zod schemas
+- **Automatic Plain Text**: Generates both HTML and plain text versions from React templates
 
 ## Setup
 
@@ -126,16 +127,64 @@ mailService.sendTemplatedEmail({
 
 ## Adding New Templates
 
-Edit `server/src/services/mail/template.service.ts` to add new templates:
+1. Create a new React component in `server/src/services/mail/templates/`:
+
+```tsx
+// server/src/services/mail/templates/notification.tsx
+import {
+  Body,
+  Container,
+  Head,
+  Heading,
+  Html,
+  Preview,
+  Text,
+} from '@react-email/components';
+
+export interface NotificationEmailProps {
+  title: string;
+  message: string;
+}
+
+export const NotificationEmail = ({
+  title,
+  message,
+}: NotificationEmailProps) => {
+  return (
+    <Html>
+      <Head />
+      <Preview>{title}</Preview>
+      <Body>
+        <Container>
+          <Heading>{title}</Heading>
+          <Text>{message}</Text>
+        </Container>
+      </Body>
+    </Html>
+  );
+};
+
+export default NotificationEmail;
+```
+
+2. Add it to the template map in `template.service.ts`:
 
 ```typescript
-const templates: Record<string, TemplateData> = {
-  'your-template': {
-    subject: 'Your subject with {{variable}}',
-    html: '<h1>HTML content with {{variable}}</h1>',
-    text: 'Plain text content with {{variable}}',
+import { NotificationEmail } from './templates/notification';
+
+const templateMap = {
+  // ... existing templates
+  'notification': {
+    component: NotificationEmail,
+    getSubject: (props: { title: string }) => props.title,
   },
-};
+} as const;
+```
+
+3. Update the template enum in `mail.schema.ts`:
+
+```typescript
+template: z.enum(['welcome', 'reset-password', 'notification']),
 ```
 
 ## Testing
