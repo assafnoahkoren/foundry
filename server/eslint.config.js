@@ -13,6 +13,10 @@ module.exports = tseslint.config(
         ...globals.node,
         ...globals.es2022,
       },
+      parserOptions: {
+        tsconfigRootDir: __dirname,
+        project: './tsconfig.json',
+      },
     },
   },
   {
