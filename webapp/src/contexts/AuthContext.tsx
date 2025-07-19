@@ -26,7 +26,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     staleTime: Infinity, // Don't refetch on window focus
   });
 
-  // Update user when me query succeeds
+  // Update user when me query succeeds.
   useEffect(() => {
     if (meData && !meLoading) {
       setUser(meData);
