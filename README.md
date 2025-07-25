@@ -6,10 +6,25 @@ A modern full-stack TypeScript monorepo with end-to-end type safety using tRPC.
 
 ## Tech Stack
 
-- **Backend**: Fastify + tRPC
+- **Backend**: Fastify + tRPC + Prisma
 - **Frontend**: React + Vite + TypeScript
+- **Database**: PostgreSQL
+- **Queue**: BullMQ + Redis
+- **Email**: Nodemailer + React Email
 - **Shared**: Zod schemas and TypeScript types
 - **Package Manager**: npm workspaces
+
+## 🐳 Docker Services & Ports
+
+| Service | Port | Description |
+|---------|------|-------------|
+| PostgreSQL | 13001 | Database |
+| Server (API) | 13002 | Fastify + tRPC backend |
+| Webapp | 13003 | React frontend |
+| Mailhog SMTP | 13004 | Email SMTP server |
+| Mailhog UI | 13005 | Email web interface |
+| Redis | 13007 | Queue/Cache storage (password: foundry_redis_password) |
+| Redis Commander | 13008 | Redis web UI |
 
 ## Project Structure
 
@@ -35,7 +50,12 @@ my-workspace/
 npm install
 ```
 
-2. Start the development servers:
+2. Start Docker services:
+```bash
+docker-compose up -d
+```
+
+3. Start the development servers:
 
 In one terminal, start the backend:
 ```bash
@@ -47,9 +67,11 @@ In another terminal, start the frontend:
 npm run dev:webapp
 ```
 
-3. Open your browser:
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:3001/trpc
+4. Open your browser:
+- Frontend: http://localhost:13003
+- Backend API: http://localhost:13002/trpc
+- Mailhog UI: http://localhost:13005
+- Redis Commander: http://localhost:13008
 
 ## Features
 
@@ -101,6 +123,12 @@ const createUser = trpc.users.create.useMutation();
 - Zod schemas serve as both runtime validation and TypeScript types
 - tRPC procedures are just functions - test them like any other code
 - Use React Query's powerful caching and synchronization features
+
+## Documentation
+
+- [Background Jobs Guide](./docs/BACKGROUND_JOBS.md) - Complete guide to the queue system
+- [Background Jobs Quick Reference](./docs/BACKGROUND_JOBS_QUICK_REFERENCE.md) - Quick reference and examples
+- [Queue Architecture](./docs/QUEUE_ARCHITECTURE.md) - Detailed architecture documentation
 
 ## License
 

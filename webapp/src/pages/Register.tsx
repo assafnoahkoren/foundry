@@ -1,7 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+
+// Helper function to generate random values for dev environment
+const generateDevValues = () => {
+  const randomNum = Math.floor(Math.random() * 10000);
+  const names = ['Alice', 'Bob', 'Charlie', 'David', 'Emma', 'Frank', 'Grace', 'Henry', 'Iris', 'Jack'];
+  const randomName = names[Math.floor(Math.random() * names.length)];
+  
+  return {
+    name: `${randomName} Test${randomNum}`,
+    email: `user${randomNum}@example.com`,
+    password: `testpass${randomNum}`
+  };
+};
 
 export const Register = () => {
   const [email, setEmail] = useState('');
@@ -9,6 +22,16 @@ export const Register = () => {
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Auto-fill with random values in development
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      const devValues = generateDevValues();
+      setName(devValues.name);
+      setEmail(devValues.email);
+      setPassword(devValues.password);
+    }
+  }, []);
   
   const { register } = useAuth();
   const navigate = useNavigate();

@@ -1,8 +1,13 @@
 import { createServer } from './server';
 import { config } from './shared';
+import { bootstrapWebServer, shutdown } from './bootstrap';
 
 const start = async () => {
   try {
+    // Initialize web server systems
+    await bootstrapWebServer();
+    
+    // Create and start server
     const server = await createServer();
     const port = config.server.port;
     const host = process.env.HOST || '0.0.0.0';
@@ -15,5 +20,18 @@ const start = async () => {
     process.exit(1);
   }
 };
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received, shutting down gracefully...');
+  await shutdown();
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  console.log('SIGINT received, shutting down gracefully...');
+  await shutdown();
+  process.exit(0);
+});
 
 start();

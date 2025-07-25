@@ -2,8 +2,8 @@ import { prisma } from '../lib/prisma';
 import type { RegisterInput, LoginInput, AuthResponse } from '../shared/schemas/auth.schema';
 import { hashPassword, verifyPassword } from '../lib/auth/password';
 import { generateToken } from '../lib/auth/token';
-import { mailService } from './mail/mail.service';
 import { config } from '../shared/config/config';
+import { emailJobService } from './mail/email.job';
 
 class AuthService {
   async register(input: RegisterInput): Promise<AuthResponse> {
@@ -34,18 +34,13 @@ class AuthService {
       email: user.email,
     });
 
-    // Send welcome email (don't await to avoid blocking registration)
-    mailService.sendTemplatedEmail({
-      to: { email: user.email, name: user.name },
-      template: 'welcome',
-      variables: {
-        name: user.name,
-        appName: config.app.name,
-        loginUrl: `${config.app.clientUrl}/login`,
-      },
+    // Queue welcome email using dedicated email service
+    await emailJobService.sendWelcomeEmail(user, {
+      appName: config.app.name,
+      loginUrl: `${config.app.clientUrl}/login`,
     }).catch(error => {
-      console.error('Failed to send welcome email:', error);
-      // Don't fail registration if email fails
+      console.error('Failed to queue welcome email:', error);
+      // Don't fail registration if queueing fails
     });
 
     return {

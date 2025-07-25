@@ -28,15 +28,6 @@ class MailService {
       ignoreTLS: config.isDevelopment(),
     });
 
-    // Log configuration (without sensitive data)
-    console.log('Mail service initialized:', {
-      host: process.env.MAIL_HOST || 'localhost',
-      port: process.env.MAIL_PORT || '13004',
-      secure: process.env.MAIL_SECURE === 'true',
-      auth: !!(process.env.MAIL_USER && process.env.MAIL_PASS),
-      from: this.fromAddress.email,
-      environment: config.server.nodeEnv,
-    });
   }
 
   async sendEmail(input: SendEmailInput): Promise<EmailStatus> {
