@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { TemplateName } from '../../services/mail/template.service';
 
 // Email address validation
 export const emailAddressSchema = z.object({
@@ -32,10 +33,13 @@ export const emailTemplateSchema = z.object({
   variables: z.record(z.string()).optional(),
 });
 
+// Template names as a const array for Zod enum
+const templateNames: [TemplateName, ...TemplateName[]] = ['welcome', 'reset-password'];
+
 // Send templated email schema
 export const sendTemplatedEmailSchema = z.object({
   to: z.union([emailAddressSchema, z.array(emailAddressSchema)]),
-  template: z.enum(['welcome', 'reset-password']),
+  template: z.enum(templateNames),
   variables: z.record(z.unknown()).optional(),
   from: emailAddressSchema.optional(),
   replyTo: emailAddressSchema.optional(),

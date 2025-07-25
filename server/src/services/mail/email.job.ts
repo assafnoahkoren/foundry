@@ -6,11 +6,12 @@ import { QueuePriority } from '../../features/jobs';
 import type { BaseJobData } from '../../features/jobs';
 import { mailService } from './mail.service';
 import type { EmailAddress } from './mail.types';
+import type { TemplateName } from './template.service';
 
 // Define the email job data structure
 export interface EmailJobData extends BaseJobData {
   to: EmailAddress | EmailAddress[];
-  template: string;
+  template: TemplateName;
   variables: Record<string, unknown>;
   cc?: EmailAddress | EmailAddress[];
   bcc?: EmailAddress | EmailAddress[];
@@ -34,7 +35,7 @@ async function emailProcessor(job: Job<EmailJobData>): Promise<unknown> {
     // Send the email using the mail service
     const result = await mailService.sendTemplatedEmail({
       to,
-      template: template as 'welcome' | 'reset-password',
+      template: template,
       variables: {
         ...variables,
         _jobId: job.id,
@@ -77,7 +78,7 @@ export class EmailJobService {
    */
   async sendEmail(options: {
     to: EmailAddress | EmailAddress[];
-    template: string;
+    template: TemplateName;
     variables: Record<string, unknown>;
     cc?: EmailAddress | EmailAddress[];
     bcc?: EmailAddress | EmailAddress[];
