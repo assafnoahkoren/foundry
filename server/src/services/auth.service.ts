@@ -3,7 +3,7 @@ import type { RegisterInput, LoginInput, AuthResponse } from '../shared/schemas/
 import { hashPassword, verifyPassword } from '../lib/auth/password';
 import { generateToken } from '../lib/auth/token';
 import { config } from '../shared/config/config';
-import { emailJobService } from './mail/email.job';
+import { mailService } from './mail/mail.service';
 
 class AuthService {
   async register(input: RegisterInput): Promise<AuthResponse> {
@@ -34,8 +34,7 @@ class AuthService {
       email: user.email,
     });
 
-    // Queue welcome email using dedicated email service
-    await emailJobService.sendWelcomeEmail(user, {
+    await mailService.sendWelcomeEmail(user, {
       appName: config.app.name,
       loginUrl: `${config.app.clientUrl}/login`,
     }).catch(error => {

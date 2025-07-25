@@ -46,6 +46,7 @@ export const emailStatusSchema = z.object({
   id: z.string(),
   status: z.enum(['queued', 'sent', 'failed', 'delivered', 'bounced']),
   error: z.string().optional(),
+  queuedAt: z.date().optional(),
   sentAt: z.date().optional(),
   deliveredAt: z.date().optional(),
 });

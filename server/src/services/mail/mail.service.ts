@@ -3,6 +3,8 @@ import type { Transporter } from 'nodemailer';
 import { config } from '../../shared/config/config';
 import type { SendEmailInput, SendTemplatedEmailInput, EmailStatus, EmailAddress } from '../../shared/schemas/mail.schema';
 import { renderTemplate } from './template.service';
+import { emailJobService } from './email.job';
+import { QueuePriority } from '../../features/jobs';
 
 class MailService {
   private transporter: Transporter;
@@ -98,26 +100,6 @@ class MailService {
     }
   }
 
-  async getEmailStatus(emailId: string): Promise<EmailStatus | null> {
-    // SMTP doesn't provide real-time status tracking
-    // This would require implementing webhooks or email tracking services
-    // For now, we return a basic status
-    return {
-      id: emailId,
-      status: 'sent',
-      sentAt: new Date(),
-    };
-  }
-
-  async healthCheck(): Promise<boolean> {
-    try {
-      await this.transporter.verify();
-      return true;
-    } catch (error) {
-      console.error('Mail service health check failed:', error);
-      return false;
-    }
-  }
 
   private formatAddress(address: EmailAddress): string {
     if (address.name) {
@@ -126,12 +108,82 @@ class MailService {
     return address.email;
   }
 
-  getConfig(): { host: string; port: number; from: EmailAddress } {
-    return {
-      host: process.env.MAIL_HOST || 'localhost',
-      port: parseInt(process.env.MAIL_PORT || '13004', 10),
-      from: this.fromAddress,
-    };
+  
+  /**
+   * Send a welcome email to a new user
+   * Uses the job queue for reliable delivery
+   */
+  async sendWelcomeEmail(
+    user: { id: string; email: string; name: string },
+    options?: {
+      appName?: string;
+      loginUrl?: string;
+    }
+  ): Promise<EmailStatus> {
+    try {
+      const job = await emailJobService.sendEmail({
+        to: { email: user.email, name: user.name },
+        template: 'welcome',
+        variables: {
+          name: user.name,
+          appName: options?.appName || config.app.name,
+          loginUrl: options?.loginUrl || `${config.app.clientUrl}/login`,
+        },
+        priority: QueuePriority.HIGH,
+        userId: user.id,
+      });
+      
+      return {
+        id: job.id as string,
+        status: 'queued',
+        queuedAt: new Date(),
+      };
+    } catch (error) {
+      console.error('Failed to queue welcome email:', error);
+      return {
+        id: `error-${Date.now()}`,
+        status: 'failed',
+        error: error instanceof Error ? error.message : 'Failed to queue email',
+      };
+    }
+  }
+  
+  /**
+   * Send a password reset email
+   * Uses the job queue for reliable delivery
+   */
+  async sendPasswordResetEmail(
+    user: { id: string; email: string; name: string },
+    resetToken: string,
+    resetUrl: string
+  ): Promise<EmailStatus> {
+    try {
+      const job = await emailJobService.sendEmail({
+        to: { email: user.email, name: user.name },
+        template: 'reset-password',
+        variables: {
+          name: user.name,
+          resetUrl,
+          resetToken,
+          expiresIn: '1 hour',
+        },
+        priority: QueuePriority.CRITICAL,
+        userId: user.id,
+      });
+      
+      return {
+        id: job.id as string,
+        status: 'queued',
+        queuedAt: new Date(),
+      };
+    } catch (error) {
+      console.error('Failed to queue password reset email:', error);
+      return {
+        id: `error-${Date.now()}`,
+        status: 'failed',
+        error: error instanceof Error ? error.message : 'Failed to queue email',
+      };
+    }
   }
 }
 

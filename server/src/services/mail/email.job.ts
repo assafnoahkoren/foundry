@@ -69,7 +69,7 @@ const emailQueueDefinition: QueueDefinition<EmailJobData> = {
   },
 };
 
-// Email queue service with domain-specific methods
+// Email queue service - handles generic email sending through the queue
 export class EmailJobService {
 
   /**
@@ -96,52 +96,6 @@ export class EmailJobService {
         type: 'exponential',
         delay: 5000,
       },
-    });
-  }
-
-  /**
-   * Send a welcome email
-   */
-  async sendWelcomeEmail(
-    user: { id: string; email: string; name: string },
-    options?: {
-      appName: string;
-      loginUrl: string;
-      priority?: number;
-    }
-  ): Promise<Job<EmailJobData>> {
-    return this.sendEmail({
-      to: { email: user.email, name: user.name },
-      template: 'welcome',
-      variables: {
-        name: user.name,
-        appName: options?.appName || 'Foundry',
-        loginUrl: options?.loginUrl || process.env.CLIENT_URL + '/login',
-      },
-      priority: options?.priority || QueuePriority.HIGH,
-      userId: user.id,
-    });
-  }
-
-  /**
-   * Send a password reset email
-   */
-  async sendPasswordResetEmail(
-    user: { id: string; email: string; name: string },
-    resetToken: string,
-    resetUrl: string
-  ): Promise<Job<EmailJobData>> {
-    return this.sendEmail({
-      to: { email: user.email, name: user.name },
-      template: 'reset-password',
-      variables: {
-        name: user.name,
-        resetUrl,
-        resetToken,
-        expiresIn: '1 hour',
-      },
-      priority: QueuePriority.CRITICAL,
-      userId: user.id,
     });
   }
 
