@@ -8,12 +8,14 @@ export { queueFactory } from './queue.factory';
 export type { QueueDefinition } from './queue.registry';
 
 // Common queue types
-export enum QueuePriority {
-  LOW = 10,
-  NORMAL = 0,
-  HIGH = -5,
-  CRITICAL = -10,
-}
+export const QueuePriority = {
+  LOW: 10,
+  NORMAL: 0,
+  HIGH: -5,
+  CRITICAL: -10,
+} as const;
+
+export type QueuePriority = typeof QueuePriority[keyof typeof QueuePriority];
 
 export interface BaseJobData {
   userId?: string;

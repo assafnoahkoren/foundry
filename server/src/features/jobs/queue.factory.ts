@@ -1,4 +1,5 @@
-import { Queue, Worker, Job, Processor, WorkerOptions } from 'bullmq';
+import { Queue, Worker, Job } from 'bullmq';
+import type { Processor, WorkerOptions } from 'bullmq';
 import { getRedisOptions } from './redis.config';
 
 /**

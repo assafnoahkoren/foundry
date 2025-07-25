@@ -1,7 +1,8 @@
-import { Job, JobsOptions, BulkJobOptions } from 'bullmq';
+import { Job } from 'bullmq';
+import type { JobsOptions, BulkJobOptions } from 'bullmq';
 import { queueFactory } from './queue.factory';
 import { queueRegistry } from './queue.registry';
-import { BaseJobData } from '.';
+import type { BaseJobData } from '.';
 
 /**
  * Generic queue service that works with any registered queue

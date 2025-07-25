@@ -1,9 +1,11 @@
 import { Job } from 'bullmq';
-import { queueRegistry, QueueDefinition } from '../../features/jobs/queue.registry';
+import { queueRegistry } from '../../features/jobs/queue.registry';
+import type { QueueDefinition } from '../../features/jobs/queue.registry';
 import { queueService } from '../../features/jobs/queue.service';
-import { BaseJobData, QueuePriority } from '../../features/jobs';
+import { QueuePriority } from '../../features/jobs';
+import type { BaseJobData } from '../../features/jobs';
 import { mailService } from './mail.service';
-import { EmailAddress } from './mail.types';
+import type { EmailAddress } from './mail.types';
 
 // Define the email job data structure
 export interface EmailJobData extends BaseJobData {

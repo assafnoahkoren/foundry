@@ -1,4 +1,4 @@
-import { JobsOptions, Processor, WorkerOptions } from 'bullmq';
+import type { JobsOptions, Processor, WorkerOptions } from 'bullmq';
 import { queueFactory } from './queue.factory';
 
 export interface QueueDefinition<T = any> {
