@@ -41,7 +41,11 @@ export async function checkingCoreSystems(): Promise<void> {
  */
 export async function bootstrapWebServer(): Promise<void> {
   console.log('🌐 Bootstrapping web server...');
+  
+  // Register job queues so Bull Board can find them
   await registerAllBackgroundJobsQueues(); 
+  
+  // Check core systems
   await checkingCoreSystems();
   
   // Web server specific initializations:

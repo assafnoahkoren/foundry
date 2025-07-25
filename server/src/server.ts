@@ -1,8 +1,7 @@
 import fastify from 'fastify';
 import cors from '@fastify/cors';
-import { fastifyTRPCPlugin, type FastifyTRPCPluginOptions } from '@trpc/server/adapters/fastify';
-import { createContext } from './trpc/context';
-import { appRouter } from './trpc/routers/app.router';
+import { initTRPCPlugin } from './trpc/init';
+import { initBullBoard } from './features/jobs/bull-board';
 
 export type { AppRouter } from './trpc/routers/app.router';
 
@@ -20,17 +19,11 @@ export async function createServer() {
     credentials: true,
   });
 
-  // Register tRPC
-  await server.register(fastifyTRPCPlugin, {
-    prefix: '/trpc',
-    trpcOptions: {
-      router: appRouter,
-      createContext,
-      onError({ path, error }) {
-        console.error(`tRPC error on ${path}:`, error);
-      },
-    } satisfies FastifyTRPCPluginOptions<typeof appRouter>['trpcOptions'],
-  });
+  // Initialize tRPC
+  await initTRPCPlugin(server);
+
+  // Initialize Bull Board (controlled by environment variables)
+  await initBullBoard(server);
 
   // Health check endpoint
   server.get('/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }));
