@@ -22,7 +22,7 @@ export const config = {
   
   // Server
   server: {
-    port: parseInt(process.env.SERVER_PORT || '13002', 10),
+    port: parseInt(process.env.PORT || process.env.SERVER_PORT || '13002', 10),
     nodeEnv: (process.env.NODE_ENV || 'development') as 'development' | 'production' | 'test',
   },
   
