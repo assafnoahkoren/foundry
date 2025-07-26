@@ -60,7 +60,10 @@ describe('Auth Router', () => {
       await caller.auth.register(testUser);
 
       // Login with correct credentials
-      const loginInput = createTestLoginInput();
+      const loginInput = {
+        email: testUser.email,
+        password: testUser.password,
+      };
       const result = await caller.auth.login(loginInput);
 
       expect(result).toHaveProperty('user');
@@ -167,7 +170,10 @@ describe('Auth Router', () => {
       expect(meResult.email).toBe(testUser.email);
 
       // 3. Login with credentials
-      const loginInput = createTestLoginInput();
+      const loginInput = {
+        email: testUser.email,
+        password: testUser.password,
+      };
       const loginResult = await caller.auth.login(loginInput);
       expect(loginResult.token).toBeDefined();
 
