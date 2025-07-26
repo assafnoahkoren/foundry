@@ -46,8 +46,13 @@ export async function registerAllBackgroundJobsQueues(): Promise<void> {
         
         console.log(`Loading job file: ${jobFile}`);
         
-        // Import the module - no need to convert to file URL for Node.js imports
-        const jobModule = await import(jobFile);
+        // Convert to proper file URL for dynamic imports
+        // On Windows, we need to handle the path properly
+        const fileUrl = process.platform === 'win32' 
+          ? `file:///${jobFile.replace(/\\/g, '/')}` 
+          : jobFile;
+        
+        const jobModule = await import(fileUrl);
         
         // Check if it has a default export
         if (typeof jobModule.default === 'function') {
