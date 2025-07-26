@@ -19,6 +19,13 @@ export function Root() {
       links: [
         httpBatchLink({
           url: `${import.meta.env.VITE_SERVER_URL || 'http://localhost:13002'}/trpc`,
+          // Custom fetch to ensure CORS works properly
+          fetch(url, options) {
+            return fetch(url, {
+              ...options,
+              mode: 'cors', // Explicitly set CORS mode
+            });
+          },
           headers() {
             const token = localStorage.getItem('authToken');
             return {
