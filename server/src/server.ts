@@ -15,7 +15,7 @@ export async function createServer() {
 
   // Register CORS
   await server.register(cors, {
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: true, // Allow all origins
     credentials: true,
   });
 
