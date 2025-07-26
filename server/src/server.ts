@@ -1,8 +1,8 @@
 import fastify from 'fastify';
 import cors from '@fastify/cors';
 import { initTRPCPlugin } from './trpc/init';
-import { initBullBoard } from './features/jobs/bull-board';
 import { config } from './shared/config/config';
+import { initBullBoard } from './features/jobs/bull-board';
 
 export type { AppRouter } from './trpc/routers/app.router';
 
