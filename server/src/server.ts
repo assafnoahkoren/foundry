@@ -1,5 +1,4 @@
 import fastify from 'fastify';
-import cors from '@fastify/cors';
 import { initTRPCPlugin } from './trpc/init';
 import { initBullBoard } from './features/jobs/bull-board';
 
@@ -13,13 +12,23 @@ export async function createServer() {
     maxParamLength: 5000,
   });
 
-  // CORS configuration that properly handles preflight
-  await server.register(cors, {
-    origin: (origin, cb) => {
-      // Allow all origins
-      cb(null, true);
-    },
-    credentials: false, // We're using JWT, not cookies
+  // Manual CORS handling - set headers on every response
+  server.addHook('onSend', async (request, reply) => {
+    reply.header('Access-Control-Allow-Origin', '*');
+    reply.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    reply.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    reply.header('Access-Control-Allow-Credentials', 'false');
+  });
+
+  // Handle OPTIONS preflight requests
+  server.options('/*', async (request, reply) => {
+    reply
+      .header('Access-Control-Allow-Origin', '*')
+      .header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+      .header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+      .header('Access-Control-Allow-Credentials', 'false')
+      .status(200)
+      .send();
   });
 
   // Initialize tRPC
