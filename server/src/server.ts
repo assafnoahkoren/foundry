@@ -1,4 +1,5 @@
 import fastify from 'fastify';
+import cors from '@fastify/cors';
 import { initTRPCPlugin } from './trpc/init';
 import { initBullBoard } from './features/jobs/bull-board';
 
@@ -12,6 +13,10 @@ export async function createServer() {
     maxParamLength: 5000,
   });
 
+  // Simple CORS - allow any origin
+  await server.register(cors, {
+    origin: true
+  });
 
   // Initialize tRPC
   await initTRPCPlugin(server);
