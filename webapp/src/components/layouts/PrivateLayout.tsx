@@ -20,7 +20,7 @@ export const PrivateLayout = () => {
           alignItems: 'center'
         }}>
           <Link to="/" style={{ textDecoration: 'none', color: 'white', fontSize: '1.5rem', fontWeight: 'bold' }}>
-            Foundry
+            Aviaite
           </Link>
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
             <Link to="/protected" style={{ textDecoration: 'none', color: 'white' }}>Protected Page</Link>

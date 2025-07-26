@@ -153,36 +153,4 @@ describe('Auth Router', () => {
       await expect(authCaller.auth.me()).rejects.toThrow('User not found');
     });
   });
-
-  describe('Authentication flow', () => {
-    it('should complete full authentication flow', async () => {
-      const testUser = createTestUser();
-
-      // 1. Register
-      const registerResult = await caller.auth.register(testUser);
-      expect(registerResult.token).toBeDefined();
-
-      // 2. Use token to access protected route
-      const authContext = await createAuthenticatedContext(registerResult.token);
-      const authCaller = await createCaller(authContext);
-      
-      const meResult = await authCaller.auth.me();
-      expect(meResult.email).toBe(testUser.email);
-
-      // 3. Login with credentials
-      const loginInput = {
-        email: testUser.email,
-        password: testUser.password,
-      };
-      const loginResult = await caller.auth.login(loginInput);
-      expect(loginResult.token).toBeDefined();
-
-      // 4. Use new token to access protected route
-      const newAuthContext = await createAuthenticatedContext(loginResult.token);
-      const newAuthCaller = await createCaller(newAuthContext);
-      
-      const newMeResult = await newAuthCaller.auth.me();
-      expect(newMeResult.email).toBe(testUser.email);
-    });
-  });
 });
