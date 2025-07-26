@@ -130,6 +130,58 @@ const createUser = trpc.users.create.useMutation();
 - [Background Jobs Quick Reference](./docs/BACKGROUND_JOBS_QUICK_REFERENCE.md) - Quick reference and examples
 - [Queue Architecture](./docs/QUEUE_ARCHITECTURE.md) - Detailed architecture documentation
 
+## Deployment
+
+This project includes automated deployment workflows for Render.com that deploy both the server and webapp services:
+
+### GitHub Actions Workflows
+
+- **Production Deployment** (`deploy-production.yml`): Automatically deploys services to production when changes are pushed to the `main` branch
+- **Staging Deployment** (`deploy-staging.yml`): Automatically deploys services to staging when changes are pushed to the `staging` branch
+
+### Smart Path-Based Deployment
+
+The workflows use path filtering to only deploy services that have changed:
+
+- **Server deploys when changes are made to:**
+  - `server/**` - Any server code changes
+  - `shared/**` - Shared types/schemas that affect the server
+  - `package.json` or `package-lock.json` - Dependency changes
+
+- **WebApp deploys when changes are made to:**
+  - `webapp/**` - Any webapp code changes
+  - `shared/**` - Shared types/schemas that affect the webapp
+  - `package.json` or `package-lock.json` - Dependency changes
+
+This means:
+- If you only change server code, only the server will be deployed
+- If you only change webapp code, only the webapp will be deployed
+- If you change shared code or dependencies, both services will be deployed
+- Manual deployments (via workflow_dispatch) always deploy both services
+
+### Required GitHub Secrets
+
+To enable automated deployments, configure these secrets in your GitHub repository settings:
+
+#### General
+- `RENDER_API_KEY`: Your Render API key (found in Render account settings)
+
+#### Production Service IDs
+- `RENDER_SERVER_SERVICE_ID_PRODUCTION`: The service ID for your production server (API)
+- `RENDER_WEBAPP_SERVICE_ID_PRODUCTION`: The service ID for your production webapp
+
+#### Staging Service IDs
+- `RENDER_SERVER_SERVICE_ID_STAGING`: The service ID for your staging server (API)
+- `RENDER_WEBAPP_SERVICE_ID_STAGING`: The service ID for your staging webapp
+
+### Manual Deployment
+
+Both workflows support manual deployment via the GitHub Actions "workflow_dispatch" trigger. You can manually run a deployment from the Actions tab in GitHub. Manual deployments always deploy both services regardless of what changed.
+
+### Deployment Order
+
+The workflows deploy services in parallel for faster deployment times. Each service deployment waits for success confirmation before completing.
+
 ## License
 
 MIT

@@ -1,0 +1,70 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'server/**'
+      - 'webapp/**'
+      - 'shared/**'
+      - 'package.json'
+      - 'package-lock.json'
+  workflow_dispatch:
+
+jobs:
+  detect-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      server: ${{ steps.filter.outputs.server }}
+      webapp: ${{ steps.filter.outputs.webapp }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            server:
+              - 'server/**'
+              - 'shared/**'
+              - 'package.json'
+              - 'package-lock.json'
+            webapp:
+              - 'webapp/**'
+              - 'shared/**'
+              - 'package.json'
+              - 'package-lock.json'
+
+  deploy-server:
+    name: Deploy Server to Production
+    needs: detect-changes
+    if: needs.detect-changes.outputs.server == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy Server to Render
+        uses: johnbeynon/render-deploy-action@v0.0.8
+        with:
+          service-id: ${{ secrets.RENDER_SERVER_SERVICE_ID_PRODUCTION }}
+          api-key: ${{ secrets.RENDER_API_KEY }}
+          wait-for-success: true
+
+  deploy-webapp:
+    name: Deploy WebApp to Production
+    needs: detect-changes
+    if: needs.detect-changes.outputs.webapp == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy WebApp to Render
+        uses: johnbeynon/render-deploy-action@v0.0.8
+        with:
+          service-id: ${{ secrets.RENDER_WEBAPP_SERVICE_ID_PRODUCTION }}
+          api-key: ${{ secrets.RENDER_API_KEY }}
+          wait-for-success: true
