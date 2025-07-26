@@ -4,6 +4,7 @@ import { FastifyAdapter } from '@bull-board/fastify';
 import type { FastifyInstance } from 'fastify';
 import { queueFactory } from './queue.factory';
 import { queueRegistry } from './queue.registry';
+import { config } from '../../shared/config/config';
 
 /**
  * Create and configure Bull Board for queue monitoring
@@ -51,9 +52,7 @@ function setupBullBoard() {
  */
 export async function initBullBoard(server: FastifyInstance): Promise<void> {
   // Check if Bull Board should be enabled
-  const shouldEnableBullBoard = 
-    process.env.NODE_ENV !== 'production' || 
-    process.env.ENABLE_BULL_BOARD === 'true';
+  const shouldEnableBullBoard = !config.isProduction() || config.bullBoard.enabled;
     
   if (!shouldEnableBullBoard) {
     return;
@@ -64,7 +63,7 @@ export async function initBullBoard(server: FastifyInstance): Promise<void> {
     await server.register(bullBoardAdapter.registerPlugin(), {
       prefix: '/admin/queues',
     });
-    console.log('📊 Bull Board available at http://localhost:13002/admin/queues');
+    console.log(`📊 Bull Board available at http://localhost:${config.server.port}/admin/queues`);
   } catch (error) {
     console.error('Failed to setup Bull Board:', error);
   }

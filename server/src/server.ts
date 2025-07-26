@@ -2,13 +2,14 @@ import fastify from 'fastify';
 import cors from '@fastify/cors';
 import { initTRPCPlugin } from './trpc/init';
 import { initBullBoard } from './features/jobs/bull-board';
+import { config } from './shared/config/config';
 
 export type { AppRouter } from './trpc/routers/app.router';
 
 export async function createServer() {
   const server = fastify({
     logger: {
-      level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+      level: config.isProduction() ? 'info' : 'debug',
     },
     maxParamLength: 5000,
   });

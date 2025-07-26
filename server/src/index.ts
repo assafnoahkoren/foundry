@@ -10,7 +10,7 @@ const start = async () => {
     // Create and start server
     const server = await createServer();
     const port = config.server.port;
-    const host = process.env.HOST || '0.0.0.0';
+    const host = config.server.host;
 
     await server.listen({ port, host });
     console.log(`🚀 Server running at http://${host}:${port}`);

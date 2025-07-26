@@ -7,6 +7,7 @@ import type { BaseJobData } from '../../features/jobs';
 import { mailService } from './mail.service';
 import type { EmailAddress } from './mail.types';
 import type { TemplateName } from './template.service';
+import { config } from '../../shared/config/config';
 
 // Define the email job data structure
 export interface EmailJobData extends BaseJobData {
@@ -59,7 +60,7 @@ const emailQueueDefinition: QueueDefinition<EmailJobData> = {
   name: EMAIL_QUEUE,
   processor: emailProcessor,
   workerOptions: {
-    concurrency: parseInt(process.env.EMAIL_WORKER_CONCURRENCY || '5', 10),
+    concurrency: config.worker.emailConcurrency,
   },
   defaultJobOptions: {
     attempts: 3,

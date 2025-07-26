@@ -1,4 +1,5 @@
 import Redis from 'ioredis';
+import { config } from '../../shared/config/config';
 
 /**
  * Create a Redis connection for BullMQ
@@ -6,9 +7,9 @@ import Redis from 'ioredis';
  */
 export const createRedisConnection = () => {
   const connection = new Redis({
-    host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT || '13007', 10),
-    password: process.env.REDIS_PASSWORD,
+    host: config.redis.host,
+    port: config.redis.port,
+    password: config.redis.password,
     maxRetriesPerRequest: null, // Required for BullMQ
     enableReadyCheck: false, // Required for BullMQ
   });
@@ -26,9 +27,9 @@ export const createRedisConnection = () => {
  * This returns the options object instead of a connection instance
  */
 export const getRedisOptions = () => ({
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '13007', 10),
-  password: process.env.REDIS_PASSWORD,
+  host: config.redis.host,
+  port: config.redis.port,
+  password: config.redis.password,
   maxRetriesPerRequest: null,
   enableReadyCheck: false,
 });

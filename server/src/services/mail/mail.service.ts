@@ -12,20 +12,14 @@ class MailService {
 
   constructor() {
     // Configure from address
-    this.fromAddress = {
-      email: process.env.MAIL_FROM_EMAIL || 'noreply@foundry.local',
-      name: process.env.MAIL_FROM_NAME || 'Foundry App',
-    };
+    this.fromAddress = config.mail.from;
 
     // Create SMTP transporter with environment-based configuration
     this.transporter = nodemailer.createTransport({
-      host: process.env.MAIL_HOST || 'localhost',
-      port: parseInt(process.env.MAIL_PORT || '13004', 10),
-      secure: process.env.MAIL_SECURE === 'true', // true for 465, false for other ports
-      auth: process.env.MAIL_USER && process.env.MAIL_PASS ? {
-        user: process.env.MAIL_USER,
-        pass: process.env.MAIL_PASS,
-      } : undefined,
+      host: config.mail.host,
+      port: config.mail.port,
+      secure: config.mail.secure,
+      auth: config.mail.auth,
       // For local development with Mailhog
       ignoreTLS: config.isDevelopment(),
     });

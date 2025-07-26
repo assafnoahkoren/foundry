@@ -1,6 +1,8 @@
 import { prisma } from './lib/prisma';
 import { createRedisConnection } from './features/jobs/redis.config';
 import { registerAllBackgroundJobsQueues } from './features/jobs/register-all-background-jobs-queues';
+import { initializeQueueSystem } from './features/jobs';
+import { config } from './shared/config/config';
 
 /**
  * Initialize core application systems
@@ -47,6 +49,14 @@ export async function bootstrapWebServer(): Promise<void> {
   
   // Check core systems
   await checkingCoreSystems();
+  
+  // Initialize queue system if enabled
+  if (config.queue.initializeOnWebServer) {
+    console.log('📋 Initializing queue system (INITIALIZE_QUEUE_SYSTEM=true)...');
+    await initializeQueueSystem();
+  } else {
+    console.log('⏭️  Skipping queue system initialization (INITIALIZE_QUEUE_SYSTEM=false)');
+  }
   
   // Web server specific initializations:
   // - Session store
