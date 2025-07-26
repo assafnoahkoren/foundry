@@ -13,8 +13,14 @@ export async function createServer() {
     maxParamLength: 5000,
   });
 
-  // Simple CORS - allow everything
-  await server.register(cors);
+  // CORS configuration that properly handles preflight
+  await server.register(cors, {
+    origin: (origin, cb) => {
+      // Allow all origins
+      cb(null, true);
+    },
+    credentials: false, // We're using JWT, not cookies
+  });
 
   // Initialize tRPC
   await initTRPCPlugin(server);
