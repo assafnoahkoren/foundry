@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 export const Home = () => {
   return (
     <div>
-      <h1>Welcome to Aviaite</h1>
+      <h1>Welcome to Foundry</h1>
       <p>A modern full-stack TypeScript application with tRPC.</p>
       <div style={{ marginTop: '2rem' }}>
         <Link 
