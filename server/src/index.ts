@@ -13,7 +13,7 @@ const start = async () => {
     const host = config.server.host;
 
     await server.listen({ port, host });
-    console.log(`🚀 Server running at http://${host}:${port}`);
+    console.log(`🚀 Server running at: http://${host}:${port}`);
     console.log(`📡 tRPC endpoint: http://${host}:${port}/trpc`);
   } catch (err) {
     console.error(err);
