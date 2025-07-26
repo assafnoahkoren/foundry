@@ -5,25 +5,35 @@
 
 import { glob } from 'glob';
 import path from 'path';
-import { pathToFileURL } from 'url';
 
 /**
  * Dynamically discover and register all job files
- * Looks for any file ending with .job.ts or .job.js
+ * Looks for any file ending with .job.ts or .job.js based on current runtime
  * and calls its default export (assumed to be a register function)
  */
 export async function registerAllBackgroundJobsQueues(): Promise<void> {
   console.log('Auto-discovering job features...');
   
   try {
-    // Find all job files (both .ts and .js)
-    const jobFiles = await glob('**/*.job.{ts,js}', {
-      cwd: path.join(__dirname, '../..'),
+    // Determine file extension based on current file's extension
+    // If this file is .ts, we're in TypeScript environment; if .js, we're in compiled JavaScript
+    const currentFileExtension = path.extname(__filename);
+    const isTypeScript = currentFileExtension === '.ts';
+    const filePattern = isTypeScript ? '**/*.job.ts' : '**/*.job.js';
+    
+    // The base directory depends on whether we're running TypeScript or JavaScript
+    // In TypeScript: this file is at src/features/jobs/, so go up to src/
+    // In JavaScript: this file is at dist/features/jobs/, so go up to dist/
+    const baseDir = path.join(__dirname, '..', '..');
+    
+    // Find all job files
+    const jobFiles = await glob(filePattern, {
+      cwd: baseDir,
       absolute: true,
       ignore: ['**/node_modules/**', '**/*.test.ts', '**/*.test.js', '**/*.spec.ts', '**/*.spec.js', '**/job.template.ts', '**/job.template.js']
     });
     
-    console.log(`Found ${jobFiles.length} job file(s)`);
+    console.log(`Found ${jobFiles.length} job file(s) matching pattern: ${filePattern}`);
     
     // Import and register each job
     for (const jobFile of jobFiles) {
@@ -34,11 +44,10 @@ export async function registerAllBackgroundJobsQueues(): Promise<void> {
           continue;
         }
         
-        // Convert to file:// URL for cross-platform compatibility
-        const fileUrl = pathToFileURL(jobFile).href;
+        console.log(`Loading job file: ${jobFile}`);
         
-        // Import the module
-        const jobModule = await import(fileUrl);
+        // Import the module - no need to convert to file URL for Node.js imports
+        const jobModule = await import(jobFile);
         
         // Check if it has a default export
         if (typeof jobModule.default === 'function') {
