@@ -27,7 +27,7 @@ export async function createServer() {
 
 
   // Root endpoint
-  server.get('/', async () => ({ message: 'Hello World!' }));
+  server.get('/', async () => ({ message: 'Hello World!!' }));
 
   // Health check endpoint
   server.get('/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }));
