@@ -26,6 +26,9 @@ export async function createServer() {
   await initBullBoard(server);
 
 
+  // Root endpoint
+  server.get('/', async () => ({ message: 'Hello World!' }));
+
   // Health check endpoint
   server.get('/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }));
 
