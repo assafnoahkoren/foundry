@@ -1,5 +1,5 @@
-import { config as dotenvConfig } from 'dotenv';
 import { resolve } from 'path';
+import { config as dotenvConfig } from 'dotenv';
 
 // Load .env file from the root directory
 const envPath = resolve(process.cwd(), '../.env');
