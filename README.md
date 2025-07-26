@@ -166,13 +166,15 @@ To enable automated deployments, configure these secrets in your GitHub reposito
 #### General
 - `RENDER_API_KEY`: Your Render API key (found in Render account settings)
 
-#### Production Service IDs
+#### Production Environment
 - `RENDER_SERVER_SERVICE_ID_PRODUCTION`: The service ID for your production server (API)
 - `RENDER_WEBAPP_SERVICE_ID_PRODUCTION`: The service ID for your production webapp
+- `DATABASE_URL_PRODUCTION`: Your production database connection string
 
-#### Staging Service IDs
+#### Staging Environment
 - `RENDER_SERVER_SERVICE_ID_STAGING`: The service ID for your staging server (API)
 - `RENDER_WEBAPP_SERVICE_ID_STAGING`: The service ID for your staging webapp
+- `DATABASE_URL_STAGING`: Your staging database connection string
 
 ### Manual Deployment
 
@@ -181,6 +183,26 @@ Both workflows support manual deployment via the GitHub Actions "workflow_dispat
 ### Deployment Order
 
 The workflows deploy services in parallel for faster deployment times. Each service deployment waits for success confirmation before completing.
+
+### Database Migrations
+
+The deployment workflows automatically run Prisma migrations before deploying:
+
+1. **Migration Job**: A dedicated job runs before the server deployment
+   - Installs dependencies
+   - Generates the Prisma client
+   - Runs `prisma migrate deploy` to apply any pending migrations
+   - Uses the appropriate `DATABASE_URL_PRODUCTION` or `DATABASE_URL_STAGING` secret
+
+2. **Deployment Order**:
+   - First: Database migrations are applied
+   - Then: Server is deployed to Render
+   - This ensures your database schema is always updated before the new code runs
+
+3. **Failure Handling**:
+   - If migrations fail, the deployment stops
+   - The server won't be deployed with incompatible database schema
+   - Check the GitHub Actions logs for migration errors
 
 ## License
 

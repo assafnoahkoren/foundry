@@ -18,6 +18,7 @@ build/
 .env.test.local
 .env.production.local
 .env.prod
+.env.staging
 
 # React Email
 server/src/services/mail/emails/

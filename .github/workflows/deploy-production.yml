@@ -35,9 +35,34 @@ jobs:
               - 'package.json'
               - 'package-lock.json'
 
+  migrate-database:
+    name: Run Database Migrations
+    needs: detect-changes
+    if: needs.detect-changes.outputs.server == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Deploy Prisma Migrations
+        working-directory: ./server
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_PRODUCTION }}
+
   deploy-server:
     name: Deploy Server to Production
-    needs: detect-changes
+    needs: [detect-changes, migrate-database]
     if: needs.detect-changes.outputs.server == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     
