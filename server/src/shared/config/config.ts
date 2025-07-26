@@ -2,7 +2,7 @@ import { resolve } from 'path';
 import { config as dotenvConfig } from 'dotenv';
 
 // Load .env file from the root directory
-const envPath = resolve(process.cwd(), '../.env');
+const envPath = resolve(process.cwd(), '.env');
 dotenvConfig({ path: envPath });
 
 // Simple config object with all environment variables
