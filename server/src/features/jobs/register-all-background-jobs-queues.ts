@@ -1,6 +1,6 @@
 /**
  * Feature registration with auto-discovery
- * Automatically finds and registers all *.queue.ts files
+ * Automatically finds and registers all *.job.ts and *.job.js files
  */
 
 import { glob } from 'glob';
@@ -9,18 +9,18 @@ import { pathToFileURL } from 'url';
 
 /**
  * Dynamically discover and register all job files
- * Looks for any file ending with .job.ts in the src directory
+ * Looks for any file ending with .job.ts or .job.js
  * and calls its default export (assumed to be a register function)
  */
 export async function registerAllBackgroundJobsQueues(): Promise<void> {
   console.log('Auto-discovering job features...');
   
   try {
-    // Find all *.job.ts files in the src directory
-    const jobFiles = await glob('**/*.job.ts', {
+    // Find all job files (both .ts and .js)
+    const jobFiles = await glob('**/*.job.{ts,js}', {
       cwd: path.join(__dirname, '../..'),
       absolute: true,
-      ignore: ['**/node_modules/**', '**/*.test.ts', '**/*.spec.ts', '**/job.template.ts']
+      ignore: ['**/node_modules/**', '**/*.test.ts', '**/*.test.js', '**/*.spec.ts', '**/*.spec.js', '**/job.template.ts', '**/job.template.js']
     });
     
     console.log(`Found ${jobFiles.length} job file(s)`);
@@ -28,10 +28,12 @@ export async function registerAllBackgroundJobsQueues(): Promise<void> {
     // Import and register each job
     for (const jobFile of jobFiles) {
       try {
-        // Skip template.job.ts files (ignore them)
-        if (path.basename(jobFile) === 'template.job.ts') {
+        // Skip template files
+        const basename = path.basename(jobFile);
+        if (basename === 'template.job.ts' || basename === 'template.job.js') {
           continue;
         }
+        
         // Convert to file:// URL for cross-platform compatibility
         const fileUrl = pathToFileURL(jobFile).href;
         
@@ -42,8 +44,9 @@ export async function registerAllBackgroundJobsQueues(): Promise<void> {
         if (typeof jobModule.default === 'function') {
           // Call the registration function
           jobModule.default();
+          console.log(`✅ Registered job from ${basename}`);
         } else {
-          console.warn(`Job file ${jobFile} does not have a default export function`);
+          console.warn(`Job file ${basename} does not have a default export function`);
         }
       } catch (error) {
         console.error(`Failed to register job from ${jobFile}:`, error);
