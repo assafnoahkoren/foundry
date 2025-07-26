@@ -12,24 +12,6 @@ export async function createServer() {
     maxParamLength: 5000,
   });
 
-  // Manual CORS handling - set headers on every response
-  server.addHook('onSend', async (request, reply) => {
-    reply.header('Access-Control-Allow-Origin', '*');
-    reply.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    reply.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    reply.header('Access-Control-Allow-Credentials', 'false');
-  });
-
-  // Handle OPTIONS preflight requests
-  server.options('/*', async (request, reply) => {
-    reply
-      .header('Access-Control-Allow-Origin', '*')
-      .header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-      .header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-      .header('Access-Control-Allow-Credentials', 'false')
-      .status(200)
-      .send();
-  });
 
   // Initialize tRPC
   await initTRPCPlugin(server);
