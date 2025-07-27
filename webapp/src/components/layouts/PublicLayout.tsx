@@ -16,7 +16,7 @@ export const PublicLayout = () => {
           alignItems: 'center'
         }}>
           <Link to="/" style={{ textDecoration: 'none', color: '#333', fontSize: '1.5rem', fontWeight: 'bold' }}>
-            Foundry
+          Aviaite
           </Link>
           <div style={{ display: 'flex', gap: '1rem' }}>
             <Link to="/" style={{ textDecoration: 'none', color: '#333' }}>Home</Link>
