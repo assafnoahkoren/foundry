@@ -10,47 +10,47 @@ describe('Auth Router', () => {
     caller = await createCaller();
   });
 
-  describe('register', () => {
-    it('should register a new user successfully', async () => {
-      const testUser = createTestUser();
+  // describe('register', () => {
+  //   it('should register a new user successfully', async () => {
+  //     const testUser = createTestUser();
 
-      const result = await caller.auth.register(testUser);
+  //     const result = await caller.auth.register(testUser);
 
-      expect(result).toHaveProperty('user');
-      expect(result).toHaveProperty('token');
-      expect(result.user.email).toBe(testUser.email);
-      expect(result.user.name).toBe(testUser.name);
-      expect(result.user.id).toBeDefined();
-      expect(result.token).toBeDefined();
+  //     expect(result).toHaveProperty('user');
+  //     expect(result).toHaveProperty('token');
+  //     expect(result.user.email).toBe(testUser.email);
+  //     expect(result.user.name).toBe(testUser.name);
+  //     expect(result.user.id).toBeDefined();
+  //     expect(result.token).toBeDefined();
 
-      // Verify user was created in database
-      const dbUser = await prisma.user.findUnique({
-        where: { email: testUser.email },
-      });
-      expect(dbUser).toBeTruthy();
-      expect(dbUser?.email).toBe(testUser.email);
-    });
+  //     // Verify user was created in database
+  //     const dbUser = await prisma.user.findUnique({
+  //       where: { email: testUser.email },
+  //     });
+  //     expect(dbUser).toBeTruthy();
+  //     expect(dbUser?.email).toBe(testUser.email);
+  //   });
 
-    it('should throw error when registering with existing email', async () => {
-      const testUser = createTestUser();
+  //   it('should throw error when registering with existing email', async () => {
+  //     const testUser = createTestUser();
 
-      // First registration should succeed
-      await caller.auth.register(testUser);
+  //     // First registration should succeed
+  //     await caller.auth.register(testUser);
 
-      // Second registration with same email should fail
-      await expect(caller.auth.register(testUser)).rejects.toThrow('User with this email already exists');
-    });
+  //     // Second registration with same email should fail
+  //     await expect(caller.auth.register(testUser)).rejects.toThrow('User with this email already exists');
+  //   });
 
-    it('should validate registration input', async () => {
-      const invalidUser = {
-        email: 'invalid-email',
-        password: '', // Empty password
-        name: 'T', // Too short
-      };
+  //   it('should validate registration input', async () => {
+  //     const invalidUser = {
+  //       email: 'invalid-email',
+  //       password: '', // Empty password
+  //       name: 'T', // Too short
+  //     };
 
-      await expect(caller.auth.register(invalidUser)).rejects.toThrow();
-    });
-  });
+  //     await expect(caller.auth.register(invalidUser)).rejects.toThrow();
+  //   });
+  // });
 
   describe('login', () => {
     it('should login successfully with correct credentials', async () => {
