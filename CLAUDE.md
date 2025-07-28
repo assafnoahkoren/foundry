@@ -13,3 +13,4 @@
 
 ## UI Development
 - When creating UI layouts, assign meaningful IDs to different sections and components for better accessibility and testing
+- Use Lucide React icons (already installed with shadcn/ui) for all icon needs
