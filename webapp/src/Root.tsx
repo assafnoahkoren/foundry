@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { httpBatchLink } from '@trpc/client';
 import { trpc } from './utils/trpc';
 import App from './App';
+import { ThemeProvider } from './contexts/ThemeContext';
 
 export function Root() {
   const [queryClient] = useState(() => new QueryClient({
@@ -40,7 +41,9 @@ export function Root() {
   return (
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>
-        <App />
+        <ThemeProvider>
+          <App />
+        </ThemeProvider>
       </QueryClientProvider>
     </trpc.Provider>
   );

@@ -1,50 +1,75 @@
 import { Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { Button } from '@/components/ui/button';
+import { User, LogOut, Shield } from 'lucide-react';
+import { ThemeToggle } from '../ThemeToggle';
 
 export const PrivateLayout = () => {
   const { user, logout } = useAuth();
 
+  const HEADER_HEIGHT = '4rem'; // 64px
+
   return (
-    <div>
-      <nav style={{ 
-        backgroundColor: '#2c3e50', 
-        color: 'white',
-        padding: '1rem',
-        marginBottom: '2rem' 
-      }}>
-        <div style={{ 
-          maxWidth: '1200px', 
-          margin: '0 auto',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
-          <Link to="/" style={{ textDecoration: 'none', color: 'white', fontSize: '1.5rem', fontWeight: 'bold' }}>
-            Aviaite
-          </Link>
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            <Link to="/protected" style={{ textDecoration: 'none', color: 'white' }}>Protected Page</Link>
-            <span style={{ marginLeft: '1rem', marginRight: '0.5rem' }}>
-              Welcome, {user?.name || 'User'}
-            </span>
-            <button 
-              onClick={logout}
-              style={{ 
-                backgroundColor: '#e74c3c', 
-                color: 'white', 
-                border: 'none', 
-                padding: '0.5rem 1rem',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
+    <div id="private-layout" className="h-[100dvh] flex flex-col">
+      <header 
+        id="private-header" 
+        className="bg-primary text-primary-foreground border-b"
+        style={{ height: HEADER_HEIGHT }}
+      >
+        <nav className="h-full">
+          <div className="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
+            <Link 
+              id="logo-link"
+              to="/" 
+              className="text-2xl font-bold hover:opacity-80 transition-opacity"
             >
-              Logout
-            </button>
+              Aviaite
+            </Link>
+            
+            <div className="flex items-center gap-6">
+              <Link 
+                id="protected-nav-link"
+                to="/protected" 
+                className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+              >
+                <Shield className="h-4 w-4" />
+                Protected Page
+              </Link>
+              
+              <div className="flex items-center gap-3">
+                <ThemeToggle />
+
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  <span id="user-greeting" className="text-sm font-medium">
+                    Welcome, {user?.name || 'User'}
+                  </span>
+                </div>
+                
+                <Button 
+                  id="logout-button"
+                  onClick={logout}
+                  variant="destructive"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Logout
+                </Button>
+              </div>
+            </div>
           </div>
+        </nav>
+      </header>
+      
+      <main 
+        id="private-main"
+        className="flex-1 overflow-y-auto"
+        style={{ minHeight: `calc(100dvh - ${HEADER_HEIGHT})` }}
+      >
+        <div className="max-w-7xl mx-auto px-4">
+          <Outlet />
         </div>
-      </nav>
-      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1rem' }}>
-        <Outlet />
       </main>
     </div>
   );

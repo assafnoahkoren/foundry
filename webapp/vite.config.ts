@@ -11,6 +11,7 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     resolve: {
       alias: {
+        '@': resolve(__dirname, './src'),
         '@server/shared': resolve(__dirname, '../server/src/shared-export.ts'),
       },
     },

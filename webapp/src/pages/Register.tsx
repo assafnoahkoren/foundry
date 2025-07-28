@@ -2,6 +2,11 @@ import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Eye, EyeOff } from 'lucide-react';
 
 // Helper function to generate random values for dev environment
 const generateDevValues = () => {
@@ -22,6 +27,7 @@ export const Register = () => {
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   
   // Auto-fill with random values in development
   useEffect(() => {
@@ -52,99 +58,100 @@ export const Register = () => {
   };
 
   return (
-    <div style={{ maxWidth: '400px', margin: '0 auto' }}>
-      <h1>Register</h1>
-      <form onSubmit={handleSubmit}>
-        {error && (
-          <div style={{ 
-            backgroundColor: '#fee', 
-            color: '#c33', 
-            padding: '0.5rem', 
-            marginBottom: '1rem',
-            borderRadius: '4px'
-          }}>
-            {error}
-          </div>
-        )}
-        <div style={{ marginBottom: '1rem' }}>
-          <label htmlFor="name" style={{ display: 'block', marginBottom: '0.25rem' }}>
-            Name
-          </label>
-          <input
-            id="name"
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            minLength={2}
-            style={{ 
-              width: '100%', 
-              padding: '0.5rem',
-              fontSize: '1rem',
-              border: '1px solid #ddd',
-              borderRadius: '4px'
-            }}
-          />
-        </div>
-        <div style={{ marginBottom: '1rem' }}>
-          <label htmlFor="email" style={{ display: 'block', marginBottom: '0.25rem' }}>
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            style={{ 
-              width: '100%', 
-              padding: '0.5rem',
-              fontSize: '1rem',
-              border: '1px solid #ddd',
-              borderRadius: '4px'
-            }}
-          />
-        </div>
-        <div style={{ marginBottom: '1rem' }}>
-          <label htmlFor="password" style={{ display: 'block', marginBottom: '0.25rem' }}>
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            style={{ 
-              width: '100%', 
-              padding: '0.5rem',
-              fontSize: '1rem',
-              border: '1px solid #ddd',
-              borderRadius: '4px'
-            }}
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={isLoading}
-          style={{ 
-            width: '100%',
-            padding: '0.75rem',
-            backgroundColor: '#2ecc71',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            fontSize: '1rem',
-            cursor: isLoading ? 'not-allowed' : 'pointer',
-            opacity: isLoading ? 0.7 : 1
-          }}
-        >
-          {isLoading ? 'Creating account...' : 'Register'}
-        </button>
-      </form>
-      <p style={{ marginTop: '1rem', textAlign: 'center' }}>
-        Already have an account? <Link to="/login">Login</Link>
-      </p>
+    <div id="register-page" className="flex items-center justify-center px-4 py-8">
+      <Card id="register-card" className="w-full max-w-md mx-auto">
+        <CardHeader id="register-header" className="space-y-1">
+          <CardTitle id="register-title" className="text-2xl font-bold text-center">Create an account</CardTitle>
+          <CardDescription id="register-description" className="text-center">
+            Enter your information to get started
+          </CardDescription>
+        </CardHeader>
+        <form onSubmit={handleSubmit}>
+          <CardContent id="register-content" className="space-y-4">
+            {error && (
+              <div 
+                id="register-error"
+                className="bg-destructive/10 text-destructive px-3 py-2 rounded-md text-sm"
+              >
+                {error}
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                type="text"
+                placeholder="Enter your name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                minLength={2}
+                disabled={isLoading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={isLoading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Create a password"
+                  className="pr-10"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter id="register-footer" className="flex flex-col space-y-4">
+            <Button 
+              id="register-submit-button"
+              type="submit" 
+              className="w-full" 
+              disabled={isLoading}
+              variant="secondary"
+            >
+              {isLoading ? 'Creating account...' : 'Register'}
+            </Button>
+            <p className="text-center text-sm text-muted-foreground">
+              Already have an account?{' '}
+              <Link 
+                id="login-link"
+                to="/login" 
+                className="font-medium text-primary hover:underline"
+              >
+                Login
+              </Link>
+            </p>
+          </CardFooter>
+        </form>
+      </Card>
     </div>
   );
 };
