@@ -24,7 +24,7 @@ export const Login = () => {
 
     try {
       await login(email, password);
-      navigate('/dashboard');
+      navigate('/protected');
     } catch (err) {
       setError((err as Error).message || 'Failed to login');
     } finally {
