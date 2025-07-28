@@ -10,3 +10,6 @@
   - Maybe database migrations need to be run (`npm run prisma:migrate`)
   - Check if types need to be regenerated (e.g., after Prisma schema changes)
   - Consider if the error indicates a real logic issue that needs proper fixing
+
+## UI Development
+- When creating UI layouts, assign meaningful IDs to different sections and components for better accessibility and testing
