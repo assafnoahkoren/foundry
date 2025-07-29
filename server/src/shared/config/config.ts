@@ -88,6 +88,11 @@ export const config = {
     } : undefined,
   },
   
+  // OpenAI
+  openai: {
+    apiKey: process.env.OPENAI_API_KEY || '',
+  },
+  
   // Helper functions
   isProduction: () => config.server.nodeEnv === 'production',
   isDevelopment: () => config.server.nodeEnv === 'development',
