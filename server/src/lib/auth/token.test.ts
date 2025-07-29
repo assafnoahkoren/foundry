@@ -35,8 +35,8 @@ describe('Token utilities', () => {
 
       const expirationTime = decoded.exp! - decoded.iat!;
       
-      // Test setup sets expiration to 1h = 3600 seconds
-      expect(expirationTime).toBe(3600);
+      // JWT expiration is set to 7d = 604800 seconds in config
+      expect(expirationTime).toBe(604800);
     });
   });
 
