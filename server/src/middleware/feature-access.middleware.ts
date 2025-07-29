@@ -1,6 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { userAccessService } from '../services/user-access.service';
-import { FeatureId, SubFeatureId } from '../services/features.config';
+import { userAccessService, FeatureId, SubFeatureId } from '../services/user-access';
 
 /**
  * Middleware to check if user has access to a specific feature

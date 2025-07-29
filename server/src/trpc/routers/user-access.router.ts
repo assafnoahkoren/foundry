@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import { router, protectedProcedure } from '../trpc';
-import { userAccessService } from '../../services/user-access.service';
-import { featuresConfig, FeatureId } from '../../services/features.config';
+import { userAccessService, featuresConfig, FeatureId } from '../../services/user-access';
 
 // Schema for user feature access response
 const SubFeatureAccessSchema = z.object({

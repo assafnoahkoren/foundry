@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import { router, protectedProcedure } from '../trpc';
-import { userAccessService, GrantAccessInput, BulkGrantAccessInput } from '../../services/user-access.service';
-import { FeatureId } from '../../services/features.config';
+import { userAccessService, GrantAccessInput, BulkGrantAccessInput, FeatureId } from '../../services/user-access';
 
 /**
  * Admin router for user access management

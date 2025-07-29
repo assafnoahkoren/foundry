@@ -5,9 +5,9 @@ import {
   FeatureId, 
   SubFeatureId, 
   AnySubFeatureId
-} from './features.config';
+} from './features';
 import { TRPCError } from '@trpc/server';
-import { prisma } from '../lib/prisma';
+import { prisma } from '../../lib/prisma';
 
 export interface UserFeatureAccess<T extends FeatureId = FeatureId> {
   featureId: T;

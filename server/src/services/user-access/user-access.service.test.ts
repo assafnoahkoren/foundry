@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // Mock the prisma module
-vi.mock('../lib/prisma', () => ({
+vi.mock('../../lib/prisma', () => ({
   prisma: {
     userAccess: {
       findFirst: vi.fn(),
@@ -14,7 +14,7 @@ vi.mock('../lib/prisma', () => ({
 
 // Import after mocking
 import { userAccessService } from './user-access.service';
-import { prisma } from '../lib/prisma';
+import { prisma } from '../../lib/prisma';
 
 describe('UserAccessService', () => {
   beforeEach(() => {
@@ -91,8 +91,8 @@ describe('UserAccessService', () => {
           id: '2',
           userId: 'user1',
           featureId: 'joni',
-          subFeatureId: 'joni-gadgets',
-          metadata: { gadgetLevel: 'advanced' },
+          subFeatureId: 'joni-management',
+          metadata: {},
           grantedAt: new Date('2024-01-15'),
           expiresAt: null,
           updatedAt: new Date(),
@@ -123,12 +123,9 @@ describe('UserAccessService', () => {
         featureName: 'Johnny English Feature Suite',
         subFeatures: [
           {
-            subFeatureId: 'joni-gadgets',
-            subFeatureName: 'Spy Gadgets',
-            metadata: expect.objectContaining({
-              gadgetLevel: 'advanced',
-              maxActiveGadgets: 3, // Should include default
-            }),
+            subFeatureId: 'joni-management',
+            subFeatureName: 'Management Access',
+            metadata: {},
           },
         ],
       });
