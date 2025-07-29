@@ -28,6 +28,7 @@ model User {
   updatedAt    DateTime     @updatedAt
   userAccess   UserAccess[] @relation("UserAccess")
   grantedAccess UserAccess[] @relation("GrantedBy")
+  joniScenarioResponses JoniScenarioResponse[]
 }
 
 model UserAccess {
@@ -49,4 +50,45 @@ model UserAccess {
   @@index([featureId])
   @@index([subFeatureId])
   @@index([grantedBy])
+}
+
+// Joni Scenario Practice Models
+model JoniScenarioSubject {
+  id          String         @id @default(cuid())
+  name        String         @unique
+  description String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  scenarios   JoniScenario[]
+}
+
+model JoniScenario {
+  id                String                 @id @default(cuid())
+  subjectId         String
+  subject           JoniScenarioSubject    @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  flightInformation Json
+  expectedAnswer    Json
+  currentStatus     String
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  responses         JoniScenarioResponse[]
+  
+  @@index([subjectId])
+}
+
+model JoniScenarioResponse {
+  id               String       @id @default(cuid())
+  scenarioId       String
+  scenario         JoniScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userResponse     String
+  responseAnalysis Json
+  correctness      Float        // 0 to 10 score
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  
+  @@index([scenarioId])
+  @@index([userId])
+  @@index([createdAt])
 }

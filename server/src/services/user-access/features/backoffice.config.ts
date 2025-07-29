@@ -1,7 +1,7 @@
 import { Feature } from '../types';
 
 // Type-safe sub-feature IDs for backoffice
-export type BackofficeSubFeatureId = 'backoffice-users' | 'backoffice-user-access';
+export type BackofficeSubFeatureId = 'backoffice-users' | 'backoffice-user-access' | 'backoffice-scenario';
 
 export const backofficeFeature: Feature<'backoffice'> = {
   id: 'backoffice',
@@ -18,6 +18,12 @@ export const backofficeFeature: Feature<'backoffice'> = {
       id: 'backoffice-user-access',
       name: 'User Access Control',
       description: 'Manage user permissions and feature access'
+      // No metadata - simple boolean access control
+    },
+    'backoffice-scenario': {
+      id: 'backoffice-scenario',
+      name: 'Scenario Management',
+      description: 'Manage aviation training scenarios and subjects'
       // No metadata - simple boolean access control
     }
   }
