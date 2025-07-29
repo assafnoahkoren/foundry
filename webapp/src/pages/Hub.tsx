@@ -1,9 +1,9 @@
-import { useUserAccess } from "@/hooks/useUserAccess";
-import { FeatureCard } from "@/components/FeatureCard";
-import { Loader2 } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import joniLogo from "@/apps/joni/assets/logo.png";
 import aceLogo from "@/apps/ace/assets/ace-fav-dark.png";
+import joniLogo from "@/apps/joni/assets/logo.png";
+import { FeatureCard } from "@/components/FeatureCard";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useUserAccess } from "@/hooks/useUserAccess";
+import { Loader2, Settings2 } from "lucide-react";
 
 export default function Hub() {
   const { 
@@ -40,13 +40,21 @@ export default function Hub() {
   const featureConfig = {
     ace: {
       title: 'Ace',
-      logo: aceLogo,
-      navigateTo: '/ace'
+      logo: <img src={aceLogo} alt="Ace logo" className="w-full h-full object-contain p-1" />,
+      navigateTo: '/ace',
+      hideIfNoAccess: false
     },
     joni: {
       title: 'Joni',
-      logo: joniLogo,
-      navigateTo: '/joni'
+      logo: <img src={joniLogo} alt="Joni logo" className="w-full h-full object-contain" />,
+      navigateTo: '/joni',
+      hideIfNoAccess: false
+    },
+    backoffice: {
+      title: 'Backoffice',
+      logo: <Settings2 className="w-full h-full text-foreground" />,
+      navigateTo: '/backoffice',
+      hideIfNoAccess: true
     }
   };
 
@@ -67,6 +75,9 @@ export default function Hub() {
           const config = featureConfig[featureId as keyof typeof featureConfig];
 
           if (!config) return null;
+
+          // Skip rendering if hideIfNoAccess is true and user has no access
+          if (config.hideIfNoAccess && !hasAccess) return null;
 
           return (
             <FeatureCard

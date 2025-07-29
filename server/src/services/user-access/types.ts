@@ -1,19 +1,21 @@
 // Type definitions for feature IDs
-export type FeatureId = 'ace' | 'joni';
+export type FeatureId = 'ace' | 'joni' | 'backoffice';
 
 // Type definitions for sub-feature IDs (conditional based on feature)
 export type SubFeatureId<T extends FeatureId> = 
   T extends 'ace' ? 'ace-analytics' | 'ace-api-access' :
   T extends 'joni' ? 'joni-management' :
+  T extends 'backoffice' ? 'backoffice-users' | 'backoffice-user-access' :
   never;
 
 // Union type for all possible sub-feature IDs
-export type AnySubFeatureId = SubFeatureId<'ace'> | SubFeatureId<'joni'>;
+export type AnySubFeatureId = SubFeatureId<'ace'> | SubFeatureId<'joni'> | SubFeatureId<'backoffice'>;
 
 // Type to validate feature-subfeature combinations
 export type ValidFeatureSubFeaturePair = 
   | { featureId: 'ace'; subFeatureId: SubFeatureId<'ace'> }
-  | { featureId: 'joni'; subFeatureId: SubFeatureId<'joni'> };
+  | { featureId: 'joni'; subFeatureId: SubFeatureId<'joni'> }
+  | { featureId: 'backoffice'; subFeatureId: SubFeatureId<'backoffice'> };
 
 // Type definitions for feature metadata
 export type MetadataType = string | number | boolean | string[] | Record<string, any>;

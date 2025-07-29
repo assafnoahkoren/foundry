@@ -1,12 +1,14 @@
 import { aceFeature } from './ace.config';
 import { joniFeature } from './joni.config';
+import { backofficeFeature } from './backoffice.config';
 import { FeaturesConfig, FeatureId, SubFeatureId } from '../types';
 
 // Combined features configuration
 export const featuresConfig: FeaturesConfig = {
   features: {
     'ace': aceFeature,
-    'joni': joniFeature
+    'joni': joniFeature,
+    'backoffice': backofficeFeature
   }
 };
 
@@ -75,5 +77,7 @@ export function validateMetadata<T extends FeatureId>(
 export * from '../types';
 export { aceFeature } from './ace.config';
 export { joniFeature } from './joni.config';
+export { backofficeFeature } from './backoffice.config';
 export type { AceSubFeatureId } from './ace.config';
 export type { JoniSubFeatureId } from './joni.config';
+export type { BackofficeSubFeatureId } from './backoffice.config';

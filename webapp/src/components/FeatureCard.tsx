@@ -1,10 +1,11 @@
 import { cn } from "@/lib/utils";
 import { Lock } from "lucide-react";
+import type { ReactNode } from "react";
 
 interface FeatureCardProps {
   title: string;
   hasAccess: boolean;
-  logo: string;
+  logo: ReactNode;
   navigateTo: string;
 }
 
@@ -36,11 +37,9 @@ export function FeatureCard({
         </div>
       )}
       <div className="flex flex-col items-center gap-4">
-        <img 
-          src={logo} 
-          alt={`${title} logo`}
-          className="w-16 h-16 object-contain"
-        />
+        <div className="w-16 h-16 flex items-center justify-center">
+          {logo}
+        </div>
         <h3 className="font-semibold text-lg">{title}</h3>
       </div>
     </div>
