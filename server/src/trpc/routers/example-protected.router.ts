@@ -17,7 +17,7 @@ export const exampleProtectedRouter = router({
       endDate: z.string(),
       format: z.enum(['pdf', 'csv', 'excel', 'json']),
     }))
-    .mutation(async ({ ctx, input }) => {
+    .mutation(async ({ input }) => {
       // At this point, we know the user has access to ace-analytics
       // The feature metadata is available in ctx.featureAccess if needed
       
@@ -38,7 +38,7 @@ export const exampleProtectedRouter = router({
       gadgetId: z.string(),
       duration: z.number().min(1).max(3600), // seconds
     }))
-    .mutation(async ({ ctx, input }) => {
+    .mutation(async ({ input }) => {
       // User has access to spy gadgets
       
       // TODO: Implement gadget activation logic
@@ -57,7 +57,7 @@ export const exampleProtectedRouter = router({
    */
   getAceStatus: publicProcedure
     .use(requireFeatureAccess('ace'))
-    .query(async ({ ctx }) => {
+    .query(async () => {
       // User has access to at least one ace sub-feature
       
       return {
