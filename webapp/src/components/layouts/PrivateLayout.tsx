@@ -1,7 +1,7 @@
 import { Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { User, LogOut, Shield } from 'lucide-react';
+import { User, LogOut, Shield, LayoutGrid } from 'lucide-react';
 import { ThemeToggle } from '../ThemeToggle';
 
 export const PrivateLayout = () => {
@@ -27,6 +27,15 @@ export const PrivateLayout = () => {
             </Link>
             
             <div className="flex items-center gap-6">
+              <Link 
+                id="hub-nav-link"
+                to="/hub" 
+                className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+              >
+                <LayoutGrid className="h-4 w-4" />
+                Hub
+              </Link>
+              
               <Link 
                 id="protected-nav-link"
                 to="/protected" 

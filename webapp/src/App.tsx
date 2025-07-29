@@ -11,6 +11,8 @@ import { Register } from './pages/Register';
 
 // Private pages
 import { Protected } from './pages/Protected';
+import Hub from './pages/Hub';
+import JoniHome from './apps/joni/pages/JoniHome';
 
 import './App.css';
 
@@ -29,8 +31,12 @@ function App() {
           {/* Private routes */}
           <Route element={<PrivateRoute />}>
             <Route path="/" element={<PrivateLayout />}>
+              <Route path="hub" element={<Hub />} />
               <Route path="protected" element={<Protected />} />
             </Route>
+            
+            {/* Joni app with its own layout */}
+            <Route path="joni" element={<JoniHome />} />
           </Route>
 
           {/* Catch all - redirect to home */}
