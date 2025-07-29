@@ -14,3 +14,50 @@
 ## UI Development
 - When creating UI layouts, assign meaningful IDs to different sections and components for better accessibility and testing
 - Use Lucide React icons (already installed with shadcn/ui) for all icon needs
+
+## User Access Management System
+
+### Overview
+The project includes a flexible user access management system that supports feature-based access control with metadata.
+
+### Key Components
+
+1. **Features Configuration** (`/server/src/services/features.config.ts`)
+   - Defines available features and sub-features
+   - Uses TypeScript conditional types for type-safe feature/sub-feature combinations
+   - Supports metadata with validation rules
+
+2. **Database Schema**
+   - `UserAccess` table in Prisma schema
+   - Tracks user access to specific sub-features with metadata
+   - Supports expiration dates and grant tracking (who granted and why)
+
+3. **Services**
+   - `UserAccessService`: Core service for validating access and retrieving user features
+   - `UserAccessAdminService`: Admin operations like granting/revoking access
+
+4. **Middleware** (`/server/src/middleware/feature-access.middleware.ts`)
+   - `requireFeatureAccess()`: tRPC middleware for protecting endpoints
+   - Can check for specific sub-feature or general feature access
+
+5. **Router** (`/server/src/trpc/routers/user-access.router.ts`)
+   - `getMyFeatures`: Get all features/sub-features for the current user
+   - `checkAccess`: Check if user has specific access
+   - `getFeaturesConfig`: Get feature structure (for admin UIs)
+
+### Usage Example
+```typescript
+// Protect an endpoint with feature access requirement
+.use(requireFeatureAccess('ace', 'ace-analytics'))
+.mutation(async ({ ctx }) => {
+  // User has access to ace-analytics
+})
+```
+
+### Current Features
+- **ace**: Advanced capabilities suite
+  - `ace-analytics`: Analytics and reporting
+  - `ace-api-access`: Advanced API endpoints
+- **johnny-english**: Specialized spy tools
+  - `johnny-english-gadgets`: Spy gadgets access
+  - `johnny-english-missions`: Secret mission planning

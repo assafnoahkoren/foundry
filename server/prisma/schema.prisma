@@ -13,12 +13,40 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum GrantCause {
+  manual
+  subscription
+}
+
 // Example models
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String
-  password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String       @id @default(cuid())
+  email        String       @unique
+  name         String
+  password     String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  userAccess   UserAccess[] @relation("UserAccess")
+  grantedAccess UserAccess[] @relation("GrantedBy")
+}
+
+model UserAccess {
+  id           String      @id @default(cuid())
+  userId       String
+  user         User        @relation("UserAccess", fields: [userId], references: [id], onDelete: Cascade)
+  featureId    String
+  subFeatureId String
+  metadata     Json        @default("{}")
+  grantedAt    DateTime    @default(now())
+  grantedBy    String?     // ID of admin who granted access
+  grantedByUser User?      @relation("GrantedBy", fields: [grantedBy], references: [id], onDelete: SetNull)
+  grantCause   GrantCause  @default(manual)
+  expiresAt    DateTime?   // Optional expiration date
+  updatedAt    DateTime    @updatedAt
+  
+  @@unique([userId, featureId, subFeatureId])
+  @@index([userId])
+  @@index([featureId])
+  @@index([subFeatureId])
+  @@index([grantedBy])
 }
