@@ -21,15 +21,24 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+} from '@/components/ui/dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Search, UserPlus, Mail, Calendar, Shield, Trash2 } from 'lucide-react';
+import { Search, UserPlus, Mail, Calendar, Shield, Trash2, Edit, Key } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { UserForm } from '../components/UserForm';
+import { ResetPasswordDialog } from '../components/ResetPasswordDialog';
 
 export default function ManageUsers() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [userToDelete, setUserToDelete] = useState<string | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingUserId, setEditingUserId] = useState<string | undefined>(undefined);
+  const [resetPasswordUser, setResetPasswordUser] = useState<{ id: string; name: string } | null>(null);
 
   // Fetch users
   const { data: users, isLoading } = trpc.admin.getUsers.useQuery();
@@ -63,6 +72,30 @@ export default function ManageUsers() {
     deleteUser.mutate({ userId });
   };
 
+  const handleCreateUser = () => {
+    setEditingUserId(undefined);
+    setIsFormOpen(true);
+  };
+
+  const handleEditUser = (userId: string) => {
+    setEditingUserId(userId);
+    setIsFormOpen(true);
+  };
+
+  const handleFormSuccess = () => {
+    setIsFormOpen(false);
+    setEditingUserId(undefined);
+  };
+
+  const handleFormCancel = () => {
+    setIsFormOpen(false);
+    setEditingUserId(undefined);
+  };
+
+  const handleResetPassword = (user: { id: string; name: string }) => {
+    setResetPasswordUser(user);
+  };
+
   // Calculate statistics
   const totalUsers = users?.length || 0;
   
@@ -89,7 +122,7 @@ export default function ManageUsers() {
             View and manage all registered users
           </p>
         </div>
-        <Button>
+        <Button onClick={handleCreateUser}>
           <UserPlus className="mr-2 h-4 w-4" />
           Add User
         </Button>
@@ -189,14 +222,33 @@ export default function ManageUsers() {
                       {formatDistanceToNow(new Date(user.updatedAt), { addSuffix: true })}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setUserToDelete(user.id)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditUser(user.id)}
+                          title="Edit user"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleResetPassword({ id: user.id, name: user.name })}
+                          title="Reset password"
+                        >
+                          <Key className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setUserToDelete(user.id)}
+                          className="text-destructive hover:text-destructive"
+                          title="Delete user"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -226,6 +278,27 @@ export default function ManageUsers() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* User Form Dialog */}
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent className="max-w-lg p-0">
+          <UserForm
+            userId={editingUserId}
+            onSuccess={handleFormSuccess}
+            onCancel={handleFormCancel}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset Password Dialog */}
+      {resetPasswordUser && (
+        <ResetPasswordDialog
+          userId={resetPasswordUser.id}
+          userName={resetPasswordUser.name}
+          open={!!resetPasswordUser}
+          onOpenChange={(open) => !open && setResetPasswordUser(null)}
+        />
+      )}
     </div>
   );
 }
