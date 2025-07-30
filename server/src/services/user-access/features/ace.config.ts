@@ -4,7 +4,7 @@ export type AceSubFeatureId = 'ace-analytics' | 'ace-api-access';
 
 export const aceFeature: Feature<'ace'> = {
   id: 'ace',
-  name: 'Ace Feature Suite',
+  name: 'Ace',
   description: 'Advanced capabilities and enhanced features',
   subFeatures: {
     'ace-analytics': {

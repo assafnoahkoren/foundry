@@ -23,6 +23,7 @@ interface ResetPasswordDialogProps {
 
 export function ResetPasswordDialog({ userId, userName, open, onOpenChange }: ResetPasswordDialogProps) {
   const { toast } = useToast();
+  const utils = trpc.useUtils();
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
@@ -32,6 +33,9 @@ export function ResetPasswordDialog({ userId, userName, open, onOpenChange }: Re
         title: 'Success',
         description: 'Password has been reset successfully',
       });
+      // Invalidate user data to ensure UI is up to date
+      utils.admin.getUser.invalidate({ userId });
+      utils.admin.getUsers.invalidate();
       onOpenChange(false);
       setNewPassword('');
       setConfirmPassword('');

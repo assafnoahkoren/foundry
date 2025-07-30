@@ -5,7 +5,7 @@ export type BackofficeSubFeatureId = 'backoffice-users' | 'backoffice-user-acces
 
 export const backofficeFeature: Feature<'backoffice'> = {
   id: 'backoffice',
-  name: 'Backoffice Administration',
+  name: 'Backoffice',
   description: 'System administration and management features',
   subFeatures: {
     'backoffice-users': {

@@ -56,6 +56,8 @@ export function UserForm({ userId, onSuccess, onCancel }: UserFormProps) {
       });
       utils.admin.getUsers.invalidate();
       utils.admin.getUser.invalidate({ userId: userId! });
+      // Also invalidate user access in case it affects display
+      utils.admin.getUserAccess.invalidate({ userId: userId! });
       onSuccess?.();
     },
     onError: (error) => {
@@ -122,7 +124,7 @@ export function UserForm({ userId, onSuccess, onCancel }: UserFormProps) {
   }
 
   return (
-    <Card className="w-full max-w-lg">
+    <Card className="w-full max-w-lg border-0 shadow-none">
       <CardHeader>
         <CardTitle>{isEditMode ? 'Edit User' : 'Create New User'}</CardTitle>
         <CardDescription>

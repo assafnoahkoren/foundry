@@ -3,6 +3,8 @@ import { router, protectedProcedure } from '../trpc';
 import { TRPCError } from '@trpc/server';
 import { prisma } from '../../lib/prisma';
 import bcrypt from 'bcryptjs';
+import { userAccessService } from '../../services/user-access/user-access.service';
+import { GrantCause } from '@prisma/client';
 
 export const adminRouter = router({
   getUsers: protectedProcedure
@@ -205,5 +207,60 @@ export const adminRouter = router({
           message: 'Failed to delete user',
         });
       }
+    }),
+
+  getUserAccess: protectedProcedure
+    .input(z.object({
+      userId: z.string(),
+    }))
+    .query(async ({ input }) => {
+      const features = await userAccessService.getUserFeatures(input.userId);
+      // Flatten the structure for easier handling in the frontend
+      const access = features.flatMap(feature => 
+        feature.subFeatures.map(subFeature => ({
+          feature: feature.featureId,
+          subFeature: subFeature.subFeatureId,
+          metadata: subFeature.metadata,
+          grantedAt: subFeature.grantedAt,
+          expiresAt: subFeature.expiresAt
+        }))
+      );
+      return access;
+    }),
+
+  updateUserAccess: protectedProcedure
+    .input(z.object({
+      userId: z.string(),
+      updates: z.array(z.object({
+        feature: z.string(),
+        subFeature: z.string(),
+        hasAccess: z.boolean(),
+      })),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      // Process each access update
+      for (const update of input.updates) {
+        if (update.hasAccess) {
+          // Grant access
+          await userAccessService.grantAccess(
+            input.userId,
+            update.feature as any,
+            update.subFeature as any,
+            undefined, // metadata
+            ctx.user.userId, // grantedBy
+            GrantCause.manual, // grantCause
+            undefined // expiresAt
+          );
+        } else {
+          // Revoke access
+          await userAccessService.revokeAccess(
+            input.userId,
+            update.feature as any,
+            update.subFeature as any
+          );
+        }
+      }
+
+      return { success: true };
     }),
 });

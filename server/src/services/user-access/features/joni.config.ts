@@ -4,7 +4,7 @@ export type JoniSubFeatureId = 'joni-management' | 'joni-scenario-practice';
 
 export const joniFeature: Feature<'joni'> = {
   id: 'joni',
-  name: 'Johnny English Feature Suite',
+  name: 'Joni',
   description: 'Management and administrative features',
   subFeatures: {
     'joni-management': {

@@ -24,13 +24,15 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Search, UserPlus, Mail, Calendar, Shield, Trash2, Edit, Key } from 'lucide-react';
+import { Search, UserPlus, Mail, Calendar, Shield, Trash2, Edit, Key, ShieldCheck } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { UserForm } from '../components/UserForm';
 import { ResetPasswordDialog } from '../components/ResetPasswordDialog';
+import { UserAccessForm } from '../components/UserAccessForm';
 
 export default function ManageUsers() {
   const { toast } = useToast();
@@ -39,6 +41,7 @@ export default function ManageUsers() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | undefined>(undefined);
   const [resetPasswordUser, setResetPasswordUser] = useState<{ id: string; name: string } | null>(null);
+  const [accessFormUser, setAccessFormUser] = useState<{ id: string; name: string } | null>(null);
 
   // Fetch users
   const { data: users, isLoading } = trpc.admin.getUsers.useQuery();
@@ -94,6 +97,10 @@ export default function ManageUsers() {
 
   const handleResetPassword = (user: { id: string; name: string }) => {
     setResetPasswordUser(user);
+  };
+
+  const handleManageAccess = (user: { id: string; name: string }) => {
+    setAccessFormUser(user);
   };
 
   // Calculate statistics
@@ -234,6 +241,14 @@ export default function ManageUsers() {
                         <Button
                           variant="ghost"
                           size="sm"
+                          onClick={() => handleManageAccess({ id: user.id, name: user.name })}
+                          title="Manage access"
+                        >
+                          <ShieldCheck className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => handleResetPassword({ id: user.id, name: user.name })}
                           title="Reset password"
                         >
@@ -281,7 +296,13 @@ export default function ManageUsers() {
 
       {/* User Form Dialog */}
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="max-w-lg p-0">
+        <DialogContent className="max-w-lg p-0" aria-describedby="user-form-description">
+          <DialogTitle className="sr-only">
+            {editingUserId ? 'Edit User' : 'Create New User'}
+          </DialogTitle>
+          <div className="sr-only" id="user-form-description">
+            Form to create or edit user details
+          </div>
           <UserForm
             userId={editingUserId}
             onSuccess={handleFormSuccess}
@@ -299,6 +320,26 @@ export default function ManageUsers() {
           onOpenChange={(open) => !open && setResetPasswordUser(null)}
         />
       )}
+
+      {/* User Access Form Dialog */}
+      <Dialog open={!!accessFormUser} onOpenChange={(open) => !open && setAccessFormUser(null)}>
+        <DialogContent className="max-w-2xl p-0" aria-describedby="user-access-form-description">
+          <DialogTitle className="sr-only">
+            Manage User Access
+          </DialogTitle>
+          <div className="sr-only" id="user-access-form-description">
+            Form to manage feature access for the selected user
+          </div>
+          {accessFormUser && (
+            <UserAccessForm
+              userId={accessFormUser.id}
+              userName={accessFormUser.name}
+              onSuccess={() => setAccessFormUser(null)}
+              onCancel={() => setAccessFormUser(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
