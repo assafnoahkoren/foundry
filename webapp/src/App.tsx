@@ -10,7 +10,6 @@ import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 
 // Private pages
-import { Protected } from './pages/Protected';
 import Hub from './pages/Hub';
 
 // Apps
@@ -35,7 +34,6 @@ function App() {
           <Route element={<PrivateRoute />}>
             <Route path="/" element={<PrivateLayout />}>
               <Route path="hub" element={<Hub />} />
-              <Route path="protected" element={<Protected />} />
             </Route>
             
             {/* Joni app with its own layout and nested routes */}
