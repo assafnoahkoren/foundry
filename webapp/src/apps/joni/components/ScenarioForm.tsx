@@ -33,6 +33,9 @@ export function ScenarioForm({ scenarioId, onSuccess, onCancel }: ScenarioFormPr
     { enabled: isEditMode }
   );
 
+  // Get tRPC utils for cache invalidation
+  const utils = trpc.useUtils();
+
   // Mutations
   const createScenario = trpc.joniScenario.createScenario.useMutation({
     onSuccess: () => {
@@ -40,6 +43,8 @@ export function ScenarioForm({ scenarioId, onSuccess, onCancel }: ScenarioFormPr
         title: 'Success',
         description: 'Scenario created successfully',
       });
+      // Invalidate scenarios list to refresh the data
+      utils.joniScenario.getAllScenarios.invalidate();
       onSuccess?.();
     },
     onError: (error) => {
@@ -57,6 +62,9 @@ export function ScenarioForm({ scenarioId, onSuccess, onCancel }: ScenarioFormPr
         title: 'Success',
         description: 'Scenario updated successfully',
       });
+      // Invalidate both the specific scenario and the list
+      utils.joniScenario.getScenarioById.invalidate(scenarioId);
+      utils.joniScenario.getAllScenarios.invalidate();
       onSuccess?.();
     },
     onError: (error) => {
