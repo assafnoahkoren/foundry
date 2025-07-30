@@ -30,10 +30,10 @@ export function JoniScenarioManagement() {
     { enabled: hasAccess }
   );
 
-  // Fetch scenarios for selected subject
+  // Fetch scenarios - all if no subject selected, filtered if subject selected
   const { data: scenarios, isLoading: scenariosLoading } = trpc.joniScenario.getAllScenarios.useQuery(
     { subjectId: selectedSubjectId },
-    { enabled: hasAccess && !!selectedSubjectId }
+    { enabled: hasAccess }
   );
 
   // Redirect if no access
@@ -61,7 +61,7 @@ export function JoniScenarioManagement() {
             <Plus className="mr-2 h-4 w-4" />
             New Subject
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => navigate('/joni/scenarios/new')}>
             <Plus className="mr-2 h-4 w-4" />
             New Scenario
           </Button>
@@ -95,11 +95,7 @@ export function JoniScenarioManagement() {
           </div>
         </CardHeader>
         <CardContent>
-          {!selectedSubjectId ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Select a subject to view its scenarios
-            </div>
-          ) : scenariosLoading ? (
+          {scenariosLoading ? (
               <div className="space-y-2">
                 {[...Array(3)].map((_, i) => (
                   <Skeleton key={i} className="h-16 w-full" />
@@ -109,6 +105,7 @@ export function JoniScenarioManagement() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    {!selectedSubjectId && <TableHead>Subject</TableHead>}
                     <TableHead>Status</TableHead>
                     <TableHead>Flight Information</TableHead>
                     <TableHead>Responses</TableHead>
@@ -118,6 +115,11 @@ export function JoniScenarioManagement() {
                 <TableBody>
                   {scenarios.map((scenario) => (
                     <TableRow key={scenario.id}>
+                      {!selectedSubjectId && (
+                        <TableCell>
+                          <Badge variant="outline">{scenario.subject.name}</Badge>
+                        </TableCell>
+                      )}
                       <TableCell className="font-medium">
                         <div className="max-w-xs">
                           <p className="truncate">{scenario.currentStatus}</p>
@@ -136,7 +138,11 @@ export function JoniScenarioManagement() {
                       </TableCell>
                       <TableCell>
                         <div className="flex space-x-2">
-                          <Button variant="ghost" size="sm">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => navigate(`/joni/scenarios/${scenario.id}/edit`)}
+                          >
                             <Edit className="h-4 w-4" />
                           </Button>
                         </div>
@@ -147,8 +153,16 @@ export function JoniScenarioManagement() {
               </Table>
             ) : (
               <div className="text-center py-8">
-                <p className="text-muted-foreground">No scenarios found for this subject</p>
-                <Button className="mt-4" variant="outline">
+                <p className="text-muted-foreground">
+                  {selectedSubjectId 
+                    ? 'No scenarios found for this subject' 
+                    : 'No scenarios found'}
+                </p>
+                <Button 
+                  className="mt-4" 
+                  variant="outline"
+                  onClick={() => navigate('/joni/scenarios/new')}
+                >
                   <Plus className="mr-2 h-4 w-4" />
                   Create First Scenario
                 </Button>
