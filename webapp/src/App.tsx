@@ -15,6 +15,7 @@ import Hub from './pages/Hub';
 
 // Apps
 import { JoniApp } from './apps/joni/JoniApp';
+import { BackofficeApp } from './apps/backoffice/BackofficeApp';
 
 import './App.css';
 
@@ -39,6 +40,9 @@ function App() {
             
             {/* Joni app with its own layout and nested routes */}
             <Route path="joni/*" element={<JoniApp />} />
+            
+            {/* Backoffice app with its own layout and nested routes */}
+            <Route path="backoffice/*" element={<BackofficeApp />} />
           </Route>
 
           {/* Catch all - redirect to home */}
