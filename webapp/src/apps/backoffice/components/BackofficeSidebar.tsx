@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Home, Users, Settings, Menu, X } from 'lucide-react';
+import { Users, Menu, X } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 interface BackofficeSidebarProps {
@@ -13,9 +13,7 @@ export function BackofficeSidebar({ isOpen, onToggle }: BackofficeSidebarProps) 
   const location = useLocation();
 
   const navigationItems = [
-    { path: '/backoffice', label: 'Dashboard', icon: Home },
-    { path: '/backoffice/users', label: 'Users', icon: Users },
-    { path: '/backoffice/settings', label: 'Settings', icon: Settings },
+    { path: '/backoffice', label: 'Users', icon: Users },
   ];
 
   return (
