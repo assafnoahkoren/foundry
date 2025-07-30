@@ -4,6 +4,8 @@ import { BackofficeSidebar } from '../components/BackofficeSidebar';
 import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { BackToHubButton } from '@/components/BackToHubButton';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 export function BackofficeLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -16,30 +18,35 @@ export function BackofficeLayout() {
   };
 
   return (
-    <div className="flex h-screen bg-background">
-      {/* Sidebar */}
-      <BackofficeSidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen(!isSidebarOpen)} />
+    <TooltipProvider>
+      <div className="flex h-screen bg-background">
+        {/* Sidebar */}
+        <BackofficeSidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen(!isSidebarOpen)} />
 
-      {/* Main content */}
-      <div className={`flex-1 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'}`}>
-        {/* Header */}
-        <header className="border-b bg-background h-16 flex items-center justify-between px-6">
-          <h1 className="text-lg font-semibold">Backoffice</h1>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleLogout}
-            className="gap-2"
-          >
-            <LogOut className="h-4 w-4 text-red-500" />
-          </Button>
-        </header>
+        {/* Main content */}
+        <div className={`flex-1 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'}`}>
+          {/* Header */}
+          <header className="border-b bg-background h-16 flex items-center justify-between px-6">
+            <div className="flex items-center gap-4">
+              <BackToHubButton />
+              <h1 className="text-lg font-semibold">Backoffice</h1>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLogout}
+              className="gap-2"
+            >
+              <LogOut className="h-4 w-4 text-red-500" />
+            </Button>
+          </header>
 
-        {/* Page content */}
-        <main className="flex-1 overflow-y-auto p-6">
-          <Outlet />
-        </main>
+          {/* Page content */}
+          <main className="flex-1 overflow-y-auto p-6">
+            <Outlet />
+          </main>
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }
