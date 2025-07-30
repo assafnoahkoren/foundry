@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { hashPassword } from '../src/lib/auth/password';
 
 const prisma = new PrismaClient();
 
@@ -54,9 +55,78 @@ async function seedScenarioSubjects() {
   }
 }
 
+async function seedAdminUser() {
+  console.log('🌱 Seeding admin user...');
+  
+  const hashedPassword = await hashPassword('123');
+  
+  // Create or update the admin user
+  const user = await prisma.user.upsert({
+    where: { email: 'a@a.com' },
+    update: {
+      password: hashedPassword,
+      name: 'Admin User'
+    },
+    create: {
+      email: 'a@a.com',
+      password: hashedPassword,
+      name: 'Admin User'
+    }
+  });
+  
+  console.log(`  ✅ User created: ${user.email}`);
+  
+  // Give the user all features
+  console.log('  🔐 Granting user access to all features...');
+  
+  // Define all features and their sub-features
+  const features = [
+    {
+      featureId: 'ace',
+      subFeatures: ['ace-analytics', 'ace-api-access']
+    },
+    {
+      featureId: 'joni',
+      subFeatures: ['joni-management', 'joni-scenario-practice']
+    },
+    {
+      featureId: 'backoffice',
+      subFeatures: ['backoffice-users', 'backoffice-user-access', 'backoffice-scenario']
+    }
+  ];
+  
+  // Grant access to all features and sub-features
+  for (const feature of features) {
+    for (const subFeatureId of feature.subFeatures) {
+      await prisma.userAccess.upsert({
+        where: {
+          userId_featureId_subFeatureId: {
+            userId: user.id,
+            featureId: feature.featureId,
+            subFeatureId
+          }
+        },
+        update: {},
+        create: {
+          userId: user.id,
+          featureId: feature.featureId,
+          subFeatureId,
+          grantCause: 'manual'
+        }
+      });
+      console.log(`    ✅ Granted ${feature.featureId}/${subFeatureId}`);
+    }
+  }
+  
+  console.log('  ✅ All features and sub-features granted');
+}
+
 async function main() {
   console.log('🌱 Starting database seed...\n');
 
+  // Seed admin user with all access
+  await seedAdminUser();
+  
   // Seed scenario subjects
   await seedScenarioSubjects();
 

@@ -1,7 +1,8 @@
 import { Button } from '@/components/ui/button';
-import { Home } from 'lucide-react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useUserAccess } from '@/hooks/useUserAccess';
 import { cn } from '@/lib/utils';
+import { FileText, Home } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 interface JoniSidebarProps {
   isOpen: boolean;
@@ -10,10 +11,14 @@ interface JoniSidebarProps {
 export function JoniSidebar({ isOpen }: JoniSidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { hasSubFeatureAccess } = useUserAccess();
+
+  const hasScenarioAccess = hasSubFeatureAccess('backoffice', 'backoffice-scenario');
 
   const navigationItems = [
-    { path: '/joni', label: 'Dashboard', icon: Home },
-  ];
+    { path: '/joni', label: 'Dashboard', icon: Home, requiresAccess: false },
+    { path: '/joni/scenarios', label: 'Scenarios', icon: FileText, requiresAccess: true, show: hasScenarioAccess },
+  ].filter(item => !item.requiresAccess || item.show);
 
   return (
     <aside className={cn(
@@ -25,7 +30,8 @@ export function JoniSidebar({ isOpen }: JoniSidebarProps) {
         <nav className="space-y-2">
           {navigationItems.map((item) => {
             const Icon = item.icon;
-            const isActive = location.pathname === item.path;
+            const isActive = location.pathname === item.path || 
+                           (item.path !== '/joni' && location.pathname.startsWith(item.path));
             
             return (
               <Button
