@@ -38,6 +38,18 @@ export class JoniScenarioService {
     });
   }
 
+  async deleteSubject(id: string): Promise<JoniScenarioSubject> {
+    return prisma.joniScenarioSubject.delete({
+      where: { id }
+    });
+  }
+
+  async getScenarioCountBySubject(subjectId: string): Promise<number> {
+    return prisma.joniScenario.count({
+      where: { subjectId }
+    });
+  }
+
   // ===== SCENARIOS =====
 
   async createScenario(data: {

@@ -57,9 +57,9 @@ export function JoniScenarioManagement() {
           </p>
         </div>
         <div className="space-x-2">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            New Subject
+          <Button onClick={() => navigate('/joni/subjects')}>
+            <Edit className="mr-2 h-4 w-4" />
+            Edit Subjects
           </Button>
           <Button variant="outline" onClick={() => navigate('/joni/scenarios/new')}>
             <Plus className="mr-2 h-4 w-4" />

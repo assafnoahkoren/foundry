@@ -111,6 +111,33 @@ export const joniScenarioRouter = router({
       }
     }),
 
+  deleteSubject: requireBackofficeScenario
+    .input(z.string())
+    .mutation(async ({ input }) => {
+      try {
+        // Check if subject has any scenarios
+        const scenarioCount = await joniScenarioService.getScenarioCountBySubject(input);
+        if (scenarioCount > 0) {
+          throw new TRPCError({
+            code: 'PRECONDITION_FAILED',
+            message: `Cannot delete subject with ${scenarioCount} existing scenario${scenarioCount > 1 ? 's' : ''}`
+          });
+        }
+        return await joniScenarioService.deleteSubject(input);
+      } catch (error: any) {
+        if (error.code === 'PRECONDITION_FAILED') {
+          throw error;
+        }
+        if (error.code === 'P2025') {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Subject not found'
+          });
+        }
+        throw error;
+      }
+    }),
+
   // ===== SCENARIOS =====
 
   createScenario: requireBackofficeScenario
