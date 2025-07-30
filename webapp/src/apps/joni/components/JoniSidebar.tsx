@@ -17,7 +17,8 @@ export function JoniSidebar({ isOpen }: JoniSidebarProps) {
 
   const navigationItems = [
     { path: '/joni', label: 'Dashboard', icon: Home, requiresAccess: false },
-    { path: '/joni/scenarios', label: 'Scenarios', icon: FileText, requiresAccess: true, show: hasScenarioAccess },
+    { path: '/joni/scenarios', label: 'Scenarios Management', icon: FileText, requiresAccess: true, show: hasScenarioAccess },
+    { path: '/joni/subjects', label: 'Subjects Management', icon: FileText, requiresAccess: true, show: hasScenarioAccess },
   ].filter(item => !item.requiresAccess || item.show);
 
   return (
