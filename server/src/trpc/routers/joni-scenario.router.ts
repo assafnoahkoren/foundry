@@ -37,8 +37,8 @@ const updateSubjectSchema = z.object({
 
 const createScenarioSchema = z.object({
   subjectId: z.string(),
-  flightInformation: z.any(), // JSON value
-  expectedAnswer: z.any(), // JSON value
+  flightInformation: z.string().min(1),
+  expectedAnswer: z.string().min(1),
   currentStatus: z.string().min(1)
 });
 
@@ -46,8 +46,8 @@ const updateScenarioSchema = z.object({
   id: z.string(),
   data: z.object({
     subjectId: z.string().optional(),
-    flightInformation: z.any().optional(),
-    expectedAnswer: z.any().optional(),
+    flightInformation: z.string().min(1).optional(),
+    expectedAnswer: z.string().min(1).optional(),
     currentStatus: z.string().min(1).optional()
   })
 });

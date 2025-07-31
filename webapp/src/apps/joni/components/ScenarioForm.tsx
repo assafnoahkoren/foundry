@@ -4,10 +4,11 @@ import { trpc } from '@/utils/trpc';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { KeyValueInput } from '@/components/KeyValueInput';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
+import '../styles/quill-custom.css';
 
 interface ScenarioFormProps {
   scenarioId?: string;
@@ -22,9 +23,22 @@ export function ScenarioForm({ scenarioId, onSuccess, onCancel }: ScenarioFormPr
 
   // Form state
   const [subjectId, setSubjectId] = useState<string>('');
-  const [flightInformation, setFlightInformation] = useState<Record<string, unknown>>({});
-  const [expectedAnswer, setExpectedAnswer] = useState<Record<string, unknown>>({});
+  const [flightInformation, setFlightInformation] = useState<string>('');
+  const [expectedAnswer, setExpectedAnswer] = useState<string>('');
   const [currentStatus, setCurrentStatus] = useState<string>('');
+
+  // Quill modules configuration
+  const quillModules = {
+    toolbar: [
+      [{ 'header': [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      ['blockquote', 'code-block'],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'indent': '-1'}, { 'indent': '+1' }],
+      ['link', 'image'],
+      ['clean']
+    ],
+  };
 
   // Queries
   const { data: subjects } = trpc.joniScenario.getAllSubjects.useQuery();
@@ -80,8 +94,8 @@ export function ScenarioForm({ scenarioId, onSuccess, onCancel }: ScenarioFormPr
   useEffect(() => {
     if (scenario && isEditMode) {
       setSubjectId(scenario.subjectId);
-      setFlightInformation(scenario.flightInformation as Record<string, unknown>);
-      setExpectedAnswer(scenario.expectedAnswer as Record<string, unknown>);
+      setFlightInformation(scenario.flightInformation);
+      setExpectedAnswer(scenario.expectedAnswer);
       setCurrentStatus(scenario.currentStatus);
     }
   }, [scenario, isEditMode]);
@@ -152,32 +166,46 @@ export function ScenarioForm({ scenarioId, onSuccess, onCancel }: ScenarioFormPr
           </div>
 
           {/* Flight Information */}
-          <KeyValueInput
-            label="Flight Information"
-            value={flightInformation}
-            onChange={setFlightInformation}
-            placeholder={{ key: 'Property', value: 'Value' }}
-          />
+          <div className="space-y-2">
+            <Label>Flight Information *</Label>
+            <div className="border rounded-md">
+              <ReactQuill
+                theme="snow"
+                value={flightInformation}
+                onChange={setFlightInformation}
+                modules={quillModules}
+                className="[&_.ql-container]:min-h-[200px] [&_.ql-container]:max-h-[400px] [&_.ql-editor]:overflow-y-auto"
+              />
+            </div>
+          </div>
 
           {/* Expected Answer */}
-          <KeyValueInput
-            label="Expected Answer"
-            value={expectedAnswer}
-            onChange={setExpectedAnswer}
-            placeholder={{ key: 'Property', value: 'Value' }}
-          />
+          <div className="space-y-2">
+            <Label>Expected Answer *</Label>
+            <div className="border rounded-md">
+              <ReactQuill
+                theme="snow"
+                value={expectedAnswer}
+                onChange={setExpectedAnswer}
+                modules={quillModules}
+                className="[&_.ql-container]:min-h-[200px] [&_.ql-container]:max-h-[400px] [&_.ql-editor]:overflow-y-auto"
+              />
+            </div>
+          </div>
 
           {/* Current Status */}
           <div className="space-y-2">
-            <Label htmlFor="currentStatus">Current Status *</Label>
-            <Textarea
-              id="currentStatus"
-              placeholder="Describe the current status of the scenario..."
-              value={currentStatus}
-              onChange={(e) => setCurrentStatus(e.target.value)}
-              required
-              rows={4}
-            />
+            <Label>Current Status *</Label>
+            <div className="border rounded-md">
+              <ReactQuill
+                theme="snow"
+                value={currentStatus}
+                onChange={setCurrentStatus}
+                modules={quillModules}
+                className="[&_.ql-container]:min-h-[150px] [&_.ql-container]:max-h-[300px] [&_.ql-editor]:overflow-y-auto"
+                placeholder="Describe the current status of the scenario..."
+              />
+            </div>
           </div>
 
           {/* Form Actions */}

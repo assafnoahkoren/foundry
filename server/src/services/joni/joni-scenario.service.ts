@@ -1,5 +1,5 @@
 import { prisma } from '../../lib/prisma';
-import type { JoniScenarioSubject, JoniScenario, Prisma } from '@prisma/client';
+import type { JoniScenarioSubject, JoniScenario } from '@prisma/client';
 
 export class JoniScenarioService {
   // ===== SCENARIO SUBJECTS =====
@@ -54,8 +54,8 @@ export class JoniScenarioService {
 
   async createScenario(data: {
     subjectId: string;
-    flightInformation: Prisma.InputJsonValue;
-    expectedAnswer: Prisma.InputJsonValue;
+    flightInformation: string;
+    expectedAnswer: string;
     currentStatus: string;
   }): Promise<JoniScenario & { subject: JoniScenarioSubject }> {
     return prisma.joniScenario.create({
@@ -101,8 +101,8 @@ export class JoniScenarioService {
     id: string,
     data: {
       subjectId?: string;
-      flightInformation?: Prisma.InputJsonValue;
-      expectedAnswer?: Prisma.InputJsonValue;
+      flightInformation?: string;
+      expectedAnswer?: string;
       currentStatus?: string;
     }
   ): Promise<JoniScenario & { subject: JoniScenarioSubject }> {
