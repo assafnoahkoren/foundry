@@ -54,6 +54,8 @@ export class JoniScenarioService {
 
   async createScenario(data: {
     subjectId: string;
+    groupId: string;
+    orderInGroup: number;
     flightInformation: string;
     expectedAnswer: string;
     currentStatus: string;
@@ -68,28 +70,40 @@ export class JoniScenarioService {
 
   async getAllScenarios(subjectId?: string): Promise<(JoniScenario & {
     subject: JoniScenarioSubject;
+    group: { id: string; name: string };
     _count: { responses: number };
   })[]> {
     return prisma.joniScenario.findMany({
       where: subjectId ? { subjectId } : undefined,
       include: {
         subject: true,
+        group: {
+          select: { id: true, name: true }
+        },
         _count: {
           select: { responses: true }
         }
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: [
+        { groupId: 'asc' },
+        { orderInGroup: 'asc' },
+        { createdAt: 'desc' }
+      ]
     });
   }
 
   async getScenarioById(id: string): Promise<(JoniScenario & {
     subject: JoniScenarioSubject;
+    group: { id: string; name: string };
     _count: { responses: number };
   }) | null> {
     return prisma.joniScenario.findUnique({
       where: { id },
       include: {
         subject: true,
+        group: {
+          select: { id: true, name: true }
+        },
         _count: {
           select: { responses: true }
         }
@@ -101,6 +115,8 @@ export class JoniScenarioService {
     id: string,
     data: {
       subjectId?: string;
+      groupId?: string;
+      orderInGroup?: number;
       flightInformation?: string;
       expectedAnswer?: string;
       currentStatus?: string;

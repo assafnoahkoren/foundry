@@ -54,18 +54,35 @@ model UserAccess {
 
 // Joni Scenario Practice Models
 model JoniScenarioSubject {
-  id          String         @id @default(cuid())
-  name        String         @unique
+  id          String              @id @default(cuid())
+  name        String              @unique
   description String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  scenarios   JoniScenario[]
+  groups      JoniScenarioGroup[]
+}
+
+model JoniScenarioGroup {
+  id          String         @id @default(cuid())
+  name        String
+  description String?
+  subjectId   String
+  subject     JoniScenarioSubject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
   scenarios   JoniScenario[]
+  
+  @@index([subjectId])
 }
 
 model JoniScenario {
   id                String                 @id @default(cuid())
   subjectId         String
   subject           JoniScenarioSubject    @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  groupId           String
+  group             JoniScenarioGroup      @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  orderInGroup      Int
   flightInformation String                 @db.Text
   expectedAnswer    String                 @db.Text
   currentStatus     String                 @db.Text
@@ -74,6 +91,8 @@ model JoniScenario {
   responses         JoniScenarioResponse[]
   
   @@index([subjectId])
+  @@index([groupId])
+  @@index([groupId, orderInGroup])
 }
 
 model JoniScenarioResponse {

@@ -37,6 +37,8 @@ const updateSubjectSchema = z.object({
 
 const createScenarioSchema = z.object({
   subjectId: z.string(),
+  groupId: z.string(),
+  orderInGroup: z.number().int().min(0),
   flightInformation: z.string().min(1),
   expectedAnswer: z.string().min(1),
   currentStatus: z.string().min(1)
@@ -46,6 +48,8 @@ const updateScenarioSchema = z.object({
   id: z.string(),
   data: z.object({
     subjectId: z.string().optional(),
+    groupId: z.string().optional(),
+    orderInGroup: z.number().int().min(0).optional(),
     flightInformation: z.string().min(1).optional(),
     expectedAnswer: z.string().min(1).optional(),
     currentStatus: z.string().min(1).optional()
@@ -146,6 +150,8 @@ export const joniScenarioRouter = router({
       try {
         return await joniScenarioService.createScenario({
           subjectId: input.subjectId,
+          groupId: input.groupId,
+          orderInGroup: input.orderInGroup,
           flightInformation: input.flightInformation,
           expectedAnswer: input.expectedAnswer,
           currentStatus: input.currentStatus
