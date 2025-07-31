@@ -55,7 +55,7 @@ export class JoniScenarioGroupService {
       flightInformation: string;
       expectedAnswer: string;
       currentStatus: string;
-      orderInGroup: number | null;
+      orderInGroup: number;
     }[];
   }) | null> {
     return prisma.joniScenarioGroup.findUnique({

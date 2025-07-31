@@ -5,6 +5,8 @@ import { JoniScenarioManagement } from './pages/JoniScenarioManagement';
 import { JoniScenarioCreate } from './pages/JoniScenarioCreate';
 import { JoniScenarioEdit } from './pages/JoniScenarioEdit';
 import { ScenarioSubjectsPage } from './pages/ScenarioSubjectsPage';
+import { JoniScenarioGroupManagement } from './pages/JoniScenarioGroupManagement';
+import { JoniScenarioGroupEdit } from './pages/JoniScenarioGroupEdit';
 
 export function JoniApp() {
   return (
@@ -15,6 +17,8 @@ export function JoniApp() {
         <Route path="scenarios/new" element={<JoniScenarioCreate />} />
         <Route path="scenarios/:id/edit" element={<JoniScenarioEdit />} />
         <Route path="subjects" element={<ScenarioSubjectsPage />} />
+        <Route path="groups" element={<JoniScenarioGroupManagement />} />
+        <Route path="groups/:groupId" element={<JoniScenarioGroupEdit />} />
         <Route path="*" element={<Navigate to="/joni" replace />} />
       </Route>
     </Routes>

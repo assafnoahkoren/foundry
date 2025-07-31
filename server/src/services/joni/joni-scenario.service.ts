@@ -131,6 +131,12 @@ export class JoniScenarioService {
     });
   }
 
+  async deleteScenario(id: string): Promise<void> {
+    await prisma.joniScenario.delete({
+      where: { id }
+    });
+  }
+
   // ===== SCENARIO STATS =====
 
   async getScenarioStats(scenarioId: string) {

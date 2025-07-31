@@ -12,17 +12,22 @@ import '../styles/quill-custom.css';
 
 interface ScenarioFormProps {
   scenarioId?: string;
+  subjectId?: string;
+  groupId?: string;
+  orderInGroup?: number;
   onSuccess?: () => void;
   onCancel?: () => void;
 }
 
-export function ScenarioForm({ scenarioId, onSuccess, onCancel }: ScenarioFormProps) {
+export function ScenarioForm({ scenarioId, subjectId: defaultSubjectId, groupId: defaultGroupId, orderInGroup: defaultOrderInGroup, onSuccess, onCancel }: ScenarioFormProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const isEditMode = !!scenarioId;
 
   // Form state
-  const [subjectId, setSubjectId] = useState<string>('');
+  const [subjectId, setSubjectId] = useState<string>(defaultSubjectId || '');
+  const [groupId, setGroupId] = useState<string>(defaultGroupId || '');
+  const [orderInGroup, setOrderInGroup] = useState<number>(defaultOrderInGroup ?? 0);
   const [flightInformation, setFlightInformation] = useState<string>('');
   const [expectedAnswer, setExpectedAnswer] = useState<string>('');
   const [currentStatus, setCurrentStatus] = useState<string>('');
@@ -42,6 +47,10 @@ export function ScenarioForm({ scenarioId, onSuccess, onCancel }: ScenarioFormPr
 
   // Queries
   const { data: subjects } = trpc.joniScenario.getAllSubjects.useQuery();
+  const { data: groups } = trpc.joniScenarioGroup.getGroupsBySubject.useQuery(
+    { subjectId },
+    { enabled: !!subjectId }
+  );
   const { data: scenario, isLoading: scenarioLoading } = trpc.joniScenario.getScenarioById.useQuery(
     scenarioId!,
     { enabled: isEditMode }
@@ -94,6 +103,8 @@ export function ScenarioForm({ scenarioId, onSuccess, onCancel }: ScenarioFormPr
   useEffect(() => {
     if (scenario && isEditMode) {
       setSubjectId(scenario.subjectId);
+      setGroupId(scenario.groupId);
+      setOrderInGroup(scenario.orderInGroup);
       setFlightInformation(scenario.flightInformation);
       setExpectedAnswer(scenario.expectedAnswer);
       setCurrentStatus(scenario.currentStatus);
@@ -112,8 +123,19 @@ export function ScenarioForm({ scenarioId, onSuccess, onCancel }: ScenarioFormPr
       return;
     }
 
+    if (!groupId) {
+      toast({
+        title: 'Error',
+        description: 'Please select a group',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     const data = {
       subjectId,
+      groupId,
+      orderInGroup,
       flightInformation,
       expectedAnswer,
       currentStatus,
@@ -153,8 +175,13 @@ export function ScenarioForm({ scenarioId, onSuccess, onCancel }: ScenarioFormPr
               id="subject"
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               value={subjectId}
-              onChange={(e) => setSubjectId(e.target.value)}
+              onChange={(e) => {
+                setSubjectId(e.target.value);
+                // Reset group selection when subject changes
+                setGroupId('');
+              }}
               required
+              disabled={isEditMode || !!defaultSubjectId}
             >
               <option value="">Select a subject...</option>
               {subjects?.map((subject) => (
@@ -164,6 +191,28 @@ export function ScenarioForm({ scenarioId, onSuccess, onCancel }: ScenarioFormPr
               ))}
             </select>
           </div>
+
+          {/* Group Selection */}
+          {subjectId && (
+            <div className="space-y-2">
+              <Label htmlFor="group">Group *</Label>
+              <select
+                id="group"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                value={groupId}
+                onChange={(e) => setGroupId(e.target.value)}
+                required
+                disabled={isEditMode || !!defaultGroupId}
+              >
+                <option value="">Select a group...</option>
+                {groups?.map((group) => (
+                  <option key={group.id} value={group.id}>
+                    {group.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Flight Information */}
           <div className="space-y-2">

@@ -210,6 +210,23 @@ export const joniScenarioRouter = router({
       }
     }),
 
+  deleteScenario: requireBackofficeScenario
+    .input(z.string())
+    .mutation(async ({ input }) => {
+      try {
+        await joniScenarioService.deleteScenario(input);
+        return { success: true };
+      } catch (error: any) {
+        if (error.code === 'P2025') {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Scenario not found'
+          });
+        }
+        throw error;
+      }
+    }),
+
   // ===== STATS =====
 
   getScenarioStats: requireBackofficeScenario
