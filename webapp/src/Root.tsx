@@ -4,6 +4,7 @@ import { httpBatchLink } from '@trpc/client';
 import { trpc } from './utils/trpc';
 import App from './App';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { Toaster } from '@/components/ui/toaster';
 
 export function Root() {
   const [queryClient] = useState(() => new QueryClient({
@@ -43,6 +44,7 @@ export function Root() {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <App />
+          <Toaster />
         </ThemeProvider>
       </QueryClientProvider>
     </trpc.Provider>

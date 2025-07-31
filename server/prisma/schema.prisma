@@ -13,12 +13,102 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum GrantCause {
+  manual
+  subscription
+}
+
 // Example models
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String
-  password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String       @id @default(cuid())
+  email        String       @unique
+  name         String
+  password     String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  userAccess   UserAccess[] @relation("UserAccess")
+  grantedAccess UserAccess[] @relation("GrantedBy")
+  joniScenarioResponses JoniScenarioResponse[]
+}
+
+model UserAccess {
+  id           String      @id @default(cuid())
+  userId       String
+  user         User        @relation("UserAccess", fields: [userId], references: [id], onDelete: Cascade)
+  featureId    String
+  subFeatureId String
+  metadata     Json        @default("{}")
+  grantedAt    DateTime    @default(now())
+  grantedBy    String?     // ID of admin who granted access
+  grantedByUser User?      @relation("GrantedBy", fields: [grantedBy], references: [id], onDelete: SetNull)
+  grantCause   GrantCause  @default(manual)
+  expiresAt    DateTime?   // Optional expiration date
+  updatedAt    DateTime    @updatedAt
+  
+  @@unique([userId, featureId, subFeatureId])
+  @@index([userId])
+  @@index([featureId])
+  @@index([subFeatureId])
+  @@index([grantedBy])
+}
+
+// Joni Scenario Practice Models
+model JoniScenarioSubject {
+  id          String              @id @default(cuid())
+  name        String              @unique
+  description String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  scenarios   JoniScenario[]
+  groups      JoniScenarioGroup[]
+}
+
+model JoniScenarioGroup {
+  id          String         @id @default(cuid())
+  name        String
+  description String?
+  subjectId   String
+  subject     JoniScenarioSubject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  scenarios   JoniScenario[]
+  
+  @@index([subjectId])
+}
+
+model JoniScenario {
+  id                String                 @id @default(cuid())
+  name              String
+  subjectId         String
+  subject           JoniScenarioSubject    @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  groupId           String
+  group             JoniScenarioGroup      @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  orderInGroup      Int
+  flightInformation String                 @db.Text
+  expectedAnswer    String                 @db.Text
+  currentStatus     String                 @db.Text
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  responses         JoniScenarioResponse[]
+  
+  @@index([subjectId])
+  @@index([groupId])
+  @@index([groupId, orderInGroup])
+}
+
+model JoniScenarioResponse {
+  id               String       @id @default(cuid())
+  scenarioId       String
+  scenario         JoniScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userResponse     String       @db.Text
+  responseAnalysis Json
+  correctness      Float        // 0 to 10 score
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  
+  @@index([scenarioId])
+  @@index([userId])
+  @@index([createdAt])
 }
