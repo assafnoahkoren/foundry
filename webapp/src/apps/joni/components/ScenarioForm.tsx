@@ -4,6 +4,7 @@ import { trpc } from '@/utils/trpc';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import ReactQuill from 'react-quill';
@@ -25,6 +26,7 @@ export function ScenarioForm({ scenarioId, subjectId: defaultSubjectId, groupId:
   const isEditMode = !!scenarioId;
 
   // Form state
+  const [name, setName] = useState<string>('');
   const [subjectId, setSubjectId] = useState<string>(defaultSubjectId || '');
   const [groupId, setGroupId] = useState<string>(defaultGroupId || '');
   const [orderInGroup, setOrderInGroup] = useState<number>(defaultOrderInGroup ?? 0);
@@ -102,6 +104,7 @@ export function ScenarioForm({ scenarioId, subjectId: defaultSubjectId, groupId:
   // Load scenario data in edit mode
   useEffect(() => {
     if (scenario && isEditMode) {
+      setName(scenario.name);
       setSubjectId(scenario.subjectId);
       setGroupId(scenario.groupId);
       setOrderInGroup(scenario.orderInGroup);
@@ -113,6 +116,15 @@ export function ScenarioForm({ scenarioId, subjectId: defaultSubjectId, groupId:
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!name.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please provide a scenario name',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     if (!subjectId) {
       toast({
@@ -133,6 +145,7 @@ export function ScenarioForm({ scenarioId, subjectId: defaultSubjectId, groupId:
     }
 
     const data = {
+      name,
       subjectId,
       groupId,
       orderInGroup,
@@ -168,6 +181,18 @@ export function ScenarioForm({ scenarioId, subjectId: defaultSubjectId, groupId:
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Scenario Name */}
+          <div className="space-y-2">
+            <Label htmlFor="name">Scenario Name *</Label>
+            <Input
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter a descriptive name for this scenario"
+              required
+            />
+          </div>
+
           {/* Subject Selection */}
           <div className="space-y-2">
             <Label htmlFor="subject">Subject *</Label>

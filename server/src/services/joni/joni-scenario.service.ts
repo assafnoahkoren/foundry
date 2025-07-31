@@ -53,6 +53,7 @@ export class JoniScenarioService {
   // ===== SCENARIOS =====
 
   async createScenario(data: {
+    name: string;
     subjectId: string;
     groupId: string;
     orderInGroup: number;
@@ -114,6 +115,7 @@ export class JoniScenarioService {
   async updateScenario(
     id: string,
     data: {
+      name?: string;
       subjectId?: string;
       groupId?: string;
       orderInGroup?: number;

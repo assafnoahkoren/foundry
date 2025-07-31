@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { useUserAccess } from '@/hooks/useUserAccess';
 import { cn } from '@/lib/utils';
-import { FileText, Home, Tags, Folder } from 'lucide-react';
+import { Home, Tags, Folder } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 interface JoniSidebarProps {
@@ -18,7 +18,6 @@ export function JoniSidebar({ isOpen }: JoniSidebarProps) {
   const navigationItems = [
     { path: '/joni', label: 'Dashboard', icon: Home, requiresAccess: false },
     { path: '/joni/groups', label: 'Groups Management', icon: Folder, requiresAccess: true, show: hasScenarioAccess },
-    { path: '/joni/scenarios', label: 'Scenarios Management', icon: FileText, requiresAccess: true, show: hasScenarioAccess },
     { path: '/joni/subjects', label: 'Subjects Management', icon: Tags, requiresAccess: true, show: hasScenarioAccess },
   ].filter(item => !item.requiresAccess || item.show);
 

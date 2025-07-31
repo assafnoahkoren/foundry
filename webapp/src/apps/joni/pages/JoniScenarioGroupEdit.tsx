@@ -41,6 +41,7 @@ import { CSS } from '@dnd-kit/utilities';
 interface SortableScenarioItemProps {
   scenario: {
     id: string;
+    name: string;
     flightInformation: string;
     expectedAnswer: string;
     currentStatus: string;
@@ -82,7 +83,10 @@ function SortableScenarioItem({ scenario, onEdit, onDelete }: SortableScenarioIt
             <GripVertical className="h-5 w-5" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="font-medium mb-1">Scenario #{scenario.orderInGroup + 1}</div>
+            <div className="font-medium text-lg mb-1">{scenario.name}</div>
+            <div className="text-sm text-muted-foreground mb-2">
+              Scenario #{scenario.orderInGroup + 1}
+            </div>
             <div className="text-sm text-muted-foreground space-y-1">
               <div className="truncate">
                 <span className="font-medium">Flight Info:</span>{' '}

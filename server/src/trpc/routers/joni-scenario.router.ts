@@ -36,6 +36,7 @@ const updateSubjectSchema = z.object({
 });
 
 const createScenarioSchema = z.object({
+  name: z.string().min(1).max(200),
   subjectId: z.string(),
   groupId: z.string(),
   orderInGroup: z.number().int().min(0),
@@ -47,6 +48,7 @@ const createScenarioSchema = z.object({
 const updateScenarioSchema = z.object({
   id: z.string(),
   data: z.object({
+    name: z.string().min(1).max(200).optional(),
     subjectId: z.string().optional(),
     groupId: z.string().optional(),
     orderInGroup: z.number().int().min(0).optional(),
@@ -149,6 +151,7 @@ export const joniScenarioRouter = router({
     .mutation(async ({ input }) => {
       try {
         return await joniScenarioService.createScenario({
+          name: input.name,
           subjectId: input.subjectId,
           groupId: input.groupId,
           orderInGroup: input.orderInGroup,

@@ -1,9 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { JoniLayout } from './layouts/JoniLayout';
 import JoniHome from './pages/JoniHome';
-import { JoniScenarioManagement } from './pages/JoniScenarioManagement';
-import { JoniScenarioCreate } from './pages/JoniScenarioCreate';
-import { JoniScenarioEdit } from './pages/JoniScenarioEdit';
 import { ScenarioSubjectsPage } from './pages/ScenarioSubjectsPage';
 import { JoniScenarioGroupManagement } from './pages/JoniScenarioGroupManagement';
 import { JoniScenarioGroupEdit } from './pages/JoniScenarioGroupEdit';
@@ -13,9 +10,6 @@ export function JoniApp() {
     <Routes>
       <Route element={<JoniLayout />}>
         <Route index element={<JoniHome />} />
-        <Route path="scenarios" element={<JoniScenarioManagement />} />
-        <Route path="scenarios/new" element={<JoniScenarioCreate />} />
-        <Route path="scenarios/:id/edit" element={<JoniScenarioEdit />} />
         <Route path="subjects" element={<ScenarioSubjectsPage />} />
         <Route path="groups" element={<JoniScenarioGroupManagement />} />
         <Route path="groups/:groupId" element={<JoniScenarioGroupEdit />} />
