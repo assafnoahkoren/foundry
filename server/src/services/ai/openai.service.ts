@@ -46,6 +46,55 @@ export class OpenAiService implements AiService {
       throw new Error('Failed to get response from LLM');
     }
   }
+
+  async askLLMStructured<T>(
+    question: string,
+    options?: {
+      model?: string;
+      temperature?: number;
+      maxTokens?: number;
+    }
+  ): Promise<T> {
+    try {
+      const completion = await this.openai.chat.completions.create({
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a helpful assistant that responds with valid JSON only.',
+          },
+          {
+            role: 'user',
+            content: question,
+          },
+        ],
+        model: options?.model || 'gpt-3.5-turbo',
+        temperature: options?.temperature ?? 0.7,
+        max_tokens: options?.maxTokens || 1000,
+        response_format: { type: 'json_object' },
+      });
+
+      const response = completion.choices[0]?.message?.content;
+      
+      if (!response) {
+        throw new Error('No response from OpenAI');
+      }
+
+      try {
+        return JSON.parse(response) as T;
+      } catch {
+        console.error('Failed to parse JSON response:', response);
+        throw new Error('Invalid JSON response from OpenAI');
+      }
+    } catch (error) {
+      console.error('Error calling OpenAI API:', error);
+      
+      if (error instanceof Error) {
+        throw new Error(`Failed to get structured response from LLM: ${error.message}`);
+      }
+      
+      throw new Error('Failed to get structured response from LLM');
+    }
+  }
 }
 
 // Export a singleton instance
