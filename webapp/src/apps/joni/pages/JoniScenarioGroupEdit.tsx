@@ -42,6 +42,7 @@ interface SortableScenarioItemProps {
   scenario: {
     id: string;
     name: string;
+    shortDescription: string | null;
     flightInformation: string;
     expectedAnswer: string;
     currentStatus: string;
@@ -84,8 +85,14 @@ function SortableScenarioItem({ scenario, onEdit, onDelete }: SortableScenarioIt
           </div>
           <div className="flex-1 min-w-0">
             <div className="font-medium text-lg mb-1">{scenario.name}</div>
-            <div className="text-sm text-muted-foreground mb-2">
-              Scenario #{scenario.orderInGroup + 1}
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+              <span>Scenario #{scenario.orderInGroup + 1}</span>
+              {scenario.shortDescription && (
+                <>
+                  <span>•</span>
+                  <span className="italic">{scenario.shortDescription}</span>
+                </>
+              )}
             </div>
             <div className="text-sm text-muted-foreground space-y-1">
               <div className="truncate">

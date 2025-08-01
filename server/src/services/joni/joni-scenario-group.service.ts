@@ -53,6 +53,7 @@ export class JoniScenarioGroupService {
     scenarios: {
       id: string;
       name: string;
+      shortDescription: string | null;
       flightInformation: string;
       expectedAnswer: string;
       currentStatus: string;
@@ -69,6 +70,7 @@ export class JoniScenarioGroupService {
           select: {
             id: true,
             name: true,
+            shortDescription: true,
             flightInformation: true,
             expectedAnswer: true,
             currentStatus: true,
@@ -169,6 +171,7 @@ export class JoniScenarioGroupService {
           prisma.joniScenario.create({
             data: {
               name: scenario.name + ' (Copy)',
+              shortDescription: scenario.shortDescription,
               subjectId: originalGroup.subjectId,
               groupId: newGroup.id,
               orderInGroup: index,

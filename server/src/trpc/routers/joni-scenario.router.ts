@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { router, protectedProcedure } from '../trpc';
 import { joniScenarioService } from '../../services/joni/joni-scenario.service';
+import { joniScenarioAiService } from '../../services/joni/joni-scenario-ai.service';
 import { TRPCError } from '@trpc/server';
 
 // Middleware to check backoffice-scenario access
@@ -37,6 +38,7 @@ const updateSubjectSchema = z.object({
 
 const createScenarioSchema = z.object({
   name: z.string().min(1).max(200),
+  shortDescription: z.string().max(150).optional(),
   subjectId: z.string(),
   groupId: z.string(),
   orderInGroup: z.number().int().min(0),
@@ -49,6 +51,7 @@ const updateScenarioSchema = z.object({
   id: z.string(),
   data: z.object({
     name: z.string().min(1).max(200).optional(),
+    shortDescription: z.string().max(150).optional(),
     subjectId: z.string().optional(),
     groupId: z.string().optional(),
     orderInGroup: z.number().int().min(0).optional(),
@@ -152,6 +155,7 @@ export const joniScenarioRouter = router({
       try {
         return await joniScenarioService.createScenario({
           name: input.name,
+          shortDescription: input.shortDescription,
           subjectId: input.subjectId,
           groupId: input.groupId,
           orderInGroup: input.orderInGroup,
@@ -236,5 +240,27 @@ export const joniScenarioRouter = router({
     .input(z.string())
     .query(async ({ input }) => {
       return joniScenarioService.getScenarioStats(input);
+    }),
+
+  // ===== AI FEATURES =====
+
+  generateShortDescription: requireBackofficeScenario
+    .input(z.object({
+      flightInformation: z.string(),
+      currentStatus: z.string()
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        const description = await joniScenarioAiService.generateShortDescription(
+          input.flightInformation,
+          input.currentStatus
+        );
+        return { description };
+      } catch (error: any) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: error.message || 'Failed to generate description'
+        });
+      }
     })
 });

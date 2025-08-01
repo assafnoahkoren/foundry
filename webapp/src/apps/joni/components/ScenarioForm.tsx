@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Sparkles } from 'lucide-react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import '../styles/quill-custom.css';
@@ -27,6 +28,7 @@ export function ScenarioForm({ scenarioId, subjectId: defaultSubjectId, groupId:
 
   // Form state
   const [name, setName] = useState<string>('');
+  const [shortDescription, setShortDescription] = useState<string>('');
   const [subjectId, setSubjectId] = useState<string>(defaultSubjectId || '');
   const [groupId, setGroupId] = useState<string>(defaultGroupId || '');
   const [orderInGroup, setOrderInGroup] = useState<number>(defaultOrderInGroup ?? 0);
@@ -101,10 +103,28 @@ export function ScenarioForm({ scenarioId, subjectId: defaultSubjectId, groupId:
     },
   });
 
+  const generateDescription = trpc.joniScenario.generateShortDescription.useMutation({
+    onSuccess: (data) => {
+      setShortDescription(data.description);
+      toast({
+        title: 'Success',
+        description: 'Description generated successfully',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
   // Load scenario data in edit mode
   useEffect(() => {
     if (scenario && isEditMode) {
       setName(scenario.name);
+      setShortDescription(scenario.shortDescription || '');
       setSubjectId(scenario.subjectId);
       setGroupId(scenario.groupId);
       setOrderInGroup(scenario.orderInGroup);
@@ -113,6 +133,29 @@ export function ScenarioForm({ scenarioId, subjectId: defaultSubjectId, groupId:
       setCurrentStatus(scenario.currentStatus);
     }
   }, [scenario, isEditMode]);
+
+  const handleGenerateDescription = () => {
+    if (!flightInformation || !currentStatus) {
+      toast({
+        title: 'Error',
+        description: 'Please provide flight information and current status first',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Strip HTML tags for AI processing
+    const stripHtml = (html: string) => {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = html;
+      return tmp.textContent || tmp.innerText || '';
+    };
+
+    generateDescription.mutate({
+      flightInformation: stripHtml(flightInformation),
+      currentStatus: stripHtml(currentStatus),
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,6 +189,7 @@ export function ScenarioForm({ scenarioId, subjectId: defaultSubjectId, groupId:
 
     const data = {
       name,
+      shortDescription: shortDescription || undefined,
       subjectId,
       groupId,
       orderInGroup,
@@ -191,6 +235,38 @@ export function ScenarioForm({ scenarioId, subjectId: defaultSubjectId, groupId:
               placeholder="Enter a descriptive name for this scenario"
               required
             />
+          </div>
+
+          {/* Short Description */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="shortDescription">Short Description</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleGenerateDescription}
+                disabled={generateDescription.isPending || !flightInformation || !currentStatus}
+              >
+                {generateDescription.isPending ? (
+                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                ) : (
+                  <Sparkles className="mr-2 h-3 w-3" />
+                )}
+                Generate with AI
+              </Button>
+            </div>
+            <Textarea
+              id="shortDescription"
+              value={shortDescription}
+              onChange={(e) => setShortDescription(e.target.value)}
+              placeholder="A brief description of the scenario (max 150 characters)"
+              maxLength={150}
+              rows={2}
+            />
+            <p className="text-xs text-muted-foreground">
+              {shortDescription.length}/150 characters
+            </p>
           </div>
 
           {/* Subject Selection */}

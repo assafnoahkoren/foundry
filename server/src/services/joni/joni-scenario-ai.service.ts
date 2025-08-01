@@ -123,6 +123,51 @@ Important:
       throw new Error('Failed to enrich scenario data');
     }
   }
+
+  async generateShortDescription(
+    flightInformation: string,
+    currentStatus: string
+  ): Promise<string> {
+    try {
+      const prompt = `You are an AI assistant helping to create concise descriptions for aviation training scenarios.
+
+Given the following flight information and current status, generate a short, clear description (1-2 sentences) that summarizes the key aspects of this scenario.
+
+Flight Information:
+${flightInformation}
+
+Current Status:
+${currentStatus}
+
+Generate a short description that:
+- Captures the essence of the scenario
+- Is clear and concise (maximum 150 characters)
+- Uses professional aviation terminology
+- Focuses on the most critical information
+- Is suitable for quick identification in a list view
+
+Return only the description text, no quotes or additional formatting.`;
+
+      const response = await openAiService.askLLM(prompt);
+      
+      // Trim and ensure it's not too long
+      const description = response.trim().substring(0, 150);
+      
+      if (!description) {
+        throw new Error('Generated description is empty');
+      }
+      
+      return description;
+    } catch (error) {
+      console.error('Error generating short description:', error);
+      
+      if (error instanceof Error) {
+        throw new Error(`Failed to generate description: ${error.message}`);
+      }
+      
+      throw new Error('Failed to generate short description');
+    }
+  }
 }
 
 // Export a singleton instance

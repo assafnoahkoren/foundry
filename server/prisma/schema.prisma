@@ -79,6 +79,7 @@ model JoniScenarioGroup {
 model JoniScenario {
   id                String                 @id @default(cuid())
   name              String
+  shortDescription  String?
   subjectId         String
   subject           JoniScenarioSubject    @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   groupId           String
