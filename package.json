@@ -4,7 +4,8 @@
   "private": true,
   "workspaces": [
     "server",
-    "webapp"
+    "webapp",
+    "docusaurus"
   ],
   "scripts": {
     "dev": "npm run dev --workspaces",
