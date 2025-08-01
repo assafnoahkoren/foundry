@@ -190,7 +190,7 @@ export const icaoRules: ICAORule[] = [
     ruleName: "Clearance Readback",
     ruleDescription: "Always read back clearances including altitude, heading, and frequency changes",
     correctExample: "DESCENDING TO FLIGHT LEVEL TWO ZERO ZERO, SPEEDBIRD ONE TWO THREE",
-    incorrectExample: "OK" or no readback
+    incorrectExample: "OK"
   },
   {
     ruleCategory: "Heavy Aircraft",
