@@ -3,15 +3,15 @@ import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
-  title: 'Foundry',
+  title: 'Aviate',
   tagline: 'Documentation',
   favicon: 'img/favicon.ico',
 
   url: 'http://localhost:13000',
   baseUrl: '/',
 
-  organizationName: 'foundry',
-  projectName: 'foundry',
+  organizationName: 'aviate',
+  projectName: 'aviate',
 
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
@@ -38,7 +38,7 @@ const config: Config = {
 
   themeConfig: {
     navbar: {
-      title: 'Foundry',
+      title: 'Aviate',
       items: [
         {
           type: 'docSidebar',
@@ -50,7 +50,7 @@ const config: Config = {
     },
     footer: {
       style: 'dark',
-      copyright: `Copyright © ${new Date().getFullYear()} Foundry`,
+      copyright: `Copyright © ${new Date().getFullYear()} Aviate`,
     },
     prism: {
       theme: prismThemes.github,
