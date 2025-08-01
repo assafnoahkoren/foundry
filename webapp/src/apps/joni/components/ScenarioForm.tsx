@@ -1,15 +1,15 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { trpc } from '@/utils/trpc';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { trpc } from '@/utils/trpc';
 import { Loader2, Sparkles } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import { useNavigate } from 'react-router-dom';
 import '../styles/quill-custom.css';
 
 interface ScenarioFormProps {
@@ -214,7 +214,7 @@ export function ScenarioForm({ scenarioId, subjectId: defaultSubjectId, groupId:
   }
 
   return (
-    <Card>
+    <Card className="border-0 shadow-none">
       <CardHeader>
         <CardTitle>{isEditMode ? 'Edit Scenario' : 'Create New Scenario'}</CardTitle>
         <CardDescription>
@@ -225,6 +225,28 @@ export function ScenarioForm({ scenarioId, subjectId: defaultSubjectId, groupId:
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Display Subject and Group info when not editable */}
+          {(isEditMode || defaultSubjectId || defaultGroupId) && (
+            <div className="flex items-center gap-6 bg-muted/50 rounded-lg p-4">
+              {subjectId && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">Subject:</span>
+                  <span className="text-sm text-muted-foreground">
+                    {subjects?.find(s => s.id === subjectId)?.name || 'Loading...'}
+                  </span>
+                </div>
+              )}
+              {groupId && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">Group:</span>
+                  <span className="text-sm text-muted-foreground">
+                    {groups?.find(g => g.id === groupId)?.name || 'Loading...'}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Scenario Name */}
           <div className="space-y-2">
             <Label htmlFor="name">Scenario Name *</Label>
@@ -269,32 +291,33 @@ export function ScenarioForm({ scenarioId, subjectId: defaultSubjectId, groupId:
             </p>
           </div>
 
-          {/* Subject Selection */}
-          <div className="space-y-2">
-            <Label htmlFor="subject">Subject *</Label>
-            <select
-              id="subject"
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              value={subjectId}
-              onChange={(e) => {
-                setSubjectId(e.target.value);
-                // Reset group selection when subject changes
-                setGroupId('');
-              }}
-              required
-              disabled={isEditMode || !!defaultSubjectId}
-            >
-              <option value="">Select a subject...</option>
-              {subjects?.map((subject) => (
-                <option key={subject.id} value={subject.id}>
-                  {subject.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Subject Selection - only show when editable */}
+          {!isEditMode && !defaultSubjectId && (
+            <div className="space-y-2">
+              <Label htmlFor="subject">Subject *</Label>
+              <select
+                id="subject"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                value={subjectId}
+                onChange={(e) => {
+                  setSubjectId(e.target.value);
+                  // Reset group selection when subject changes
+                  setGroupId('');
+                }}
+                required
+              >
+                <option value="">Select a subject...</option>
+                {subjects?.map((subject) => (
+                  <option key={subject.id} value={subject.id}>
+                    {subject.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
-          {/* Group Selection */}
-          {subjectId && (
+          {/* Group Selection - only show when editable */}
+          {!isEditMode && !defaultGroupId && subjectId && (
             <div className="space-y-2">
               <Label htmlFor="group">Group *</Label>
               <select
@@ -303,7 +326,6 @@ export function ScenarioForm({ scenarioId, subjectId: defaultSubjectId, groupId:
                 value={groupId}
                 onChange={(e) => setGroupId(e.target.value)}
                 required
-                disabled={isEditMode || !!defaultGroupId}
               >
                 <option value="">Select a group...</option>
                 {groups?.map((group) => (
