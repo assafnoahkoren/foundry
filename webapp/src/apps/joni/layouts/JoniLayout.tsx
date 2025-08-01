@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { BackToHubButton } from '@/components/BackToHubButton';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuth } from '@/hooks/useAuth';
 import { LogOut, Menu } from 'lucide-react';
 import { Outlet, useNavigate } from 'react-router-dom';
@@ -43,13 +44,16 @@ export function JoniLayout() {
                 />
               </div>
             
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleLogout}
-              >
-                <LogOut className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-2">
+                <ThemeToggle />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </header>
