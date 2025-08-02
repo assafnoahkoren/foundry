@@ -1,5 +1,28 @@
 import { openAiService } from '../ai/openai.service';
 
+// Local type definition to match the ExpectedComponent from frontend
+interface ExpectedComponent {
+  component: string;
+  value?: string;
+  required: boolean;
+  description?: string;
+}
+
+export interface ResponseEvaluationItem {
+  type: 'correct' | 'wrong' | 'warning';
+  title: string;
+  description: string;
+}
+
+export interface ResponseEvaluationResult {
+  score: number; // 0-10
+  items: ResponseEvaluationItem[];
+  feedback: string;
+  missingComponents: string[];
+  incorrectComponents: string[];
+  extraComponents: string[];
+}
+
 export interface GeneratedScenarioData {
   name: string;
   shortDescription: string;
@@ -417,6 +440,163 @@ Return only the description text, no quotes or additional formatting.`;
       }
       
       throw new Error('Failed to generate short description');
+    }
+  }
+
+  async evaluateResponse(
+    userResponse: string,
+    correctResponseExample: string,
+    expectedComponents: ExpectedComponent[],
+    eventType: string,
+    eventMessage: string
+  ): Promise<ResponseEvaluationResult> {
+    try {
+      const prompt = `You are an expert aviation communications instructor evaluating a pilot's radio response according to ICAO standards.
+
+CONTEXT:
+Event Type: ${eventType}
+Message Received: "${eventMessage}"
+Correct Response Example: "${correctResponseExample}"
+
+Expected Components:
+${expectedComponents.map(comp => 
+  `- ${comp.component}${comp.value ? ` (value: "${comp.value}")` : ''}${comp.required ? ' [REQUIRED]' : ' [OPTIONAL]'}`
+).join('\n')}
+
+USER'S RESPONSE TO EVALUATE:
+"${userResponse}"
+
+Evaluate the user's response and return ONLY a JSON object with this EXACT structure:
+{
+  "score": [0-10 numeric score],
+  "items": [
+    {
+      "type": "correct" | "wrong" | "warning",
+      "title": "Brief title",
+      "description": "Detailed explanation"
+    }
+  ],
+  "feedback": "Overall feedback summary",
+  "missingComponents": ["list", "of", "missing", "required", "components"],
+  "incorrectComponents": ["list", "of", "components", "with", "wrong", "values"],
+  "extraComponents": ["list", "of", "unnecessary", "components", "added"]
+}
+
+SCORING CRITERIA:
+- 10: Perfect response with all required components, correct values, and proper ICAO phraseology
+- 8-9: Minor phraseology issues but all critical information correct
+- 6-7: Most required components present but some errors or omissions
+- 4-5: Several missing components or significant errors
+- 2-3: Major errors, missing most required components
+- 0-1: Completely incorrect or unintelligible response
+
+EVALUATION FOCUS:
+1. Required components MUST be present and correct
+2. Component values must match exactly when specified
+3. ICAO phraseology standards (phonetic alphabet, number pronunciation)
+4. Callsign position (usually at the end for pilot responses)
+5. Readback accuracy for clearances, altitudes, headings, frequencies
+6. No extra or confusing information
+
+EVALUATION ITEM TYPES:
+- "correct": Things done correctly (e.g., "Correct callsign placement", "Proper readback of altitude")
+- "wrong": Critical errors that must be fixed (e.g., "Missing required callsign", "Incorrect altitude readback")
+- "warning": Minor issues or suggestions (e.g., "Non-standard phraseology used", "Could be more concise")
+
+IMPORTANT: Include BOTH positive feedback (correct items) AND negative feedback (wrong/warning items).
+For a perfect response, still list what was done correctly.
+Aim for 3-8 items total, mixing correct/wrong/warning as appropriate.
+
+COMMON THINGS TO EVALUATE:
+CORRECT:
+- Callsign included and positioned correctly
+- All required components present
+- Proper ICAO phraseology used
+- Accurate readback of critical information
+- Clear and concise communication
+
+WRONG:
+- Missing required components
+- Incorrect values for critical information
+- Major phraseology errors
+- Safety-critical mistakes
+
+WARNING:
+- Minor phraseology variations
+- Slightly non-standard but acceptable phrasing
+- Extra information that doesn't harm clarity
+- Opportunities for improvement
+
+Return ONLY valid JSON without any markdown formatting or explanatory text.`;
+
+      const response = await openAiService.askLLM(prompt);
+      
+      // Clean and parse the response
+      let cleanedResponse = response.trim();
+      
+      // Try to extract JSON from the response
+      const codeBlockMatch = cleanedResponse.match(/```json?\s*([\s\S]*?)```/);
+      if (codeBlockMatch) {
+        cleanedResponse = codeBlockMatch[1].trim();
+      }
+      
+      // Remove any trailing commas before closing braces/brackets
+      cleanedResponse = cleanedResponse.replace(/,(\s*[}\]])/g, '$1');
+      
+      // Try to find the first complete JSON object
+      const startIndex = cleanedResponse.indexOf('{');
+      const endIndex = cleanedResponse.lastIndexOf('}');
+      if (startIndex >= 0 && endIndex > startIndex) {
+        cleanedResponse = cleanedResponse.substring(startIndex, endIndex + 1);
+      }
+      
+      let evaluationResult: ResponseEvaluationResult;
+      try {
+        const parsed = JSON.parse(cleanedResponse);
+        
+        // Validate and ensure correct structure
+        evaluationResult = {
+          score: typeof parsed.score === 'number' ? Math.min(10, Math.max(0, parsed.score)) : 0,
+          items: Array.isArray(parsed.items) ? parsed.items : [],
+          feedback: parsed.feedback || 'No feedback provided',
+          missingComponents: Array.isArray(parsed.missingComponents) ? parsed.missingComponents : [],
+          incorrectComponents: Array.isArray(parsed.incorrectComponents) ? parsed.incorrectComponents : [],
+          extraComponents: Array.isArray(parsed.extraComponents) ? parsed.extraComponents : []
+        };
+        
+        // Validate items structure and type
+        evaluationResult.items = evaluationResult.items.filter(item => 
+          item && 
+          typeof item.title === 'string' && 
+          typeof item.description === 'string' &&
+          ['correct', 'wrong', 'warning'].includes(item.type)
+        );
+        
+      } catch (parseError) {
+        console.error('Failed to parse evaluation response:', parseError);
+        console.error('Attempted to parse:', cleanedResponse);
+        
+        // Return a default evaluation on parse error
+        return {
+          score: 0,
+          items: [{
+            type: 'wrong',
+            title: 'Evaluation Error',
+            description: 'Failed to properly evaluate the response. Please try again.'
+          }],
+          feedback: 'Unable to evaluate response due to technical error',
+          missingComponents: [],
+          incorrectComponents: [],
+          extraComponents: []
+        };
+      }
+      
+      return evaluationResult;
+      
+    } catch (error) {
+      console.error('Error evaluating response:', error);
+      
+      throw new Error(`Failed to evaluate response: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }
