@@ -6,8 +6,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Plus, Edit2, Trash2, GripVertical, Loader2 } from 'lucide-react';
+import { ArrowLeft, Plus, Edit2, Trash2, GripVertical, Loader2, Sparkles } from 'lucide-react';
 import { ScenarioForm } from '../components/ScenarioForm';
+import { GenerateScenarioModal } from '../components/GenerateScenarioModal';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -134,6 +135,7 @@ export function JoniScenarioGroupEdit() {
   const utils = trpc.useUtils();
   
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showGenerateDialog, setShowGenerateDialog] = useState(false);
   const [editingScenarioId, setEditingScenarioId] = useState<string | null>(null);
   const [deletingScenarioId, setDeletingScenarioId] = useState<string | null>(null);
 
@@ -283,10 +285,16 @@ export function JoniScenarioGroupEdit() {
               <p className="text-sm text-muted-foreground mt-2">{group.description}</p>
             )}
           </div>
-          <Button onClick={() => setShowCreateDialog(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Scenario
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => setShowCreateDialog(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Scenario
+            </Button>
+            <Button onClick={() => setShowGenerateDialog(true)} variant="outline">
+              <Sparkles className="mr-2 h-4 w-4" />
+              Generate with AI
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -297,10 +305,16 @@ export function JoniScenarioGroupEdit() {
             <p className="text-muted-foreground mb-4">
               No scenarios in this group yet. Add your first scenario to get started.
             </p>
-            <Button onClick={() => setShowCreateDialog(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Scenario
-            </Button>
+            <div className="flex gap-2 justify-center">
+              <Button onClick={() => setShowCreateDialog(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Scenario
+              </Button>
+              <Button onClick={() => setShowGenerateDialog(true)} variant="outline">
+                <Sparkles className="mr-2 h-4 w-4" />
+                Generate with AI
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ) : (
@@ -398,6 +412,17 @@ export function JoniScenarioGroupEdit() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Generate with AI Dialog */}
+      <GenerateScenarioModal
+        open={showGenerateDialog}
+        onOpenChange={setShowGenerateDialog}
+        subjectId={group.subject.id}
+        groupId={group.id}
+        onSuccess={() => {
+          utils.joniScenarioGroup.getGroupById.invalidate(groupId);
+        }}
+      />
     </div>
   );
 }

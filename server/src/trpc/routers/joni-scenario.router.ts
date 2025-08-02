@@ -411,6 +411,63 @@ ${flightInfo.weather ? `Weather: ${flightInfo.weather.conditions || 'Not specifi
       }
     }),
 
+  generateScenarioFromText: requireBackofficeScenario
+    .input(z.object({
+      description: z.string().min(10).max(10000),
+      subjectId: z.string(),
+      groupId: z.string().optional()
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        // Get subject context
+        const subject = await joniScenarioService.getSubjectById(input.subjectId);
+        const subjectContext = subject ? `${subject.name}: ${subject.description || ''}` : undefined;
+        
+        // Generate scenario data with AI
+        const generatedData = await joniScenarioAiService.generateScenarioFromText(
+          input.description,
+          subjectContext
+        );
+
+        // Create the scenario with steps
+        const result = await joniScenarioService.createScenarioWithSteps({
+          scenario: {
+            name: generatedData.name,
+            shortDescription: generatedData.shortDescription,
+            subjectId: input.subjectId,
+            groupId: input.groupId || '',
+            scenarioType: generatedData.scenarioType,
+            difficulty: generatedData.difficulty,
+            estimatedMinutes: generatedData.estimatedMinutes,
+            initialContext: generatedData.initialContext,
+            flightInformationJson: generatedData.flightInformation,
+            // Generate legacy fields
+            flightInformation: JSON.stringify(generatedData.flightInformation),
+            expectedAnswer: generatedData.steps.map(s => s.correctResponseExample || s.eventDescription).join('\n'),
+            currentStatus: `${generatedData.scenarioType} scenario - ${generatedData.difficulty} level`
+          },
+          steps: generatedData.steps.map((step, index) => ({
+            stepOrder: index + 1,
+            eventType: step.eventType,
+            actorRole: step.actorRole,
+            eventDescription: step.eventDescription,
+            eventMessage: step.eventMessage || '',
+            expectedComponents: step.expectedComponents,
+            correctResponseExample: step.correctResponseExample || '',
+            nextStepCondition: step.nextStepCondition
+          }))
+        });
+
+        return result;
+      } catch (error: any) {
+        console.error('Error generating scenario from text:', error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: error.message || 'Failed to generate scenario from text'
+        });
+      }
+    }),
+
   // ===== SCENARIO STEPS =====
 
   createScenarioStep: requireBackofficeScenario

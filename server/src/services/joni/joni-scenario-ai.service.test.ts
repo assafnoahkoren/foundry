@@ -17,147 +17,171 @@ describe('JoniScenarioAiService', () => {
 
   describe('generateScenarioFromText', () => {
     it('should generate scenario data from text description', async () => {
-      const mockResponse = {
+      const mockResponse = JSON.stringify({
+        name: "Emergency Landing at EGLL",
+        shortDescription: "Bird strike on approach requiring immediate action",
+        scenarioType: "emergency",
+        difficulty: "advanced",
+        estimatedMinutes: 20,
+        initialContext: "Aircraft on final approach experiences bird strike",
         flightInformation: {
-          flightNumber: 'BA007',
-          departure: 'London Heathrow',
-          arrival: 'Moscow Domodedovo',
-          departureTime: '14:30',
-          arrivalTime: '21:45',
-          targetName: 'Viktor Volkov',
-          missionCode: 'SNOWFALL'
+          aircraft: {
+            type: "B737-800",
+            registration: "G-ABCD",
+            weightCategory: "MEDIUM"
+          },
+          callsign: "BAW123",
+          route: {
+            departure: "LFPG",
+            destination: "EGLL",
+            flightRules: "IFR",
+            cruiseAltitude: "FL350"
+          },
+          currentPosition: {
+            phase: "approach",
+            location: "8 miles final runway 27L",
+            altitude: "2500ft",
+            heading: 270,
+            speed: "180kts"
+          },
+          weather: {
+            conditions: "Few clouds at 2500ft",
+            wind: "270/15",
+            visibility: "10km",
+            qnh: "1013"
+          }
         },
-        expectedAnswer: {
-          primaryObjective: 'Intercept target at airport',
-          secondaryObjective: 'Retrieve briefcase',
-          extractionPoint: 'Terminal 2 parking lot',
-          backupPlan: 'Use diplomatic immunity if compromised'
-        },
-        currentStatus: 'Active - High Priority'
-      };
-
-      vi.mocked(openAiService.askLLMStructured).mockResolvedValue(mockResponse);
-
-      const result = await joniScenarioAiService.generateScenarioFromText(
-        'Agent must intercept Viktor Volkov on flight BA007 from London to Moscow, departing at 14:30. Mission code SNOWFALL. Retrieve briefcase and extract via Terminal 2.',
-        'International espionage operations'
-      );
-
-      expect(result).toEqual({
-        flightInformation: {
-          flightNumber: 'BA007',
-          departure: 'London Heathrow',
-          arrival: 'Moscow Domodedovo',
-          departureTime: '14:30',
-          arrivalTime: '21:45',
-          targetName: 'Viktor Volkov',
-          missionCode: 'SNOWFALL'
-        },
-        expectedAnswer: {
-          primaryObjective: 'Intercept target at airport',
-          secondaryObjective: 'Retrieve briefcase',
-          extractionPoint: 'Terminal 2 parking lot',
-          backupPlan: 'Use diplomatic immunity if compromised'
-        },
-        currentStatus: 'Active - High Priority'
+        steps: [
+          {
+            eventType: "emergency",
+            eventDescription: "Bird strike on approach",
+            eventMessage: "MAYDAY MAYDAY MAYDAY, BAW123 bird strike, engine failure, going around",
+            expectedComponents: [
+              { component: "mayday", required: true },
+              { component: "callsign", required: true },
+              { component: "nature", required: true }
+            ],
+            correctResponseExample: "BAW123, roger MAYDAY, turn left heading 180, climb flight level 70",
+            nextStepCondition: "After go-around initiated"
+          }
+        ]
       });
 
-      expect(openAiService.askLLMStructured).toHaveBeenCalledTimes(1);
-      expect(openAiService.askLLMStructured).toHaveBeenCalledWith(expect.stringContaining('Johnny English agents'));
-      expect(openAiService.askLLMStructured).toHaveBeenCalledWith(expect.stringContaining('International espionage operations'));
-    });
+      vi.mocked(openAiService.askLLM).mockResolvedValue(mockResponse);
 
-    it('should throw error if OpenAI returns invalid structure', async () => {
-      vi.mocked(openAiService.askLLMStructured).mockRejectedValue(
-        new Error('Invalid JSON response from OpenAI')
+      const result = await joniScenarioAiService.generateScenarioFromText(
+        'Create an emergency scenario with a bird strike on approach to Heathrow',
+        'Aviation radiotelephony training'
       );
 
-      await expect(
-        joniScenarioAiService.generateScenarioFromText('Test scenario')
-      ).rejects.toThrow('Failed to generate scenario: Invalid JSON response from OpenAI');
+      expect(result).toHaveProperty('name', 'Emergency Landing at EGLL');
+      expect(result).toHaveProperty('scenarioType', 'emergency');
+      expect(result).toHaveProperty('difficulty', 'advanced');
+      expect(result.flightInformation).toHaveProperty('callsign', 'BAW123');
+      expect(result.steps).toHaveLength(1);
+      expect(result.steps[0]).toHaveProperty('eventType', 'emergency');
+
+      expect(openAiService.askLLM).toHaveBeenCalledTimes(1);
+      expect(openAiService.askLLM).toHaveBeenCalledWith(expect.stringContaining('aviation radiotelephony training'));
     });
 
-    it('should throw error if flightInformation is missing', async () => {
-      const mockResponse = {
-        expectedAnswer: { action: 'Test' },
-        currentStatus: 'Active'
-      };
-
-      vi.mocked(openAiService.askLLMStructured).mockResolvedValue(mockResponse);
+    it('should throw error if OpenAI returns invalid JSON', async () => {
+      vi.mocked(openAiService.askLLM).mockResolvedValue('Invalid JSON response');
 
       await expect(
         joniScenarioAiService.generateScenarioFromText('Test scenario')
-      ).rejects.toThrow('Failed to generate scenario: Invalid flightInformation in AI response');
+      ).rejects.toThrow('Failed to generate scenario: No valid JSON found in response');
     });
 
-    it('should throw error if expectedAnswer is missing', async () => {
-      const mockResponse = {
-        flightInformation: { test: 'data' },
-        currentStatus: 'Active'
-      };
+    it('should throw error if name is missing', async () => {
+      const mockResponse = JSON.stringify({
+        shortDescription: "Test",
+        scenarioType: "standard",
+        difficulty: "beginner",
+        estimatedMinutes: 15,
+        flightInformation: { aircraft: { type: "B737" }, callsign: "TEST" },
+        steps: []
+      });
 
-      vi.mocked(openAiService.askLLMStructured).mockResolvedValue(mockResponse);
+      vi.mocked(openAiService.askLLM).mockResolvedValue(mockResponse);
 
       await expect(
         joniScenarioAiService.generateScenarioFromText('Test scenario')
-      ).rejects.toThrow('Failed to generate scenario: Invalid expectedAnswer in AI response');
+      ).rejects.toThrow('Failed to generate scenario: Invalid or missing scenario name');
     });
 
-    it('should throw error if currentStatus is missing', async () => {
-      const mockResponse = {
-        flightInformation: { test: 'data' },
-        expectedAnswer: { action: 'Test' }
-      };
+    it('should throw error if invalid scenario type', async () => {
+      const mockResponse = JSON.stringify({
+        name: "Test",
+        shortDescription: "Test",
+        scenarioType: "invalid",
+        difficulty: "beginner",
+        estimatedMinutes: 15,
+        flightInformation: { aircraft: { type: "B737" }, callsign: "TEST" },
+        steps: []
+      });
 
-      vi.mocked(openAiService.askLLMStructured).mockResolvedValue(mockResponse);
+      vi.mocked(openAiService.askLLM).mockResolvedValue(mockResponse);
 
       await expect(
         joniScenarioAiService.generateScenarioFromText('Test scenario')
-      ).rejects.toThrow('Failed to generate scenario: Invalid currentStatus in AI response');
+      ).rejects.toThrow('Failed to generate scenario: Invalid scenario type');
+    });
+
+    it('should throw error if steps array is empty', async () => {
+      const mockResponse = JSON.stringify({
+        name: "Test",
+        shortDescription: "Test",
+        scenarioType: "standard",
+        difficulty: "beginner",
+        estimatedMinutes: 15,
+        flightInformation: { aircraft: { type: "B737" }, callsign: "TEST" },
+        steps: []
+      });
+
+      vi.mocked(openAiService.askLLM).mockResolvedValue(mockResponse);
+
+      await expect(
+        joniScenarioAiService.generateScenarioFromText('Test scenario')
+      ).rejects.toThrow('Failed to generate scenario: Invalid or empty steps array');
     });
   });
 
-  describe('enrichScenarioData', () => {
-    it('should enrich existing scenario data', async () => {
-      const existingData = {
-        flightInformation: {
-          flightNumber: 'BA007'
-        },
-        currentStatus: 'Active'
-      };
+  describe('generateShortDescription', () => {
+    it('should generate short description from flight info', async () => {
+      const mockResponse = 'B737 approaching EGLL with bird strike emergency';
 
-      const mockResponse = {
-        flightInformation: {
-          flightNumber: 'BA007',
-          departure: 'London Heathrow',
-          arrival: 'Moscow Domodedovo',
-          aircraftType: 'Boeing 777'
-        },
-        expectedAnswer: {
-          primaryObjective: 'Surveillance',
-          equipment: 'Standard spy kit'
-        },
-        currentStatus: 'Active - Under Review'
-      };
+      vi.mocked(openAiService.askLLM).mockResolvedValue(mockResponse);
 
-      vi.mocked(openAiService.askLLMStructured).mockResolvedValue(mockResponse);
-
-      const result = await joniScenarioAiService.enrichScenarioData(
-        existingData,
-        'Add departure and arrival details. Aircraft is Boeing 777. Mission requires standard spy kit for surveillance.'
+      const result = await joniScenarioAiService.generateShortDescription(
+        'Aircraft: B737-800, Route: LFPG to EGLL',
+        'Emergency - bird strike on approach'
       );
 
-      expect(result.flightInformation).toHaveProperty('aircraftType', 'Boeing 777');
-      expect(result.expectedAnswer).toHaveProperty('equipment', 'Standard spy kit');
-      expect(result.currentStatus).toBe('Active - Under Review');
+      expect(result).toBe('B737 approaching EGLL with bird strike emergency');
+      expect(openAiService.askLLM).toHaveBeenCalledWith(
+        expect.stringContaining('aviation training scenarios')
+      );
     });
 
-    it('should handle enrichment errors gracefully', async () => {
-      vi.mocked(openAiService.askLLMStructured).mockRejectedValue(new Error('API Error'));
+    it('should truncate long descriptions', async () => {
+      const longDescription = 'A'.repeat(200);
+      vi.mocked(openAiService.askLLM).mockResolvedValue(longDescription);
+
+      const result = await joniScenarioAiService.generateShortDescription(
+        'Flight info',
+        'Status'
+      );
+
+      expect(result).toHaveLength(150);
+    });
+
+    it('should handle API errors gracefully', async () => {
+      vi.mocked(openAiService.askLLM).mockRejectedValue(new Error('API Error'));
 
       await expect(
-        joniScenarioAiService.enrichScenarioData({}, 'Additional context')
-      ).rejects.toThrow('Failed to enrich scenario: API Error');
+        joniScenarioAiService.generateShortDescription('Flight info', 'Status')
+      ).rejects.toThrow('Failed to generate description: API Error');
     });
   });
 });

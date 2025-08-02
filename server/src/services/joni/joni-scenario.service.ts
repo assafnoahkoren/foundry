@@ -101,6 +101,7 @@ export class JoniScenarioService {
   async getScenarioById(id: string): Promise<(JoniScenario & {
     subject: JoniScenarioSubject;
     group: { id: string; name: string } | null;
+    steps: JoniScenarioStep[];
     _count: { responses: number };
   }) | null> {
     return prisma.joniScenario.findUnique({
@@ -109,6 +110,9 @@ export class JoniScenarioService {
         subject: true,
         group: {
           select: { id: true, name: true }
+        },
+        steps: {
+          orderBy: { stepOrder: 'asc' }
         },
         _count: {
           select: { responses: true }

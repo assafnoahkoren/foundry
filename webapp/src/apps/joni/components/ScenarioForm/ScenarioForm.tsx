@@ -115,6 +115,18 @@ export function ScenarioForm({
         flightInfo = scenario.flightInformationJson as FlightInformation;
       }
 
+      // Convert steps from database format to form format
+      const formSteps: ScenarioStep[] = scenario.steps?.map(step => ({
+        id: step.id,
+        eventType: step.eventType as ScenarioStep['eventType'],
+        actorRole: step.actorRole || undefined,
+        eventDescription: step.eventDescription,
+        eventMessage: step.eventMessage || '',
+        expectedComponents: step.expectedComponents as Array<{ component: string; required: boolean }> || [],
+        correctResponseExample: step.correctResponseExample || '',
+        nextStepCondition: step.nextStepCondition || ''
+      })) || [];
+
       setFormData({
         name: scenario.name,
         shortDescription: scenario.shortDescription || '',
@@ -125,7 +137,7 @@ export function ScenarioForm({
         estimatedMinutes: scenario.estimatedMinutes || 15,
         initialContext: scenario.initialContext || '',
         flightInformation: flightInfo,
-        steps: [] // TODO: Load steps when implemented
+        steps: formSteps
       });
 
       // Set legacy fields
