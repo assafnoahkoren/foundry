@@ -103,6 +103,21 @@ export interface ScenarioPracticeSession {
   totalScore?: number;
 }
 
+export interface ResponseEvaluationItem {
+  type: 'correct' | 'wrong' | 'warning';
+  title: string;
+  description: string;
+}
+
+export interface ResponseEvaluationResult {
+  score: number; // 0-10
+  items: ResponseEvaluationItem[];
+  feedback: string;
+  missingComponents: string[];
+  incorrectComponents: string[];
+  extraComponents: string[];
+}
+
 export interface StepResponse {
   stepId: string;
   userResponse: string;

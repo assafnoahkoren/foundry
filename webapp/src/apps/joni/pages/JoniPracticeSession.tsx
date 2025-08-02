@@ -3,6 +3,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/drawer';
 import { useToast } from '@/hooks/use-toast';
 import { useAudioRecording } from '@/hooks/useAudioRecording';
 import { trpc } from '@/utils/trpc';
@@ -24,7 +33,8 @@ import {
 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import type { FlightInformation } from '../types/scenario-practice.types';
+import type { FlightInformation, ResponseEvaluationResult } from '../types/scenario-practice.types';
+import { ScenarioResponseAnalysis } from '../components/ScenarioResponseAnalysis';
 
 interface StepResponse {
   stepId: string;
@@ -42,6 +52,9 @@ export function JoniPracticeSession() {
   const [stepResponses, setStepResponses] = useState<StepResponse[]>([]);
   const [isCompleted, setIsCompleted] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
+  const [currentAnalysis, setCurrentAnalysis] = useState<ResponseEvaluationResult | null>(null);
+  const [isEvaluating, setIsEvaluating] = useState(false);
   const audioChunksRef = useRef<Blob[]>([]);
   const lastProcessedChunkRef = useRef<number>(0);
 
@@ -61,6 +74,23 @@ export function JoniPracticeSession() {
     onError: (error) => {
       console.error('Transcription error:', error);
       setIsTranscribing(false);
+    },
+  });
+
+  const evaluateResponseMutation = trpc.joniScenario.evaluateResponse.useMutation({
+    onSuccess: (result) => {
+      setCurrentAnalysis(result);
+      setIsAnalysisOpen(true);
+      setIsEvaluating(false);
+    },
+    onError: (error) => {
+      console.error('Evaluation error:', error);
+      toast({
+        title: 'Evaluation Error',
+        description: 'Failed to evaluate your response. Please try again.',
+        variant: 'destructive',
+      });
+      setIsEvaluating(false);
     },
   });
   
@@ -228,20 +258,33 @@ export function JoniPracticeSession() {
     // No need to do anything else - text is already in userResponse
   };
 
-  const handleSubmitResponse = () => {
+  const handleSubmitResponse = async () => {
     if (!currentStep || !userResponse.trim()) return;
+
+    // Evaluate the response
+    setIsEvaluating(true);
+    evaluateResponseMutation.mutate({
+      userResponse: userResponse,
+      stepId: currentStep.id,
+      // TODO: Add practiceId when implementing practice sessions
+    });
+  };
+
+  const handleContinueAfterAnalysis = () => {
+    if (!currentStep) return;
 
     // Save the response
     const response: StepResponse = {
       stepId: currentStep.id,
       response: userResponse,
-      // In a real implementation, this would be evaluated by an API
-      feedback: 'Response recorded',
-      score: 80 // Placeholder score
+      feedback: currentAnalysis?.feedback || 'Response recorded',
+      score: currentAnalysis?.score || 0
     };
 
     setStepResponses([...stepResponses, response]);
     setUserResponse('');
+    setIsAnalysisOpen(false);
+    setCurrentAnalysis(null);
 
     // Move to next step or complete
     if (currentStepIndex < scenario!.steps.length - 1) {
@@ -569,9 +612,14 @@ export function JoniPracticeSession() {
                     
                     <Button
                       onClick={handleSubmitResponse}
-                      disabled={!userResponse.trim() || isRecording || isTranscribing}
+                      disabled={!userResponse.trim() || isRecording || isTranscribing || isEvaluating}
                     >
-                      {currentStepIndex === scenario.steps.length - 1 ? (
+                      {isEvaluating ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Evaluating...
+                        </>
+                      ) : currentStepIndex === scenario.steps.length - 1 ? (
                         <>
                           Complete
                           <CheckCircle2 className="h-4 w-4 ml-2" />
@@ -621,6 +669,35 @@ export function JoniPracticeSession() {
           </CardContent>
         </Card>
       )}
+
+      {/* Response Analysis Drawer */}
+      <Drawer open={isAnalysisOpen} onOpenChange={setIsAnalysisOpen}>
+        <DrawerContent className="max-h-[85vh]">
+          <DrawerHeader>
+            <DrawerTitle>Response Analysis</DrawerTitle>
+            <DrawerDescription>
+              Review your response and feedback before continuing
+            </DrawerDescription>
+          </DrawerHeader>
+          <div className="p-4 overflow-y-auto max-h-[calc(85vh-200px)]">
+            {currentAnalysis && currentStep && (
+              <ScenarioResponseAnalysis
+                analysis={currentAnalysis}
+                userResponse={userResponse}
+                correctExample={currentStep.correctResponseExample}
+              />
+            )}
+          </div>
+          <DrawerFooter>
+            <Button onClick={handleContinueAfterAnalysis}>
+              {currentStepIndex === (scenario?.steps.length ?? 0) - 1 ? 'Complete' : 'Continue to Next Step'}
+            </Button>
+            <DrawerClose asChild>
+              <Button variant="outline">Review Again</Button>
+            </DrawerClose>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 }

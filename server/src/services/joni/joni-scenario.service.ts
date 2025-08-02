@@ -426,6 +426,44 @@ export class JoniScenarioService {
       };
     });
   }
+
+  async getScenarioStep(stepId: string): Promise<JoniScenarioStep | null> {
+    return prisma.joniScenarioStep.findUnique({
+      where: { id: stepId }
+    });
+  }
+
+  async saveStepResponse(data: {
+    practiceId: string;
+    stepId: string;
+    userResponse: string;
+    responseAnalysis: any;
+    correctness: number;
+  }) {
+    return prisma.joniScenarioStepResponse.upsert({
+      where: {
+        practiceId_stepId: {
+          practiceId: data.practiceId,
+          stepId: data.stepId
+        }
+      },
+      update: {
+        userResponse: data.userResponse,
+        responseAnalysis: data.responseAnalysis,
+        correctness: data.correctness,
+        attempts: {
+          increment: 1
+        }
+      },
+      create: {
+        practiceId: data.practiceId,
+        stepId: data.stepId,
+        userResponse: data.userResponse,
+        responseAnalysis: data.responseAnalysis,
+        correctness: data.correctness
+      }
+    });
+  }
 }
 
 export const joniScenarioService = new JoniScenarioService();

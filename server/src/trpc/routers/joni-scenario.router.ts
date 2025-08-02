@@ -420,7 +420,7 @@ ${flightInfo.weather ? `Weather: ${flightInfo.weather.conditions || 'Not specifi
       steps: z.array(z.object({
         id: z.string().optional(),
         stepOrder: z.number().int().min(1),
-        eventType: z.enum(['atc', 'crew', 'cockpit', 'emergency', 'technical', 'weather', 'company', 'passenger']),
+        eventType: z.enum(['atc', 'crew', 'cockpit', 'situation', 'self_initiation', 'emergency', 'technical', 'weather', 'company', 'passenger']),
         actorRole: z.enum([
           'clearance_delivery', 'ground', 'tower', 'departure', 'center', 'approach', 'ramp',
           'flight_attendant', 'purser', 'copilot', 'relief_pilot', 'maintenance', 'dispatch', 'doctor_onboard'
@@ -646,7 +646,7 @@ ${flightInfo.weather ? `Weather: ${flightInfo.weather.conditions || 'Not specifi
       scenario: createScenarioSchema,
       steps: z.array(z.object({
         stepOrder: z.number().int().min(1),
-        eventType: z.enum(['atc', 'crew', 'cockpit', 'emergency', 'technical', 'weather', 'company', 'passenger']),
+        eventType: z.enum(['atc', 'crew', 'cockpit', 'situation', 'self_initiation', 'emergency', 'technical', 'weather', 'company', 'passenger']),
         actorRole: z.enum([
           'clearance_delivery', 'ground', 'tower', 'departure', 'center', 'approach', 'ramp',
           'flight_attendant', 'purser', 'copilot', 'relief_pilot', 'maintenance', 'dispatch', 'doctor_onboard'
@@ -696,6 +696,55 @@ ${flightInfo.weather ? `Weather: ${flightInfo.weather.conditions || 'Not specifi
           });
         }
         throw error;
+      }
+    }),
+
+  // ===== RESPONSE EVALUATION =====
+
+  evaluateResponse: protectedProcedure
+    .input(z.object({
+      userResponse: z.string(),
+      stepId: z.string(),
+      practiceId: z.string().optional()
+    }))
+    .mutation(async ({ input, ctx: _ctx }) => {
+      try {
+        // Get the step details
+        const step = await joniScenarioService.getScenarioStep(input.stepId);
+        if (!step) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Step not found'
+          });
+        }
+
+        // Evaluate the response using AI
+        const evaluation = await joniScenarioAiService.evaluateResponse(
+          input.userResponse,
+          step.correctResponseExample,
+          step.expectedComponents as any,
+          step.eventType,
+          step.eventMessage
+        );
+
+        // If practiceId is provided, save the response to the practice session
+        if (input.practiceId) {
+          await joniScenarioService.saveStepResponse({
+            practiceId: input.practiceId,
+            stepId: input.stepId,
+            userResponse: input.userResponse,
+            responseAnalysis: evaluation,
+            correctness: evaluation.score
+          });
+        }
+
+        return evaluation;
+      } catch (error: any) {
+        console.error('Error evaluating response:', error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: error.message || 'Failed to evaluate response'
+        });
       }
     })
 });
