@@ -1,8 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Drawer,
   DrawerClose,
@@ -12,6 +10,8 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '@/components/ui/drawer';
+import { Progress } from '@/components/ui/progress';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useAudioRecording } from '@/hooks/useAudioRecording';
 import { trpc } from '@/utils/trpc';
@@ -33,8 +33,8 @@ import {
 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import type { FlightInformation, ResponseEvaluationResult } from '../types/scenario-practice.types';
 import { ScenarioResponseAnalysis } from '../components/ScenarioResponseAnalysis';
+import type { FlightInformation, ResponseEvaluationResult } from '../types/scenario-practice.types';
 
 interface StepResponse {
   stepId: string;
@@ -335,54 +335,60 @@ export function JoniPracticeSession() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
-      {/* Header */}
-      <div className="mb-6">
+    <div className="flex flex-col h-screen">
+      {/* Main content area with scroll */}
+      <div className="flex-1 pb-[220px] sm:pb-[200px]">
+        <div className="container mx-auto p-4 sm:p-6 max-w-4xl">
+          {/* Header */}
+          <div className="mb-4 sm:mb-6">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => navigate('/joni/practice')}
-          className="mb-4"
+          className="mb-3 sm:mb-4 -ml-2 sm:ml-0"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Practice
+          <span className="hidden sm:inline">Back to Practice</span>
+          <span className="sm:hidden">Back</span>
         </Button>
         
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold">{scenario.name}</h1>
-          <p className="text-muted-foreground">{scenario.shortDescription}</p>
-          <div className="flex items-center gap-4">
-            <Badge variant="outline" className="gap-1">
+          <h1 className="text-xl sm:text-2xl font-bold">{scenario.name}</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">{scenario.shortDescription}</p>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+            <Badge variant="outline" className="gap-1 w-fit">
               <Plane className="h-3 w-3" />
               {scenario.subject.name}
             </Badge>
-            <Progress value={progress} className="flex-1 h-2" />
-            <span className="text-sm text-muted-foreground">
-              Step {currentStepIndex + 1} of {scenario.steps.length}
-            </span>
+            <div className="flex items-center gap-2 flex-1">
+              <Progress value={progress} className="flex-1 h-2" />
+              <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
+                {currentStepIndex + 1}/{scenario.steps.length}
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Flight Information Panel */}
-      {flightInfo && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Info className="h-5 w-5" />
+          {/* Flight Information Panel */}
+          {flightInfo && (
+        <Card className="mb-4 sm:mb-6">
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+              <Info className="h-4 sm:h-5 w-4 sm:w-5" />
               Flight Information
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
               {/* Aircraft & Callsign */}
               <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Plane className="h-4 w-4 text-muted-foreground" />
+                <div className="flex flex-wrap items-center gap-2">
+                  <Plane className="h-3 sm:h-4 w-3 sm:w-4 text-muted-foreground" />
                   <span className="font-medium">Aircraft:</span>
-                  <span>{flightInfo.aircraft.type}</span>
+                  <span className="break-words">{flightInfo.aircraft.type}</span>
                   {flightInfo.aircraft.registration && (
-                    <Badge variant="outline" className="ml-2">{flightInfo.aircraft.registration}</Badge>
+                    <Badge variant="outline" className="text-xs">{flightInfo.aircraft.registration}</Badge>
                   )}
                 </div>
                 <div>
@@ -394,10 +400,10 @@ export function JoniPracticeSession() {
               {flightInfo.route && (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <MapPin className="h-3 sm:h-4 w-3 sm:w-4 text-muted-foreground" />
                     <span className="font-medium">Route:</span>
                   </div>
-                  <div className="pl-6">
+                  <div className="pl-5 sm:pl-6 break-words">
                     {flightInfo.route.departure} → {flightInfo.route.destination}
                     {flightInfo.route.alternate && (
                       <span className="text-muted-foreground"> (Alt: {flightInfo.route.alternate})</span>
@@ -429,10 +435,10 @@ export function JoniPracticeSession() {
               {flightInfo.weather && (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <Cloud className="h-4 w-4 text-muted-foreground" />
+                    <Cloud className="h-3 sm:h-4 w-3 sm:w-4 text-muted-foreground" />
                     <span className="font-medium">Weather:</span>
                   </div>
-                  <div className="pl-6 space-y-1">
+                  <div className="pl-5 sm:pl-6 space-y-1">
                     <div>Conditions: {flightInfo.weather.conditions}</div>
                     {flightInfo.weather.wind && (
                       <div>Wind: {flightInfo.weather.wind}</div>
@@ -456,7 +462,7 @@ export function JoniPracticeSession() {
                 )}
                 {flightInfo.fuel && (
                   <div className="flex items-center gap-2">
-                    <Fuel className="h-4 w-4 text-muted-foreground" />
+                    <Fuel className="h-3 sm:h-4 w-3 sm:w-4 text-muted-foreground" />
                     <span className="font-medium">Fuel:</span> {flightInfo.fuel.remaining}
                     {flightInfo.fuel.endurance && (
                       <span className="text-muted-foreground"> (Endurance: {flightInfo.fuel.endurance})</span>
@@ -474,170 +480,87 @@ export function JoniPracticeSession() {
         </Card>
       )}
 
-      {/* Initial Context */}
-      {currentStepIndex === 0 && scenario.initialContext && (
-        <Card className="mb-6 border-blue-200 bg-blue-50/50">
-          <CardHeader>
-            <CardTitle className="text-lg">Scenario Context</CardTitle>
+          {/* Initial Context */}
+          {currentStepIndex === 0 && scenario.initialContext && (
+        <Card className="mb-4 sm:mb-6 border-blue-200 bg-blue-50/50">
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="text-base sm:text-lg">Scenario Context</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm">{scenario.initialContext}</p>
+            <p className="text-xs sm:text-sm">{scenario.initialContext}</p>
           </CardContent>
         </Card>
       )}
 
-      {!isCompleted ? (
+          {!isCompleted ? (
         <>
           {/* Current Step */}
           {currentStep && (
-            <Card className="mb-6">
-              <CardHeader className="pb-3">
+            <Card className="mb-4 sm:mb-6">
+              <CardHeader className="pb-2 sm:pb-3">
                 {(currentStep.eventType === 'situation' || currentStep.eventType === 'self_initiation') ? (
                   // Situation/Self-initiation step - pilot needs to initiate
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="flex items-center gap-2 px-3 py-1 bg-blue-500/10 rounded-full">
-                      <Plane className="h-4 w-4 text-blue-600" />
-                      <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                    <div className="flex items-center gap-2 px-2 sm:px-3 py-1 bg-blue-500/10 rounded-full">
+                      <Plane className="h-3 sm:h-4 w-3 sm:w-4 text-blue-600" />
+                      <span className="text-xs sm:text-sm font-semibold text-blue-900 dark:text-blue-100">
                         {currentStep.eventType === 'self_initiation' ? 'SELF INITIATION' : 'PILOT ACTION REQUIRED'}
                       </span>
                     </div>
                   </div>
                 ) : (
                   // Communication step - someone is transmitting
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="flex items-center gap-2 px-3 py-1 bg-orange-500/10 rounded-full">
-                      <Radio className="h-4 w-4 text-orange-600" />
-                      <span className="text-sm font-semibold text-orange-900 dark:text-orange-100">
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                    <div className="flex items-center gap-2 px-2 sm:px-3 py-1 bg-orange-500/10 rounded-full">
+                      <Radio className="h-3 sm:h-4 w-3 sm:w-4 text-orange-600" />
+                      <span className="text-xs sm:text-sm font-semibold text-orange-900 dark:text-orange-100">
                         {currentStep.eventType.toUpperCase()}
                       </span>
                     </div>
                     {currentStep.actorRole && (
-                      <div className="flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full">
+                      <div className="flex items-center gap-2 px-2 sm:px-3 py-1 bg-primary/10 rounded-full">
                         {getActorIcon(currentStep.eventType, currentStep.actorRole)}
-                        <span className="text-sm font-semibold">
+                        <span className="text-xs sm:text-sm font-semibold">
                           {getActorName(currentStep.eventType, currentStep.actorRole)}
                         </span>
                       </div>
                     )}
-                    <span className="text-sm text-muted-foreground">is transmitting:</span>
+                    <span className="text-xs sm:text-sm text-muted-foreground">is transmitting:</span>
                   </div>
                 )}
-                <CardDescription>{currentStep.eventDescription}</CardDescription>
+                <CardDescription className="text-xs sm:text-sm">{currentStep.eventDescription}</CardDescription>
               </CardHeader>
               <CardContent>
                 {currentStep.eventMessage && (
-                  <div className="relative bg-muted rounded-lg p-4 mb-4">
-                    <div className="absolute -top-2 -left-2 bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center">
-                      <Radio className="h-4 w-4" />
+                  <div className="relative bg-muted rounded-lg p-3 sm:p-4 mb-3 sm:mb-4">
+                    <div className="absolute -top-2 -left-2 bg-primary text-primary-foreground rounded-full w-6 sm:w-8 h-6 sm:h-8 flex items-center justify-center">
+                      <Radio className="h-3 sm:h-4 w-3 sm:w-4" />
                     </div>
-                    <p className="font-medium italic text-lg">"{currentStep.eventMessage}"</p>
+                    <p className="font-medium italic text-sm sm:text-lg">"{currentStep.eventMessage}"</p>
                   </div>
                 )}
 
-                {/* Response Input */}
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="flex items-center gap-2 px-3 py-1 bg-blue-500/10 rounded-full">
-                        <User className="h-4 w-4 text-blue-600" />
-                        <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">You</span>
-                      </div>
-                      <span className="text-sm text-muted-foreground">
-                        {(currentStep.eventType === 'situation' || currentStep.eventType === 'self_initiation') ? 'initiate communication as' : 'respond as'}
-                      </span>
-                      <div className="flex items-center gap-2 px-3 py-1 bg-green-500/10 rounded-full">
-                        <Plane className="h-4 w-4 text-green-600" />
-                        <span className="text-sm font-semibold text-green-900 dark:text-green-100">
-                          {flightInfo?.callsign || 'Pilot'}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex gap-5">
-                      <Textarea
-                        value={userResponse}
-                        onChange={(e) => setUserResponse(e.target.value)}
-                        placeholder={(currentStep.eventType === 'situation' || currentStep.eventType === 'self_initiation')
-                          ? "Initiate your radio call using proper aviation phraseology..."
-                          : "Enter your response using proper aviation phraseology..."}
-                        className="min-h-[100px] flex-1"
-                        disabled={isRecording}
-                      />
-                      
-                      {/* Voice button as sibling */}
-                      {!isRecording ? (
-                        <Button
-                          size="icon"
-                          className="rounded-full w-[100px] h-[100px] shrink-0 bg-black hover:bg-gray-800 text-white"
-                          onClick={handleStartRecording}
-                          title="Start voice recording"
-                        >
-                          <Mic className="!h-8 !w-8" />
-                        </Button>
-                      ) : (
-                        <Button
-                          size="icon"
-                          className="rounded-full w-[100px] h-[100px] shrink-0 bg-red-600 hover:bg-red-700 text-white flex flex-col items-center justify-center gap-1"
-                          onClick={handleStopRecording}
-                          title="Stop recording"
-                        >
-                          <Square className="h-5 w-5" />
-                          <span className="text-xs font-medium">{formattedTime}</span>
-                        </Button>
-                      )}
-                    </div>
-                    
-                    {/* Show transcribing status only */}
-                    {isTranscribing && !isRecording && (
-                      <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                        <span>Transcribing...</span>
-                      </div>
-                    )}
-                    
-                    {recordingError && (
-                      <div className="text-sm text-destructive mt-2">{recordingError}</div>
-                    )}
+                {/* Show who you are responding as */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-2 px-2 sm:px-3 py-1 bg-blue-500/10 rounded-full">
+                    <User className="h-3 sm:h-4 w-3 sm:w-4 text-blue-600" />
+                    <span className="text-xs sm:text-sm font-semibold text-blue-900 dark:text-blue-100">You</span>
                   </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <Button
-                      variant="outline"
-                      onClick={() => setCurrentStepIndex(Math.max(0, currentStepIndex - 1))}
-                      disabled={currentStepIndex === 0}
-                    >
-                      <ArrowLeft className="h-4 w-4 mr-2" />
-                      Previous
-                    </Button>
-                    
-                    <Button
-                      onClick={handleSubmitResponse}
-                      disabled={!userResponse.trim() || isRecording || isTranscribing || isEvaluating}
-                    >
-                      {isEvaluating ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Evaluating...
-                        </>
-                      ) : currentStepIndex === scenario.steps.length - 1 ? (
-                        <>
-                          Complete
-                          <CheckCircle2 className="h-4 w-4 ml-2" />
-                        </>
-                      ) : (
-                        <>
-                          Next Step
-                          <ArrowRight className="h-4 w-4 ml-2" />
-                        </>
-                      )}
-                    </Button>
+                  <span className="text-xs sm:text-sm text-muted-foreground">
+                    {(currentStep.eventType === 'situation' || currentStep.eventType === 'self_initiation') ? 'initiate as' : 'respond as'}
+                  </span>
+                  <div className="flex items-center gap-2 px-2 sm:px-3 py-1 bg-green-500/10 rounded-full">
+                    <Plane className="h-3 sm:h-4 w-3 sm:w-4 text-green-600" />
+                    <span className="text-xs sm:text-sm font-semibold text-green-900 dark:text-green-100">
+                      {flightInfo?.callsign || 'Pilot'}
+                    </span>
                   </div>
                 </div>
               </CardContent>
             </Card>
           )}
-        </>
-      ) : (
+          </>
+          ) : (
         /* Completion Summary */
         <Card>
           <CardHeader>
@@ -668,18 +591,128 @@ export function JoniPracticeSession() {
             </div>
           </CardContent>
         </Card>
+          )}
+        </div>
+      </div>
+
+      {/* Fixed bottom toolbar - only show when not completed and have current step */}
+      {!isCompleted && currentStep && (
+        <div className="fixed bottom-0 left-0 right-0 bg-background border-t shadow-lg">
+          <div className="container mx-auto max-w-4xl p-3 sm:p-4">
+            {/* Show who you are responding as */}
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <div className="flex items-center gap-1 px-2 py-0.5 bg-blue-500/10 rounded-full">
+                <User className="h-3 w-3 text-blue-600" />
+                <span className="text-[11px] sm:text-xs font-semibold text-blue-900 dark:text-blue-100">You</span>
+              </div>
+              <span className="text-[11px] sm:text-xs text-muted-foreground">
+                {(currentStep.eventType === 'situation' || currentStep.eventType === 'self_initiation') ? 'initiate as' : 'respond as'}
+              </span>
+              <div className="flex items-center gap-1 px-2 py-0.5 bg-green-500/10 rounded-full">
+                <Plane className="h-3 w-3 text-green-600" />
+                <span className="text-[11px] sm:text-xs font-semibold text-green-900 dark:text-green-100">
+                  {flightInfo?.callsign || 'Pilot'}
+                </span>
+              </div>
+            </div>
+            
+            <div className="flex gap-3">
+              {/* Textarea */}
+              <div className="flex-1">
+                <Textarea
+                  value={userResponse}
+                  onChange={(e) => setUserResponse(e.target.value)}
+                  placeholder={(currentStep.eventType === 'situation' || currentStep.eventType === 'self_initiation')
+                    ? "Initiate your radio call..."
+                    : "Enter your response..."}
+                  className="min-h-[60px] sm:min-h-[80px] text-sm sm:text-base resize-none"
+                  disabled={isRecording}
+                />
+                {recordingError && (
+                  <div className="text-xs text-destructive mt-1">{recordingError}</div>
+                )}
+              </div>
+
+              {/* Voice button */}
+              <div className="flex items-end">
+                {!isRecording ? (
+                  <Button
+                    size="icon"
+                    className="rounded-full w-[50px] sm:w-[60px] h-[50px] sm:h-[60px] bg-black hover:bg-gray-800 text-white"
+                    onClick={handleStartRecording}
+                    title="Start voice recording"
+                  >
+                    <Mic className="!h-5 sm:!h-6 !w-5 sm:!w-6" />
+                  </Button>
+                ) : (
+                  <Button
+                    size="icon"
+                    className="rounded-full w-[50px] sm:w-[60px] h-[50px] sm:h-[60px] bg-red-600 hover:bg-red-700 text-white flex flex-col items-center justify-center relative"
+                    onClick={handleStopRecording}
+                    title="Stop recording"
+                  >
+                    <Square className="h-3 sm:h-4 w-3 sm:w-4 relative bottom-1" />
+                    <span className="text-[10px] sm:text-xs font-medium absolute bottom-1">{formattedTime}</span>
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Navigation buttons */}
+            <div className="flex gap-2 mt-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentStepIndex(Math.max(0, currentStepIndex - 1))}
+                disabled={currentStepIndex === 0}
+                className="flex-1"
+              >
+                <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Previous</span>
+                <span className="sm:hidden">Prev</span>
+              </Button>
+              
+              <Button
+                size="sm"
+                onClick={handleSubmitResponse}
+                disabled={!userResponse.trim() || isRecording || isTranscribing || isEvaluating}
+                className="flex-1"
+              >
+                {isEvaluating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-1 sm:mr-2 animate-spin" />
+                    <span className="hidden sm:inline">Evaluating...</span>
+                    <span className="sm:hidden">...</span>
+                  </>
+                ) : currentStepIndex === scenario.steps.length - 1 ? (
+                  <>
+                    <span className="hidden sm:inline">Complete</span>
+                    <span className="sm:hidden">Done</span>
+                    <CheckCircle2 className="h-4 w-4 ml-1 sm:ml-2" />
+                  </>
+                ) : (
+                  <>
+                    <span className="hidden sm:inline">Next Step</span>
+                    <span className="sm:hidden">Next</span>
+                    <ArrowRight className="h-4 w-4 ml-1 sm:ml-2" />
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Response Analysis Drawer */}
       <Drawer open={isAnalysisOpen} onOpenChange={setIsAnalysisOpen}>
-        <DrawerContent className="max-h-[85vh]">
-          <DrawerHeader>
-            <DrawerTitle>Response Analysis</DrawerTitle>
-            <DrawerDescription>
+        <DrawerContent className="max-h-[90vh] sm:max-h-[85vh]">
+          <DrawerHeader className="px-4">
+            <DrawerTitle className="text-base sm:text-lg">Response Analysis</DrawerTitle>
+            <DrawerDescription className="text-xs sm:text-sm">
               Review your response and feedback before continuing
             </DrawerDescription>
           </DrawerHeader>
-          <div className="p-4 overflow-y-auto max-h-[calc(85vh-200px)]">
+          <div className="px-4 pb-4 overflow-y-auto max-h-[calc(90vh-180px)] sm:max-h-[calc(85vh-200px)]">
             {currentAnalysis && currentStep && (
               <ScenarioResponseAnalysis
                 analysis={currentAnalysis}
@@ -688,12 +721,12 @@ export function JoniPracticeSession() {
               />
             )}
           </div>
-          <DrawerFooter>
-            <Button onClick={handleContinueAfterAnalysis}>
+          <DrawerFooter className="gap-2 sm:gap-3 px-4">
+            <Button onClick={handleContinueAfterAnalysis} className="w-full sm:w-auto">
               {currentStepIndex === (scenario?.steps.length ?? 0) - 1 ? 'Complete' : 'Continue to Next Step'}
             </Button>
             <DrawerClose asChild>
-              <Button variant="outline">Review Again</Button>
+              <Button variant="outline" className="w-full sm:w-auto">Review Again</Button>
             </DrawerClose>
           </DrawerFooter>
         </DrawerContent>

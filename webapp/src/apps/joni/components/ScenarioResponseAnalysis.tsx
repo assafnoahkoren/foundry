@@ -41,11 +41,11 @@ export function ScenarioResponseAnalysis({
   const getItemIcon = (type: 'correct' | 'wrong' | 'warning') => {
     switch (type) {
       case 'correct':
-        return <CheckCircle2 className="h-5 w-5 text-green-600" />;
+        return <CheckCircle2 className="h-4 sm:h-5 w-4 sm:w-5 text-green-600" />;
       case 'wrong':
-        return <XCircle className="h-5 w-5 text-red-600" />;
+        return <XCircle className="h-4 sm:h-5 w-4 sm:w-5 text-red-600" />;
       case 'warning':
-        return <AlertTriangle className="h-5 w-5 text-yellow-600" />;
+        return <AlertTriangle className="h-4 sm:h-5 w-4 sm:w-5 text-yellow-600" />;
     }
   };
 
@@ -64,14 +64,14 @@ export function ScenarioResponseAnalysis({
     <div className="space-y-6">
       {/* Score Summary */}
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">Overall Performance</CardTitle>
+            <CardTitle className="text-base sm:text-lg">Overall Performance</CardTitle>
             <div className="text-right">
-              <div className={`text-3xl font-bold ${getScoreColor(analysis.score)}`}>
+              <div className={`text-2xl sm:text-3xl font-bold ${getScoreColor(analysis.score)}`}>
                 {analysis.score}/10
               </div>
-              <p className={`text-sm ${getScoreColor(analysis.score)}`}>
+              <p className={`text-xs sm:text-sm ${getScoreColor(analysis.score)}`}>
                 {getScoreLabel(analysis.score)}
               </p>
             </div>
@@ -82,7 +82,7 @@ export function ScenarioResponseAnalysis({
             value={analysis.score * 10} 
             className="h-3"
           />
-          <p className="mt-3 text-sm text-muted-foreground">
+          <p className="mt-3 text-xs sm:text-sm text-muted-foreground">
             {analysis.feedback}
           </p>
         </CardContent>
@@ -91,23 +91,23 @@ export function ScenarioResponseAnalysis({
       {/* Your Response */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Plane className="h-4 w-4" />
+          <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+            <Plane className="h-3 sm:h-4 w-3 sm:w-4" />
             Your Response
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="bg-muted rounded-lg p-3">
-            <p className="text-sm font-medium italic">"{userResponse}"</p>
+          <div className="bg-muted rounded-lg p-2 sm:p-3">
+            <p className="text-xs sm:text-sm font-medium italic">"{userResponse}"</p>
           </div>
         </CardContent>
       </Card>
 
       {/* Detailed Feedback */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Detailed Feedback</CardTitle>
-          <CardDescription>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm sm:text-base">Detailed Feedback</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">
             {analysis.items.filter(i => i.type === 'correct').length} correct • 
             {' '}{analysis.items.filter(i => i.type === 'warning').length} warnings • 
             {' '}{analysis.items.filter(i => i.type === 'wrong').length} errors
@@ -126,8 +126,8 @@ export function ScenarioResponseAnalysis({
                       {getItemIcon(item.type)}
                     </div>
                     <div className="flex-1 space-y-1">
-                      <h4 className="font-medium text-sm">{item.title}</h4>
-                      <p className="text-sm text-muted-foreground">
+                      <h4 className="font-medium text-xs sm:text-sm">{item.title}</h4>
+                      <p className="text-xs sm:text-sm text-muted-foreground">
                         {item.description}
                       </p>
                     </div>
@@ -144,16 +144,16 @@ export function ScenarioResponseAnalysis({
         analysis.incorrectComponents.length > 0 || 
         analysis.extraComponents.length > 0) && (
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Info className="h-4 w-4" />
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+              <Info className="h-3 sm:h-4 w-3 sm:w-4" />
               Component Analysis
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {analysis.missingComponents.length > 0 && (
               <div>
-                <p className="text-sm font-medium text-red-600 mb-2">
+                <p className="text-xs sm:text-sm font-medium text-red-600 mb-2">
                   Missing Required Components:
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -168,7 +168,7 @@ export function ScenarioResponseAnalysis({
 
             {analysis.incorrectComponents.length > 0 && (
               <div>
-                <p className="text-sm font-medium text-orange-600 mb-2">
+                <p className="text-xs sm:text-sm font-medium text-orange-600 mb-2">
                   Incorrect Component Values:
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -183,7 +183,7 @@ export function ScenarioResponseAnalysis({
 
             {analysis.extraComponents.length > 0 && (
               <div>
-                <p className="text-sm font-medium text-yellow-600 mb-2">
+                <p className="text-xs sm:text-sm font-medium text-yellow-600 mb-2">
                   Extra Components (Not Required):
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -203,14 +203,14 @@ export function ScenarioResponseAnalysis({
       {correctExample && (
         <Card className="border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-950/20">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2 text-green-900 dark:text-green-100">
-              <Radio className="h-4 w-4" />
+            <CardTitle className="text-sm sm:text-base flex items-center gap-2 text-green-900 dark:text-green-100">
+              <Radio className="h-3 sm:h-4 w-3 sm:w-4" />
               Example of Correct Response
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="bg-white dark:bg-gray-900 rounded-lg p-3 border border-green-200 dark:border-green-800">
-              <p className="text-sm font-medium italic text-green-900 dark:text-green-100">
+            <div className="bg-white dark:bg-gray-900 rounded-lg p-2 sm:p-3 border border-green-200 dark:border-green-800">
+              <p className="text-xs sm:text-sm font-medium italic text-green-900 dark:text-green-100">
                 "{correctExample}"
               </p>
             </div>
