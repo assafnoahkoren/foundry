@@ -41,10 +41,50 @@ const createScenarioSchema = z.object({
   shortDescription: z.string().max(150).optional(),
   subjectId: z.string(),
   groupId: z.string(),
-  orderInGroup: z.number().int().min(0),
-  flightInformation: z.string().min(1),
-  expectedAnswer: z.string().min(1),
-  currentStatus: z.string().min(1)
+  scenarioType: z.enum(['standard', 'emergency', 'crm', 'technical', 'weather', 'medical', 'security']).default('standard'),
+  difficulty: z.enum(['beginner', 'intermediate', 'advanced']).default('intermediate'),
+  estimatedMinutes: z.number().int().min(1).max(120).default(15),
+  initialContext: z.string().optional(),
+  flightInformationJson: z.object({
+    aircraft: z.object({
+      type: z.string(),
+      registration: z.string().optional(),
+      weightCategory: z.enum(['LIGHT', 'MEDIUM', 'HEAVY', 'SUPER']).default('MEDIUM')
+    }),
+    callsign: z.string(),
+    route: z.object({
+      departure: z.string().optional(),
+      destination: z.string().optional(),
+      alternate: z.string().optional(),
+      flightRules: z.enum(['IFR', 'VFR', 'Y', 'Z']).optional(),
+      cruiseAltitude: z.string().optional()
+    }).optional(),
+    currentPosition: z.object({
+      phase: z.enum(['ground', 'taxi', 'takeoff', 'climb', 'cruise', 'descent', 'approach', 'landing', 'go_around']),
+      location: z.string().optional(),
+      altitude: z.string().optional(),
+      heading: z.number().int().min(0).max(360).optional(),
+      speed: z.string().optional()
+    }).optional(),
+    weather: z.object({
+      conditions: z.string().optional(),
+      wind: z.string().optional(),
+      visibility: z.string().optional(),
+      qnh: z.string().optional()
+    }).optional(),
+    fuel: z.object({
+      fob: z.string().optional(),
+      endurance: z.string().optional()
+    }).optional(),
+    passengers: z.object({
+      pob: z.number().int().optional(),
+      specialRequirements: z.string().optional()
+    }).optional()
+  }),
+  // Legacy fields - kept for backward compatibility but will be auto-generated
+  flightInformation: z.string().optional(),
+  expectedAnswer: z.string().optional(),
+  currentStatus: z.string().optional()
 });
 
 const updateScenarioSchema = z.object({
@@ -54,11 +94,98 @@ const updateScenarioSchema = z.object({
     shortDescription: z.string().max(150).optional(),
     subjectId: z.string().optional(),
     groupId: z.string().optional(),
-    orderInGroup: z.number().int().min(0).optional(),
-    flightInformation: z.string().min(1).optional(),
-    expectedAnswer: z.string().min(1).optional(),
-    currentStatus: z.string().min(1).optional()
+    scenarioType: z.enum(['standard', 'emergency', 'crm', 'technical', 'weather', 'medical', 'security']).optional(),
+    difficulty: z.enum(['beginner', 'intermediate', 'advanced']).optional(),
+    estimatedMinutes: z.number().int().min(1).max(120).optional(),
+    initialContext: z.string().optional(),
+    flightInformationJson: z.object({
+      aircraft: z.object({
+        type: z.string(),
+        registration: z.string().optional(),
+        weightCategory: z.enum(['LIGHT', 'MEDIUM', 'HEAVY', 'SUPER']).default('MEDIUM')
+      }),
+      callsign: z.string(),
+      route: z.object({
+        departure: z.string().optional(),
+        destination: z.string().optional(),
+        alternate: z.string().optional(),
+        flightRules: z.enum(['IFR', 'VFR', 'Y', 'Z']).optional(),
+        cruiseAltitude: z.string().optional()
+      }).optional(),
+      currentPosition: z.object({
+        phase: z.enum(['ground', 'taxi', 'takeoff', 'climb', 'cruise', 'descent', 'approach', 'landing', 'go_around']),
+        location: z.string().optional(),
+        altitude: z.string().optional(),
+        heading: z.number().int().min(0).max(360).optional(),
+        speed: z.string().optional()
+      }).optional(),
+      weather: z.object({
+        conditions: z.string().optional(),
+        wind: z.string().optional(),
+        visibility: z.string().optional(),
+        qnh: z.string().optional()
+      }).optional(),
+      fuel: z.object({
+        fob: z.string().optional(),
+        endurance: z.string().optional()
+      }).optional(),
+      passengers: z.object({
+        pob: z.number().int().optional(),
+        specialRequirements: z.string().optional()
+      }).optional()
+    }).optional(),
+    // Legacy fields
+    flightInformation: z.string().optional(),
+    expectedAnswer: z.string().optional(),
+    currentStatus: z.string().optional()
   })
+});
+
+// Scenario Step schemas
+const createScenarioStepSchema = z.object({
+  scenarioId: z.string(),
+  stepOrder: z.number().int().min(1),
+  eventType: z.enum(['atc', 'crew', 'cockpit', 'emergency', 'technical', 'weather', 'company', 'passenger']),
+  actorRole: z.enum([
+    'clearance_delivery', 'ground', 'tower', 'departure', 'center', 'approach', 'ramp',
+    'flight_attendant', 'purser', 'copilot', 'relief_pilot', 'maintenance', 'dispatch', 'doctor_onboard'
+  ]).optional(),
+  eventDescription: z.string().min(1),
+  eventMessage: z.string().optional(),
+  expectedComponents: z.array(z.object({
+    component: z.string(),
+    required: z.boolean().default(true)
+  })).default([]),
+  correctResponseExample: z.string().optional(),
+  nextStepCondition: z.string().optional()
+});
+
+const updateScenarioStepSchema = z.object({
+  id: z.string(),
+  data: z.object({
+    stepOrder: z.number().int().min(1).optional(),
+    eventType: z.enum(['atc', 'crew', 'cockpit', 'emergency', 'technical', 'weather', 'company', 'passenger']).optional(),
+    actorRole: z.enum([
+      'clearance_delivery', 'ground', 'tower', 'departure', 'center', 'approach', 'ramp',
+      'flight_attendant', 'purser', 'copilot', 'relief_pilot', 'maintenance', 'dispatch', 'doctor_onboard'
+    ]).optional().nullable(),
+    eventDescription: z.string().min(1).optional(),
+    eventMessage: z.string().optional(),
+    expectedComponents: z.array(z.object({
+      component: z.string(),
+      required: z.boolean().default(true)
+    })).optional(),
+    correctResponseExample: z.string().optional(),
+    nextStepCondition: z.string().optional().nullable()
+  })
+});
+
+const bulkUpdateStepOrderSchema = z.object({
+  scenarioId: z.string(),
+  steps: z.array(z.object({
+    id: z.string(),
+    stepOrder: z.number().int().min(1)
+  }))
 });
 
 export const joniScenarioRouter = router({
@@ -153,15 +280,35 @@ export const joniScenarioRouter = router({
     .input(createScenarioSchema)
     .mutation(async ({ input }) => {
       try {
+        // Generate legacy fields from structured data if not provided
+        const flightInfo = input.flightInformationJson;
+        const legacyFlightInfo = input.flightInformation || 
+          `Aircraft: ${flightInfo.aircraft.type} (${flightInfo.aircraft.weightCategory})
+Callsign: ${flightInfo.callsign}
+${flightInfo.route ? `Route: ${flightInfo.route.departure || 'N/A'} to ${flightInfo.route.destination || 'N/A'}` : ''}
+${flightInfo.currentPosition ? `Current Position: ${flightInfo.currentPosition.phase.replace('_', ' ')} phase${flightInfo.currentPosition.location ? ` at ${flightInfo.currentPosition.location}` : ''}` : ''}
+${flightInfo.weather ? `Weather: ${flightInfo.weather.conditions || 'Not specified'}` : ''}`;
+
+        const legacyCurrentStatus = input.currentStatus || input.initialContext || 
+          `${input.scenarioType === 'emergency' ? 'Emergency scenario' : 'Training scenario'} - ${input.difficulty} level`;
+        
+        const legacyExpectedAnswer = input.expectedAnswer || 
+          'Pilot should respond appropriately according to the scenario steps';
+
         return await joniScenarioService.createScenario({
           name: input.name,
           shortDescription: input.shortDescription,
           subjectId: input.subjectId,
           groupId: input.groupId,
-          orderInGroup: input.orderInGroup,
-          flightInformation: input.flightInformation,
-          expectedAnswer: input.expectedAnswer,
-          currentStatus: input.currentStatus
+          scenarioType: input.scenarioType,
+          difficulty: input.difficulty,
+          estimatedMinutes: input.estimatedMinutes,
+          initialContext: input.initialContext,
+          flightInformationJson: input.flightInformationJson,
+          // Legacy fields for backward compatibility
+          flightInformation: legacyFlightInfo,
+          expectedAnswer: legacyExpectedAnswer,
+          currentStatus: legacyCurrentStatus
         });
       } catch (error: any) {
         if (error.code === 'P2003') {
@@ -261,6 +408,135 @@ export const joniScenarioRouter = router({
           code: 'INTERNAL_SERVER_ERROR',
           message: error.message || 'Failed to generate description'
         });
+      }
+    }),
+
+  // ===== SCENARIO STEPS =====
+
+  createScenarioStep: requireBackofficeScenario
+    .input(createScenarioStepSchema)
+    .mutation(async ({ input }) => {
+      try {
+        return await joniScenarioService.createScenarioStep(input);
+      } catch (error: any) {
+        if (error.code === 'P2003') {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Scenario not found'
+          });
+        }
+        throw error;
+      }
+    }),
+
+  getScenarioSteps: requireBackofficeScenario
+    .input(z.string())
+    .query(async ({ input }) => {
+      return joniScenarioService.getScenarioSteps(input);
+    }),
+
+  updateScenarioStep: requireBackofficeScenario
+    .input(updateScenarioStepSchema)
+    .mutation(async ({ input }) => {
+      try {
+        return await joniScenarioService.updateScenarioStep(input.id, input.data);
+      } catch (error: any) {
+        if (error.code === 'P2025') {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Step not found'
+          });
+        }
+        throw error;
+      }
+    }),
+
+  deleteScenarioStep: requireBackofficeScenario
+    .input(z.string())
+    .mutation(async ({ input }) => {
+      try {
+        await joniScenarioService.deleteScenarioStep(input);
+        return { success: true };
+      } catch (error: any) {
+        if (error.code === 'P2025') {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Step not found'
+          });
+        }
+        throw error;
+      }
+    }),
+
+  bulkUpdateStepOrder: requireBackofficeScenario
+    .input(bulkUpdateStepOrderSchema)
+    .mutation(async ({ input }) => {
+      try {
+        return await joniScenarioService.bulkUpdateStepOrder(input.scenarioId, input.steps);
+      } catch (error: any) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: error.message || 'Failed to update step order'
+        });
+      }
+    }),
+
+  // Create all steps for a scenario at once
+  createScenarioWithSteps: requireBackofficeScenario
+    .input(z.object({
+      scenario: createScenarioSchema,
+      steps: z.array(z.object({
+        stepOrder: z.number().int().min(1),
+        eventType: z.enum(['atc', 'crew', 'cockpit', 'emergency', 'technical', 'weather', 'company', 'passenger']),
+        actorRole: z.enum([
+          'clearance_delivery', 'ground', 'tower', 'departure', 'center', 'approach', 'ramp',
+          'flight_attendant', 'purser', 'copilot', 'relief_pilot', 'maintenance', 'dispatch', 'doctor_onboard'
+        ]).optional(),
+        eventDescription: z.string().min(1),
+        eventMessage: z.string().optional(),
+        expectedComponents: z.array(z.object({
+          component: z.string(),
+          required: z.boolean().default(true)
+        })).default([]),
+        correctResponseExample: z.string().optional(),
+        nextStepCondition: z.string().optional()
+      }))
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        // Generate legacy fields
+        const flightInfo = input.scenario.flightInformationJson;
+        const legacyFlightInfo = input.scenario.flightInformation || 
+          `Aircraft: ${flightInfo.aircraft.type} (${flightInfo.aircraft.weightCategory})
+Callsign: ${flightInfo.callsign}
+${flightInfo.route ? `Route: ${flightInfo.route.departure || 'N/A'} to ${flightInfo.route.destination || 'N/A'}` : ''}
+${flightInfo.currentPosition ? `Current Position: ${flightInfo.currentPosition.phase.replace('_', ' ')} phase${flightInfo.currentPosition.location ? ` at ${flightInfo.currentPosition.location}` : ''}` : ''}
+${flightInfo.weather ? `Weather: ${flightInfo.weather.conditions || 'Not specified'}` : ''}`;
+
+        const legacyCurrentStatus = input.scenario.currentStatus || input.scenario.initialContext || 
+          `${input.scenario.scenarioType === 'emergency' ? 'Emergency scenario' : 'Training scenario'} - ${input.scenario.difficulty} level`;
+        
+        const legacyExpectedAnswer = input.scenario.expectedAnswer || 
+          'Pilot should respond appropriately according to the scenario steps';
+
+        // Create scenario with steps
+        return await joniScenarioService.createScenarioWithSteps({
+          scenario: {
+            ...input.scenario,
+            flightInformation: legacyFlightInfo,
+            expectedAnswer: legacyExpectedAnswer,
+            currentStatus: legacyCurrentStatus
+          },
+          steps: input.steps
+        });
+      } catch (error: any) {
+        if (error.code === 'P2003') {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Subject not found'
+          });
+        }
+        throw error;
       }
     })
 });

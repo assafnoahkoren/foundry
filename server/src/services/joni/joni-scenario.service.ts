@@ -1,5 +1,5 @@
 import { prisma } from '../../lib/prisma';
-import type { JoniScenarioSubject, JoniScenario } from '@prisma/client';
+import type { JoniScenarioSubject, JoniScenario, JoniScenarioStep } from '@prisma/client';
 
 export class JoniScenarioService {
   // ===== SCENARIO SUBJECTS =====
@@ -57,7 +57,11 @@ export class JoniScenarioService {
     shortDescription?: string;
     subjectId: string;
     groupId: string;
-    orderInGroup: number;
+    scenarioType?: string;
+    difficulty?: string;
+    estimatedMinutes?: number;
+    initialContext?: string;
+    flightInformationJson?: any;
     flightInformation: string;
     expectedAnswer: string;
     currentStatus: string;
@@ -120,7 +124,11 @@ export class JoniScenarioService {
       shortDescription?: string;
       subjectId?: string;
       groupId?: string;
-      orderInGroup?: number;
+      scenarioType?: string;
+      difficulty?: string;
+      estimatedMinutes?: number;
+      initialContext?: string;
+      flightInformationJson?: any;
       flightInformation?: string;
       expectedAnswer?: string;
       currentStatus?: string;
@@ -164,6 +172,143 @@ export class JoniScenarioService {
       maxCorrectness: stats._max.correctness || 0,
       minCorrectness: stats._min.correctness || 0
     };
+  }
+
+  // ===== SCENARIO STEPS =====
+
+  async createScenarioStep(data: {
+    scenarioId: string;
+    stepOrder: number;
+    eventType: string;
+    actorRole?: string;
+    eventDescription: string;
+    eventMessage?: string;
+    expectedComponents?: any;
+    correctResponseExample?: string;
+    nextStepCondition?: string;
+  }): Promise<JoniScenarioStep> {
+    return prisma.joniScenarioStep.create({
+      data: {
+        scenarioId: data.scenarioId,
+        stepOrder: data.stepOrder,
+        eventType: data.eventType,
+        actorRole: data.actorRole || null,
+        eventDescription: data.eventDescription,
+        eventMessage: data.eventMessage || '',
+        expectedComponents: data.expectedComponents || [],
+        correctResponseExample: data.correctResponseExample || '',
+        nextStepCondition: data.nextStepCondition || null
+      }
+    });
+  }
+
+  async getScenarioSteps(scenarioId: string): Promise<JoniScenarioStep[]> {
+    return prisma.joniScenarioStep.findMany({
+      where: { scenarioId },
+      orderBy: { stepOrder: 'asc' }
+    });
+  }
+
+  async updateScenarioStep(
+    id: string,
+    data: {
+      stepOrder?: number;
+      eventType?: string;
+      actorRole?: string | null;
+      eventDescription?: string;
+      eventMessage?: string;
+      expectedComponents?: any;
+      correctResponseExample?: string;
+      nextStepCondition?: string | null;
+    }
+  ): Promise<JoniScenarioStep> {
+    const updateData: any = { ...data };
+    // expectedComponents is already in the correct format
+    return prisma.joniScenarioStep.update({
+      where: { id },
+      data: updateData
+    });
+  }
+
+  async deleteScenarioStep(id: string): Promise<void> {
+    await prisma.joniScenarioStep.delete({
+      where: { id }
+    });
+  }
+
+  async bulkUpdateStepOrder(
+    scenarioId: string,
+    steps: Array<{ id: string; stepOrder: number }>
+  ): Promise<void> {
+    // Use a transaction to update all steps at once
+    await prisma.$transaction(
+      steps.map(step =>
+        prisma.joniScenarioStep.update({
+          where: { id: step.id },
+          data: { stepOrder: step.stepOrder }
+        })
+      )
+    );
+  }
+
+  async createScenarioWithSteps(data: {
+    scenario: {
+      name: string;
+      shortDescription?: string;
+      subjectId: string;
+      groupId: string;
+      scenarioType?: string;
+      difficulty?: string;
+      estimatedMinutes?: number;
+      initialContext?: string;
+      flightInformationJson?: any;
+      flightInformation: string;
+      expectedAnswer: string;
+      currentStatus: string;
+    };
+    steps: Array<{
+      stepOrder: number;
+      eventType: string;
+      actorRole?: string;
+      eventDescription: string;
+      eventMessage?: string;
+      expectedComponents?: any;
+      correctResponseExample?: string;
+      nextStepCondition?: string;
+    }>;
+  }): Promise<JoniScenario & { subject: JoniScenarioSubject; steps: JoniScenarioStep[] }> {
+    // Create scenario and steps in a transaction
+    return prisma.$transaction(async (tx) => {
+      const scenario = await tx.joniScenario.create({
+        data: data.scenario,
+        include: {
+          subject: true
+        }
+      });
+
+      const steps = await Promise.all(
+        data.steps.map(step =>
+          tx.joniScenarioStep.create({
+            data: {
+              scenarioId: scenario.id,
+              stepOrder: step.stepOrder,
+              eventType: step.eventType,
+              actorRole: step.actorRole || null,
+              eventDescription: step.eventDescription,
+              eventMessage: step.eventMessage || '',
+              expectedComponents: step.expectedComponents || [],
+              correctResponseExample: step.correctResponseExample || '',
+              nextStepCondition: step.nextStepCondition || null
+            }
+          })
+        )
+      );
+
+      return {
+        ...scenario,
+        steps
+      };
+    });
   }
 }
 

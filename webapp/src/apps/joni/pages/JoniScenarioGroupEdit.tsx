@@ -332,14 +332,15 @@ export function JoniScenarioGroupEdit() {
 
       {/* Create Scenario Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" aria-describedby="create-scenario-description">
+        <DialogContent className="max-w-[calc(100vw-4rem)] w-[calc(100vw-4rem)] h-[80vh] overflow-hidden flex flex-col" aria-describedby="create-scenario-description">
           <VisuallyHidden>
             <DialogTitle>Create New Scenario</DialogTitle>
           </VisuallyHidden>
           <div id="create-scenario-description" className="sr-only">
             Form to create a new scenario in the current group
           </div>
-          <ScenarioForm
+          <div className="flex-1 overflow-y-auto scrollbar-hide">
+            <ScenarioForm
             subjectId={group.subject.id}
             groupId={group.id}
             orderInGroup={group.scenarios.length}
@@ -347,21 +348,23 @@ export function JoniScenarioGroupEdit() {
               setShowCreateDialog(false);
               utils.joniScenarioGroup.getGroupById.invalidate(groupId);
             }}
-            onCancel={() => setShowCreateDialog(false)}
-          />
+              onCancel={() => setShowCreateDialog(false)}
+            />
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Edit Scenario Dialog */}
       <Dialog open={!!editingScenarioId} onOpenChange={(open) => !open && setEditingScenarioId(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" aria-describedby="edit-scenario-description">
+        <DialogContent className="max-w-[calc(100vw-4rem)] w-[calc(100vw-4rem)] h-[80vh] overflow-hidden flex flex-col" aria-describedby="edit-scenario-description">
           <VisuallyHidden>
             <DialogTitle>Edit Scenario</DialogTitle>
           </VisuallyHidden>
           <div id="edit-scenario-description" className="sr-only">
             Form to edit an existing scenario
           </div>
-          {editingScenarioId && (
+          <div className="flex-1 overflow-y-auto scrollbar-hide">
+            {editingScenarioId && (
             <ScenarioForm
               scenarioId={editingScenarioId}
               onSuccess={() => {
@@ -369,8 +372,9 @@ export function JoniScenarioGroupEdit() {
                 utils.joniScenarioGroup.getGroupById.invalidate(groupId);
               }}
               onCancel={() => setEditingScenarioId(null)}
-            />
-          )}
+              />
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 
