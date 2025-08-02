@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { useUserAccess } from '@/hooks/useUserAccess';
 import { cn } from '@/lib/utils';
-import { Home, Tags, Folder } from 'lucide-react';
+import { Home, Tags, Folder, GraduationCap } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 interface JoniSidebarProps {
@@ -14,11 +14,13 @@ export function JoniSidebar({ isOpen }: JoniSidebarProps) {
   const { hasSubFeatureAccess } = useUserAccess();
 
   const hasScenarioAccess = hasSubFeatureAccess('backoffice', 'backoffice-scenario');
+  const hasPracticeAccess = hasSubFeatureAccess('joni', 'joni-scenario-practice');
 
   const navigationItems = [
     { path: '/joni', label: 'Dashboard', icon: Home, requiresAccess: false },
     { path: '/joni/groups', label: 'Groups Management', icon: Folder, requiresAccess: true, show: hasScenarioAccess },
     { path: '/joni/subjects', label: 'Subjects Management', icon: Tags, requiresAccess: true, show: hasScenarioAccess },
+    { path: '/joni/practice', label: 'Practice', icon: GraduationCap, requiresAccess: true, show: hasPracticeAccess },
   ].filter(item => !item.requiresAccess || item.show);
 
   return (
