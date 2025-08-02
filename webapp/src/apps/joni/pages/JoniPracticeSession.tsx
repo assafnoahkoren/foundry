@@ -370,7 +370,7 @@ export function JoniPracticeSession() {
       </div>
 
       {/* Main content area with scroll */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto pb-[220px] sm:pb-[200px]">
         <div className="container mx-auto p-4 sm:p-6 max-w-4xl">
           {/* Flight Information Panel */}
           {flightInfo && (
