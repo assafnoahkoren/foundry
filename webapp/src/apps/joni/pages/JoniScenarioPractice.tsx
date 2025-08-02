@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { trpc } from '@/utils/trpc';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, PlayCircle, BookOpen, Trophy, Clock, Target } from 'lucide-react';
+import { Loader2, PlayCircle, Trophy, Clock, Target, Plane } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -15,20 +15,19 @@ export function JoniScenarioPractice() {
   // Queries
   const { data: subjects, isLoading: subjectsLoading } = trpc.joniScenario.getAllSubjects.useQuery();
   
-  const { data: groups, isLoading: groupsLoading } = trpc.joniScenarioGroup.getGroupsBySubject.useQuery(
+  const { data: groups } = trpc.joniScenarioGroup.getGroupsBySubject.useQuery(
     { subjectId: selectedSubject },
     { enabled: !!selectedSubject }
   );
 
-  const { data: scenarios, isLoading: scenariosLoading } = trpc.joniScenario.getAllScenarios.useQuery(
-    { subjectId: selectedSubject },
-    { enabled: !!selectedSubject }
-  );
+  const { data: scenarios, isLoading: scenariosLoading } = trpc.joniScenario.getAllScenarios.useQuery({});
 
-  // Filter scenarios by group if selected
-  const filteredScenarios = scenarios?.filter(
-    scenario => !selectedGroup || selectedGroup === 'all' || scenario.groupId === selectedGroup
-  ) || [];
+  // Filter scenarios by subject and group if selected
+  const filteredScenarios = scenarios?.filter(scenario => {
+    const matchesSubject = !selectedSubject || selectedSubject === 'all' || scenario.subjectId === selectedSubject;
+    const matchesGroup = !selectedGroup || selectedGroup === 'all' || scenario.groupId === selectedGroup;
+    return matchesSubject && matchesGroup;
+  }) || [];
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -70,9 +69,10 @@ export function JoniScenarioPractice() {
       <div className="mb-6 flex flex-col sm:flex-row gap-4">
         <Select value={selectedSubject} onValueChange={setSelectedSubject}>
           <SelectTrigger className="w-full sm:w-[250px]">
-            <SelectValue placeholder="Select a subject" />
+            <SelectValue placeholder="All subjects" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="all">All subjects</SelectItem>
             {subjects?.map((subject) => (
               <SelectItem key={subject.id} value={subject.id}>
                 {subject.name}
@@ -99,16 +99,7 @@ export function JoniScenarioPractice() {
       </div>
 
       {/* Scenarios Grid */}
-      {!selectedSubject ? (
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground text-center">
-              Select a subject to view available practice scenarios
-            </p>
-          </CardContent>
-        </Card>
-      ) : scenariosLoading || groupsLoading ? (
+      {scenariosLoading ? (
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin" />
         </div>
@@ -148,6 +139,12 @@ export function JoniScenarioPractice() {
                     <Clock className="h-3 w-3" />
                     {scenario.estimatedMinutes} min
                   </Badge>
+                  {scenario.subject && (
+                    <Badge variant="secondary" className="gap-1">
+                      <Plane className="h-3 w-3" />
+                      {scenario.subject.name}
+                    </Badge>
+                  )}
                   {scenario.group && (
                     <Badge variant="secondary">
                       {scenario.group.name}
