@@ -33,14 +33,16 @@ export interface FlightInformation {
 }
 
 export type EventType = 
-  | "atc"           // ATC communication
-  | "crew"          // Cabin crew interaction
-  | "cockpit"       // Co-pilot or other cockpit crew
-  | "emergency"     // Emergency situation
-  | "technical"     // Technical issue
-  | "weather"       // Weather-related event
-  | "company"       // Company/dispatch communication
-  | "passenger";    // Passenger-related issue
+  | "atc"             // ATC communication
+  | "crew"            // Cabin crew interaction
+  | "cockpit"         // Co-pilot or other cockpit crew
+  | "situation"       // Pilot-initiated action or situation requiring pilot action
+  | "self_initiation" // Pilot self-initiated communication
+  | "emergency"       // Emergency situation
+  | "technical"       // Technical issue
+  | "weather"         // Weather-related event
+  | "company"         // Company/dispatch communication
+  | "passenger";      // Passenger-related issue
 
 export type ActorRole = 
   // ATC roles

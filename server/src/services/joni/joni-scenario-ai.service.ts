@@ -124,10 +124,10 @@ Given a description, generate a complete training scenario with multiple steps f
   },
   "steps": [
     {
-      "eventType": "One of: atc, crew, cockpit, emergency, technical, weather, company, passenger",
-      "actorRole": "For atc: clearance_delivery, ground, tower, departure, center, approach, ramp; For crew: flight_attendant, purser; For cockpit: copilot, relief_pilot; For technical: maintenance; For company: dispatch; For passenger: doctor_onboard",
-      "eventDescription": "What happens in this step",
-      "eventMessage": "The actual radio call or message (optional)",
+      "eventType": "One of: atc, crew, cockpit, situation, self_initiation, emergency, technical, weather, company, passenger",
+      "actorRole": "For atc: clearance_delivery, ground, tower, departure, center, approach, ramp; For crew: flight_attendant, purser; For cockpit: copilot, relief_pilot; For technical: maintenance; For company: dispatch; For passenger: doctor_onboard; For situation/self_initiation: leave null",
+      "eventDescription": "What happens in this step (for situation/self_initiation: describe what the pilot needs to do)",
+      "eventMessage": "The actual radio call or message (REQUIRED for atc, crew, cockpit, emergency, technical, weather, company, passenger. MUST be empty for situation/self_initiation)",
       "expectedComponents": [
         {
           "component": "Component name (see ICAO components list below)",
@@ -204,21 +204,59 @@ Scenario Description: ${description}
 
 Important Guidelines:
 1. Generate 3-7 realistic scenario steps that build a coherent training exercise
-2. Follow ICAO standard phraseology EXACTLY - use capitals for emphasized words
-3. For each step, choose 2-5 relevant expectedComponents from the list above
-4. Include specific VALUES for components when they should match exactly:
+2. CRITICAL STEP STRUCTURE:
+   - Each step represents ONE complete exchange (incoming message + pilot response)
+   - For communication steps: eventMessage = what the actor says TO the pilot, correctResponseExample = what the pilot should respond
+   - For self_initiation steps: eventMessage = empty, correctResponseExample = what the pilot initiates
+   - DO NOT create separate steps for actor message and pilot response - they belong in ONE step
+3. ANALYZE THE SCENARIO DESCRIPTION CAREFULLY:
+   - If the scenario shows the pilot speaking first (e.g., "Pilot: 'Tel Aviv Clearance...'"), the FIRST step MUST be a self_initiation step
+   - Look for phrases like "First contact" or pilot-initiated requests in the description
+4. Include "situation" or "self_initiation" type steps where the pilot must initiate communication:
+   - First contact for clearance requests (VERY COMMON - pilot always initiates)
+   - Ready for pushback/start/taxi
+   - Request for takeoff
+   - Position reports
+   - Request for descent/approach
+   - Any pilot-initiated requests
+5. For "situation" or "self_initiation" steps:
+   - Set eventType to "self_initiation" (preferred) or "situation"
+   - Set actorRole to null
+   - Leave eventMessage empty (CRITICAL: no message for pilot-initiated steps)
+   - eventDescription should explain what the pilot needs to do
+   - correctResponseExample should show the pilot's radio call
+6. For ALL OTHER event types (atc, crew, cockpit, emergency, etc.):
+   - eventMessage is REQUIRED - must contain the actual transmission/dialogue
+   - Example for ATC: "EL AL 321 Heavy, cleared to London Heathrow via PURLA 1A departure..."
+   - Example for crew: "Captain, we have a medical emergency in row 23"
+   - The eventMessage is what the actor says TO the pilot
+   - correctResponseExample is ALWAYS what the pilot responds
+7. EXAMPLE OF CORRECT STEP STRUCTURE:
+   Step 1 (self_initiation): 
+     - eventMessage: "" 
+     - correctResponseExample: "Tel Aviv Clearance, EL AL 321 Heavy, stand B4, request IFR clearance to London Heathrow"
+   Step 2 (atc): 
+     - eventMessage: "EL AL 321 Heavy, cleared to London Heathrow via PURLA 1A..."
+     - correctResponseExample: "Cleared to London Heathrow via PURLA 1A, climb 6000 feet..."
+8. Follow ICAO standard phraseology EXACTLY - use capitals for emphasized words
+9. For each step, choose 2-5 relevant expectedComponents from the list above
+10. Include specific VALUES for components when they should match exactly:
    - For callsign: include the exact callsign (e.g., "BAW123")
    - For altitude/flight_level: include the exact level (e.g., "FL350" or "5000")
    - For heading: include the exact heading (e.g., "090")
    - For frequency: include the exact frequency (e.g., "121.5")
    - For squawk: include the exact code (e.g., "1234")
    - Leave value empty for generic acknowledgments (roger, wilco, affirm)
-5. Mark components as required:true if they are mandatory per ICAO rules
-6. Include standard words like ROGER, WILCO, AFFIRM, NEGATIVE appropriately
-7. Use phonetic alphabet for letters (ALFA, BRAVO, etc.)
-8. Pronounce numbers individually (TWO THREE ZERO, not two-thirty)
-9. For emergency scenarios, include progressive complications
-10. Ensure correctResponseExample follows exact ICAO format and includes all expected values
+11. Mark components as required:true if they are mandatory per ICAO rules
+12. Include standard words like ROGER, WILCO, AFFIRM, NEGATIVE appropriately
+13. Use phonetic alphabet for letters (ALFA, BRAVO, etc.)
+14. Pronounce numbers individually (TWO THREE ZERO, not two-thirty)
+15. For emergency scenarios, include progressive complications
+16. Ensure correctResponseExample follows exact ICAO format and includes all expected values
+17. Mix communication steps (someone speaks to pilot) with situation steps (pilot initiates)
+18. REMEMBER: IFR clearance requests are ALWAYS pilot-initiated (self_initiation)
+19. CRITICAL: Every non-self_initiation/situation step MUST have an eventMessage with the actual dialogue
+20. DO NOT create separate steps for what the pilot says - the pilot's response is ALWAYS in correctResponseExample
 
 CRITICAL: Return ONLY valid JSON without any markdown formatting, code blocks, or additional text.
 The response must start with { and end with } and be valid, parseable JSON.`;
@@ -323,7 +361,7 @@ The response must start with { and end with } and be valid, parseable JSON.`;
     }
     
     // Validate each step
-    const validEventTypes = ['atc', 'crew', 'cockpit', 'emergency', 'technical', 'weather', 'company', 'passenger'];
+    const validEventTypes = ['atc', 'crew', 'cockpit', 'situation', 'self_initiation', 'emergency', 'technical', 'weather', 'company', 'passenger'];
     for (const step of data.steps) {
       if (!validEventTypes.includes(step.eventType)) {
         throw new Error(`Invalid event type: ${step.eventType}`);

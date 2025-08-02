@@ -19,6 +19,8 @@ const EVENT_TYPES: { value: EventType; label: string }[] = [
   { value: 'atc', label: 'ATC Communication' },
   { value: 'crew', label: 'Crew Interaction' },
   { value: 'cockpit', label: 'Cockpit Crew' },
+  { value: 'situation', label: 'Pilot Action Required' },
+  { value: 'self_initiation', label: 'Self Initiation' },
   { value: 'emergency', label: 'Emergency Situation' },
   { value: 'technical', label: 'Technical Issue' },
   { value: 'weather', label: 'Weather-Related' },
@@ -55,6 +57,8 @@ const ACTOR_ROLES_BY_TYPE: Record<EventType, Array<{ value: ActorRole; label: st
   passenger: [
     { value: 'doctor_onboard', label: 'Doctor Onboard' },
   ],
+  situation: [], // No specific actor for situations
+  self_initiation: [], // No specific actor for self-initiated communications
 };
 
 // Group components by category for better organization
@@ -286,20 +290,41 @@ export function ScenarioStepsTab({ steps, setSteps }: ScenarioStepsTabProps) {
                 <Input
                   value={selectedStep.eventDescription}
                   onChange={(e) => updateStep(selectedStepIndex, { eventDescription: e.target.value })}
-                  placeholder="What's happening in this step?"
+                  placeholder={(selectedStep.eventType === 'situation' || selectedStep.eventType === 'self_initiation')
+                    ? "Describe the situation requiring pilot action (e.g., 'Aircraft ready for pushback')"
+                    : "What's happening in this step?"}
                 />
+                {(selectedStep.eventType === 'situation' || selectedStep.eventType === 'self_initiation') && (
+                  <p className="text-xs text-muted-foreground">
+                    For {selectedStep.eventType === 'self_initiation' ? 'self-initiation' : 'situation'} steps, the pilot must initiate communication. No message will be presented.
+                  </p>
+                )}
               </div>
 
               {/* Event Message */}
-              <div className="space-y-2">
-                <Label>Event Message / Dialogue</Label>
-                <Textarea
-                  value={selectedStep.eventMessage}
-                  onChange={(e) => updateStep(selectedStepIndex, { eventMessage: e.target.value })}
-                  placeholder="The actual message or dialogue that will be presented to the pilot"
-                  rows={4}
-                />
-              </div>
+              {selectedStep.eventType !== 'situation' && selectedStep.eventType !== 'self_initiation' ? (
+                <div className="space-y-2">
+                  <Label>Event Message / Dialogue</Label>
+                  <Textarea
+                    value={selectedStep.eventMessage}
+                    onChange={(e) => updateStep(selectedStepIndex, { eventMessage: e.target.value })}
+                    placeholder="The actual message or dialogue that will be presented to the pilot"
+                    rows={4}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    This is the message that {selectedStep.actorRole || selectedStep.eventType} will transmit to the pilot.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Event Message / Dialogue</Label>
+                  <div className="p-3 border border-dashed rounded-md bg-muted/50">
+                    <p className="text-sm text-muted-foreground">
+                      No message needed - the pilot initiates communication in {selectedStep.eventType === 'self_initiation' ? 'self-initiation' : 'situation'} steps.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Expected Components */}
               <div className="space-y-2">

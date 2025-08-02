@@ -448,32 +448,75 @@ export function JoniPracticeSession() {
           {/* Current Step */}
           {currentStep && (
             <Card className="mb-6">
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  {getActorIcon(currentStep.eventType, currentStep.actorRole)}
-                  <CardTitle className="text-lg">
-                    {getActorName(currentStep.eventType, currentStep.actorRole)}
-                  </CardTitle>
-                </div>
+              <CardHeader className="pb-3">
+                {(currentStep.eventType === 'situation' || currentStep.eventType === 'self_initiation') ? (
+                  // Situation/Self-initiation step - pilot needs to initiate
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center gap-2 px-3 py-1 bg-blue-500/10 rounded-full">
+                      <Plane className="h-4 w-4 text-blue-600" />
+                      <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                        {currentStep.eventType === 'self_initiation' ? 'SELF INITIATION' : 'PILOT ACTION REQUIRED'}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  // Communication step - someone is transmitting
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center gap-2 px-3 py-1 bg-orange-500/10 rounded-full">
+                      <Radio className="h-4 w-4 text-orange-600" />
+                      <span className="text-sm font-semibold text-orange-900 dark:text-orange-100">
+                        {currentStep.eventType.toUpperCase()}
+                      </span>
+                    </div>
+                    {currentStep.actorRole && (
+                      <div className="flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full">
+                        {getActorIcon(currentStep.eventType, currentStep.actorRole)}
+                        <span className="text-sm font-semibold">
+                          {getActorName(currentStep.eventType, currentStep.actorRole)}
+                        </span>
+                      </div>
+                    )}
+                    <span className="text-sm text-muted-foreground">is transmitting:</span>
+                  </div>
+                )}
                 <CardDescription>{currentStep.eventDescription}</CardDescription>
               </CardHeader>
               <CardContent>
                 {currentStep.eventMessage && (
-                  <div className="bg-muted rounded-lg p-4 mb-4">
-                    <p className="font-medium italic">"{currentStep.eventMessage}"</p>
+                  <div className="relative bg-muted rounded-lg p-4 mb-4">
+                    <div className="absolute -top-2 -left-2 bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center">
+                      <Radio className="h-4 w-4" />
+                    </div>
+                    <p className="font-medium italic text-lg">"{currentStep.eventMessage}"</p>
                   </div>
                 )}
 
                 {/* Response Input */}
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Your Response:</label>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="flex items-center gap-2 px-3 py-1 bg-blue-500/10 rounded-full">
+                        <User className="h-4 w-4 text-blue-600" />
+                        <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">You</span>
+                      </div>
+                      <span className="text-sm text-muted-foreground">
+                        {(currentStep.eventType === 'situation' || currentStep.eventType === 'self_initiation') ? 'initiate communication as' : 'respond as'}
+                      </span>
+                      <div className="flex items-center gap-2 px-3 py-1 bg-green-500/10 rounded-full">
+                        <Plane className="h-4 w-4 text-green-600" />
+                        <span className="text-sm font-semibold text-green-900 dark:text-green-100">
+                          {flightInfo?.callsign || 'Pilot'}
+                        </span>
+                      </div>
+                    </div>
                     
                     <div className="flex gap-5">
                       <Textarea
                         value={userResponse}
                         onChange={(e) => setUserResponse(e.target.value)}
-                        placeholder="Enter your response using proper aviation phraseology..."
+                        placeholder={(currentStep.eventType === 'situation' || currentStep.eventType === 'self_initiation')
+                          ? "Initiate your radio call using proper aviation phraseology..."
+                          : "Enter your response using proper aviation phraseology..."}
                         className="min-h-[100px] flex-1"
                         disabled={isRecording}
                       />
