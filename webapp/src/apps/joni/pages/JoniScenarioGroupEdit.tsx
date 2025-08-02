@@ -6,9 +6,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Plus, Edit2, Trash2, GripVertical, Loader2, Sparkles } from 'lucide-react';
+import { ArrowLeft, Plus, Edit2, Trash2, Loader2, Sparkles, Clock, BarChart3, Plane } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { ScenarioForm } from '../components/ScenarioForm';
 import { GenerateScenarioModal } from '../components/GenerateScenarioModal';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,109 +21,109 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import {
-  useSortable,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 
-interface SortableScenarioItemProps {
+interface ScenarioItemProps {
   scenario: {
     id: string;
     name: string;
     shortDescription: string | null;
+    difficulty: string;
+    estimatedMinutes: number;
     flightInformation: string;
-    expectedAnswer: string;
-    currentStatus: string;
-    orderInGroup: number;
+    expectedAnswer: string | null;
+    currentStatus: string | null;
   };
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
 }
 
-function SortableScenarioItem({ scenario, onEdit, onDelete }: SortableScenarioItemProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: scenario.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
+function ScenarioItem({ scenario, onEdit, onDelete }: ScenarioItemProps) {
+  const getDifficultyColor = (difficulty: string) => {
+    switch (difficulty) {
+      case 'beginner':
+        return 'bg-green-500/10 text-green-600 border-green-500/20';
+      case 'intermediate':
+        return 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20';
+      case 'advanced':
+        return 'bg-red-500/10 text-red-600 border-red-500/20';
+      default:
+        return '';
+    }
   };
 
+  // Parse flight information to extract key details
+  const extractFlightInfo = (info: string) => {
+    const callsignMatch = info.match(/Callsign:\s*([^\n]+)/);
+    const aircraftMatch = info.match(/Aircraft:\s*([^\n]+)/);
+    const routeMatch = info.match(/Route:\s*([^\n]+)/);
+    
+    return {
+      callsign: callsignMatch?.[1]?.trim() || 'Unknown',
+      aircraft: aircraftMatch?.[1]?.trim() || 'Unknown',
+      route: routeMatch?.[1]?.trim() || 'N/A'
+    };
+  };
+
+  const flightInfo = extractFlightInfo(scenario.flightInformation);
+
   return (
-    <Card
-      ref={setNodeRef}
-      style={style}
-      className={`${isDragging ? 'cursor-grabbing' : ''}`}
-    >
-      <CardContent className="p-4">
-        <div className="flex items-start gap-4">
-          <div
-            {...attributes}
-            {...listeners}
-            className="mt-1 cursor-grab hover:text-muted-foreground"
-          >
-            <GripVertical className="h-5 w-5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="font-medium text-lg mb-1">{scenario.name}</div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-              <span>Scenario #{scenario.orderInGroup + 1}</span>
+    <Card className="hover:shadow-md transition-shadow duration-200">
+      <CardContent className="p-6">
+        <div className="space-y-4">
+          {/* Header */}
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <h3 className="font-semibold text-lg">{scenario.name}</h3>
               {scenario.shortDescription && (
-                <>
-                  <span>•</span>
-                  <span className="italic">{scenario.shortDescription}</span>
-                </>
+                <p className="text-sm text-muted-foreground mt-1">{scenario.shortDescription}</p>
               )}
             </div>
-            <div className="text-sm text-muted-foreground space-y-1">
-              <div className="truncate">
-                <span className="font-medium">Flight Info:</span>{' '}
-                <span dangerouslySetInnerHTML={{ __html: scenario.flightInformation.substring(0, 100) + '...' }} />
-              </div>
-              <div className="truncate">
-                <span className="font-medium">Expected:</span>{' '}
-                <span dangerouslySetInnerHTML={{ __html: scenario.expectedAnswer.substring(0, 100) + '...' }} />
-              </div>
+            <div className="flex items-center gap-2 ml-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onEdit(scenario.id)}
+                className="h-8 w-8"
+              >
+                <Edit2 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onDelete(scenario.id)}
+                className="h-8 w-8 text-destructive hover:text-destructive"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onEdit(scenario.id)}
-            >
-              <Edit2 className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onDelete(scenario.id)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+
+          {/* Badges */}
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="outline" className={getDifficultyColor(scenario.difficulty)}>
+              {scenario.difficulty}
+            </Badge>
+            <Badge variant="outline" className="gap-1">
+              <Clock className="h-3 w-3" />
+              {scenario.estimatedMinutes} min
+            </Badge>
+            {flightInfo.callsign !== 'Unknown' && (
+              <Badge variant="outline" className="gap-1">
+                <Plane className="h-3 w-3" />
+                {flightInfo.callsign}
+              </Badge>
+            )}
           </div>
+
+          {/* Flight Information */}
+          {flightInfo.route !== 'N/A' && (
+            <div className="bg-muted/50 rounded-lg p-3 text-sm">
+              <div>
+                <span className="font-medium text-muted-foreground">Route:</span>{' '}
+                <span>{flightInfo.route}</span>
+              </div>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -138,13 +140,6 @@ export function JoniScenarioGroupEdit() {
   const [showGenerateDialog, setShowGenerateDialog] = useState(false);
   const [editingScenarioId, setEditingScenarioId] = useState<string | null>(null);
   const [deletingScenarioId, setDeletingScenarioId] = useState<string | null>(null);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
 
   // Queries
   const { data: group, isLoading: groupLoading } = trpc.joniScenarioGroup.getGroupById.useQuery(
@@ -171,63 +166,9 @@ export function JoniScenarioGroupEdit() {
     },
   });
 
-  const reorderScenarios = trpc.joniScenarioGroup.reorderScenariosInGroup.useMutation({
-    onSuccess: () => {
-      toast({
-        title: 'Success',
-        description: 'Scenarios reordered successfully',
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-      // Revalidate to restore original order
-      utils.joniScenarioGroup.getGroupById.invalidate(groupId);
-    },
-  });
-
   const handleDeleteScenario = () => {
     if (deletingScenarioId) {
       deleteScenario.mutate(deletingScenarioId);
-    }
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (over && active.id !== over.id && group?.scenarios) {
-      const oldIndex = group.scenarios.findIndex((s) => s.id === active.id);
-      const newIndex = group.scenarios.findIndex((s) => s.id === over.id);
-
-      if (oldIndex !== -1 && newIndex !== -1) {
-        const newOrder = arrayMove(group.scenarios, oldIndex, newIndex);
-        
-        // Optimistically update the UI
-        const updatedScenarios = newOrder.map((scenario, index) => ({
-          ...scenario,
-          orderInGroup: index,
-        }));
-
-        utils.joniScenarioGroup.getGroupById.setData(groupId!, (old) => {
-          if (!old) return old;
-          return {
-            ...old,
-            scenarios: updatedScenarios,
-          };
-        });
-
-        // Send the reorder request
-        reorderScenarios.mutate({
-          groupId: groupId!,
-          scenarioOrders: updatedScenarios.map((s) => ({
-            scenarioId: s.id,
-            orderInGroup: s.orderInGroup,
-          })),
-        });
-      }
     }
   };
 
@@ -319,28 +260,23 @@ export function JoniScenarioGroupEdit() {
         </Card>
       ) : (
         <div className="space-y-4">
-          <div className="text-sm text-muted-foreground mb-2">
-            Drag and drop scenarios to reorder them
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm text-muted-foreground">
+              {group.scenarios.length} scenario{group.scenarios.length !== 1 ? 's' : ''} in this group
+            </p>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <BarChart3 className="h-4 w-4" />
+              <span>Sorted by difficulty</span>
+            </div>
           </div>
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={group.scenarios.map(s => s.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              {group.scenarios.map((scenario) => (
-                <SortableScenarioItem
-                  key={scenario.id}
-                  scenario={scenario}
-                  onEdit={setEditingScenarioId}
-                  onDelete={setDeletingScenarioId}
-                />
-              ))}
-            </SortableContext>
-          </DndContext>
+          {group.scenarios.map((scenario) => (
+            <ScenarioItem
+              key={scenario.id}
+              scenario={scenario}
+              onEdit={setEditingScenarioId}
+              onDelete={setDeletingScenarioId}
+            />
+          ))}
         </div>
       )}
 
