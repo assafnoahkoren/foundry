@@ -6,9 +6,11 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 interface JoniSidebarProps {
   isOpen: boolean;
+  isMobile?: boolean;
+  onItemClick?: () => void;
 }
 
-export function JoniSidebar({ isOpen }: JoniSidebarProps) {
+export function JoniSidebar({ isOpen, isMobile = false, onItemClick }: JoniSidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { hasSubFeatureAccess } = useUserAccess();
@@ -23,10 +25,18 @@ export function JoniSidebar({ isOpen }: JoniSidebarProps) {
     { path: '/joni/practice', label: 'Practice', icon: GraduationCap, requiresAccess: true, show: hasPracticeAccess },
   ].filter(item => !item.requiresAccess || item.show);
 
+  const handleNavigate = (path: string) => {
+    navigate(path);
+    onItemClick?.();
+  };
+
   return (
     <aside className={cn(
-      "border-r bg-background transition-all duration-300 h-[calc(100vh-73px)] fixed left-0",
-      isOpen ? "w-64" : "w-16"
+      "border-r bg-background transition-all duration-300 h-[calc(100vh-73px)] fixed left-0 z-50",
+      isOpen ? "w-64" : "w-16",
+      // Mobile specific styles
+      isMobile && isOpen ? "w-full" : "",
+      isMobile && !isOpen ? "-translate-x-full" : "translate-x-0"
     )}>
       <div className="p-4">
         {/* Navigation items */}
@@ -44,7 +54,7 @@ export function JoniSidebar({ isOpen }: JoniSidebarProps) {
                   "w-full justify-start",
                   !isOpen && "justify-center px-2"
                 )}
-                onClick={() => navigate(item.path)}
+                onClick={() => handleNavigate(item.path)}
               >
                 <Icon className="h-4 w-4" />
                 {isOpen && (

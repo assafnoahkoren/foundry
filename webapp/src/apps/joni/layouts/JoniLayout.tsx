@@ -5,7 +5,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuth } from '@/hooks/useAuth';
 import { LogOut, Menu } from 'lucide-react';
 import { Outlet, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { JoniSidebar } from '../components/JoniSidebar';
 import joniLogo from '../assets/logo.png';
@@ -14,10 +14,33 @@ export function JoniLayout() {
   const navigate = useNavigate();
   const { logout } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    // Check if mobile on mount
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+      // Start with sidebar closed on mobile
+      if (window.innerWidth < 768) {
+        setIsSidebarOpen(false);
+      }
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const handleSidebarItemClick = () => {
+    // Close sidebar on mobile when an item is clicked
+    if (isMobile) {
+      setIsSidebarOpen(false);
+    }
   };
 
   return (
@@ -59,15 +82,25 @@ export function JoniLayout() {
         </header>
 
         <div className="flex pt-[73px]">
+          {/* Mobile overlay */}
+          {isMobile && isSidebarOpen && (
+            <div 
+              className="fixed inset-0 bg-black/50 z-40 md:hidden pt-[73px]"
+              onClick={() => setIsSidebarOpen(false)}
+            />
+          )}
+          
           {/* Sidebar */}
           <JoniSidebar 
             isOpen={isSidebarOpen} 
+            isMobile={isMobile}
+            onItemClick={handleSidebarItemClick}
           />
 
           {/* Main Content */}
           <main className={cn(
             "flex-1 transition-all duration-300",
-            isSidebarOpen ? "ml-64" : "ml-16"
+            !isMobile && isSidebarOpen ? "ml-64" : !isMobile ? "ml-16" : "ml-0"
           )}>
             <div className="container mx-auto px-4 py-8">
               <Outlet />
