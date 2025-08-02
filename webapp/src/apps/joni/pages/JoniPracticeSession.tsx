@@ -372,41 +372,40 @@ export function JoniPracticeSession() {
 
           {/* Flight Information Panel */}
           {flightInfo && (
-        <Card className="mb-4 sm:mb-6">
-          <CardHeader className="pb-3 sm:pb-6">
-            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-              <Info className="h-4 sm:h-5 w-4 sm:w-5" />
+        <Card className="mb-3 sm:mb-4">
+          <CardHeader className="pb-2 sm:pb-3">
+            <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+              <Info className="h-3 sm:h-4 w-3 sm:w-4" />
               Flight Information
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
+          <CardContent className="pt-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 text-[11px] sm:text-xs">
               {/* Aircraft & Callsign */}
-              <div className="space-y-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Plane className="h-3 sm:h-4 w-3 sm:w-4 text-muted-foreground" />
-                  <span className="font-medium">Aircraft:</span>
-                  <span className="break-words">{flightInfo.aircraft.type}</span>
-                  {flightInfo.aircraft.registration && (
-                    <Badge variant="outline" className="text-xs">{flightInfo.aircraft.registration}</Badge>
-                  )}
+              <div className="space-y-1">
+                <div className="flex items-center gap-1">
+                  <Plane className="h-3 w-3 text-muted-foreground" />
+                  <span className="font-medium">{flightInfo.aircraft.type}</span>
                 </div>
-                <div>
-                  <span className="font-medium">Callsign:</span> {flightInfo.callsign}
+                <div className="text-muted-foreground">
+                  {flightInfo.callsign}
+                  {flightInfo.aircraft.registration && (
+                    <span className="ml-1">({flightInfo.aircraft.registration})</span>
+                  )}
                 </div>
               </div>
 
               {/* Route */}
               {flightInfo.route && (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-3 sm:h-4 w-3 sm:w-4 text-muted-foreground" />
-                    <span className="font-medium">Route:</span>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1">
+                    <MapPin className="h-3 w-3 text-muted-foreground" />
+                    <span className="font-medium">Route</span>
                   </div>
-                  <div className="pl-5 sm:pl-6 break-words">
+                  <div className="text-muted-foreground">
                     {flightInfo.route.departure} → {flightInfo.route.destination}
                     {flightInfo.route.alternate && (
-                      <span className="text-muted-foreground"> (Alt: {flightInfo.route.alternate})</span>
+                      <span className="block">Alt: {flightInfo.route.alternate}</span>
                     )}
                   </div>
                 </div>
@@ -414,18 +413,18 @@ export function JoniPracticeSession() {
 
               {/* Current Position */}
               {flightInfo.currentPosition && (
-                <div className="space-y-2">
-                  <div className="font-medium">Current Position:</div>
-                  <div className="pl-6 space-y-1">
-                    <div>Phase: <Badge variant="secondary">{flightInfo.currentPosition.phase}</Badge></div>
+                <div className="space-y-1">
+                  <div className="font-medium">Position</div>
+                  <div className="text-muted-foreground">
+                    <Badge variant="secondary" className="text-[10px] sm:text-[11px] px-1.5 py-0">{flightInfo.currentPosition.phase}</Badge>
                     {flightInfo.currentPosition.location && (
-                      <div>Location: {flightInfo.currentPosition.location}</div>
+                      <div className="mt-1">{flightInfo.currentPosition.location}</div>
                     )}
                     {flightInfo.currentPosition.altitude && (
-                      <div>Altitude: {flightInfo.currentPosition.altitude}</div>
+                      <span>{flightInfo.currentPosition.altitude}</span>
                     )}
                     {flightInfo.currentPosition.heading && (
-                      <div>Heading: {flightInfo.currentPosition.heading}°</div>
+                      <span className="ml-2">HDG {flightInfo.currentPosition.heading}°</span>
                     )}
                   </div>
                 </div>
@@ -433,45 +432,48 @@ export function JoniPracticeSession() {
 
               {/* Weather */}
               {flightInfo.weather && (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Cloud className="h-3 sm:h-4 w-3 sm:w-4 text-muted-foreground" />
-                    <span className="font-medium">Weather:</span>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1">
+                    <Cloud className="h-3 w-3 text-muted-foreground" />
+                    <span className="font-medium">Weather</span>
                   </div>
-                  <div className="pl-5 sm:pl-6 space-y-1">
-                    <div>Conditions: {flightInfo.weather.conditions}</div>
+                  <div className="text-muted-foreground">
+                    <div>{flightInfo.weather.conditions}</div>
                     {flightInfo.weather.wind && (
-                      <div>Wind: {flightInfo.weather.wind}</div>
+                      <span>Wind {flightInfo.weather.wind}</span>
                     )}
                     {flightInfo.weather.visibility && (
-                      <div>Visibility: {flightInfo.weather.visibility}</div>
+                      <span className="ml-2">Vis {flightInfo.weather.visibility}</span>
                     )}
                     {flightInfo.weather.qnh && (
-                      <div>QNH: {flightInfo.weather.qnh}</div>
+                      <div>QNH {flightInfo.weather.qnh}</div>
                     )}
                   </div>
                 </div>
               )}
 
               {/* Additional Info */}
-              <div className="space-y-2">
+              <div className="space-y-1 col-span-2 sm:col-span-1">
                 {flightInfo.atis && (
                   <div>
-                    <span className="font-medium">ATIS:</span> {flightInfo.atis}
+                    <span className="font-medium">ATIS</span>
+                    <span className="text-muted-foreground ml-1">{flightInfo.atis}</span>
                   </div>
                 )}
                 {flightInfo.fuel && (
-                  <div className="flex items-center gap-2">
-                    <Fuel className="h-3 sm:h-4 w-3 sm:w-4 text-muted-foreground" />
-                    <span className="font-medium">Fuel:</span> {flightInfo.fuel.remaining}
-                    {flightInfo.fuel.endurance && (
-                      <span className="text-muted-foreground"> (Endurance: {flightInfo.fuel.endurance})</span>
-                    )}
+                  <div className="flex items-center gap-1">
+                    <Fuel className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-muted-foreground">
+                      {flightInfo.fuel.remaining}
+                      {flightInfo.fuel.endurance && (
+                        <span> ({flightInfo.fuel.endurance})</span>
+                      )}
+                    </span>
                   </div>
                 )}
                 {flightInfo.soulsOnBoard && (
-                  <div>
-                    <span className="font-medium">Souls on Board:</span> {flightInfo.soulsOnBoard}
+                  <div className="text-muted-foreground">
+                    {flightInfo.soulsOnBoard} SOB
                   </div>
                 )}
               </div>
