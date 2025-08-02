@@ -336,40 +336,42 @@ export function JoniPracticeSession() {
 
   return (
     <div className="flex flex-col h-screen">
-      {/* Main content area with scroll */}
-      <div className="flex-1 pb-[220px] sm:pb-[200px]">
-        <div className="container mx-auto p-4 sm:p-6 max-w-4xl">
-          {/* Header */}
-          <div className="mb-4 sm:mb-6">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate('/joni/practice')}
-          className="mb-3 sm:mb-4 -ml-2 sm:ml-0"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          <span className="hidden sm:inline">Back to Practice</span>
-          <span className="sm:hidden">Back</span>
-        </Button>
-        
-        <div className="space-y-2">
-          <h1 className="text-xl sm:text-2xl font-bold">{scenario.name}</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">{scenario.shortDescription}</p>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-            <Badge variant="outline" className="gap-1 w-fit">
-              <Plane className="h-3 w-3" />
-              {scenario.subject.name}
-            </Badge>
-            <div className="flex items-center gap-2 flex-1">
-              <Progress value={progress} className="flex-1 h-2" />
-              <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
-                {currentStepIndex + 1}/{scenario.steps.length}
-              </span>
+      {/* Fixed header */}
+      <div className="bg-background border-b shadow-sm z-10">
+        <div className="container mx-auto p-3 sm:p-4 max-w-4xl">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/joni/practice')}
+            className="mb-2 -ml-2 sm:ml-0"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            <span className="hidden sm:inline">Back to Practice</span>
+            <span className="sm:hidden">Back</span>
+          </Button>
+          
+          <div className="space-y-1">
+            <h1 className="text-lg sm:text-xl font-bold line-clamp-1">{scenario.name}</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">{scenario.shortDescription}</p>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+              <Badge variant="outline" className="gap-1 w-fit text-xs">
+                <Plane className="h-3 w-3" />
+                {scenario.subject.name}
+              </Badge>
+              <div className="flex items-center gap-2 flex-1">
+                <Progress value={progress} className="flex-1 h-2" />
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                  {currentStepIndex + 1}/{scenario.steps.length}
+                </span>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
+      {/* Main content area with scroll */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="container mx-auto p-4 sm:p-6 max-w-4xl">
           {/* Flight Information Panel */}
           {flightInfo && (
         <Card className="mb-3 sm:mb-4">

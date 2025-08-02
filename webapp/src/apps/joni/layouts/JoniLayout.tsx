@@ -1,14 +1,14 @@
-import { Button } from '@/components/ui/button';
-import { TooltipProvider } from '@/components/ui/tooltip';
 import { BackToHubButton } from '@/components/BackToHubButton';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { Button } from '@/components/ui/button';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { useAuth } from '@/hooks/useAuth';
-import { LogOut, Menu } from 'lucide-react';
-import { Outlet, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { JoniSidebar } from '../components/JoniSidebar';
+import { LogOut, Menu } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Outlet, useNavigate } from 'react-router-dom';
 import joniLogo from '../assets/logo.png';
+import { JoniSidebar } from '../components/JoniSidebar';
 
 export function JoniLayout() {
   const navigate = useNavigate();
@@ -102,7 +102,7 @@ export function JoniLayout() {
             "flex-1 transition-all duration-300",
             !isMobile && isSidebarOpen ? "ml-64" : !isMobile ? "ml-16" : "ml-0"
           )}>
-            <div className="container mx-auto px-4 py-8">
+            <div className="container mx-auto">
               <Outlet />
             </div>
           </main>
