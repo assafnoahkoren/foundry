@@ -5,6 +5,7 @@ import { userAccessRouter } from './user-access.router';
 import { joniScenarioRouter } from './joni-scenario.router';
 import { joniScenarioGroupRouter } from './joni-scenario-group.router';
 import { adminRouter } from './admin.router';
+import { speechRouter } from './speech.router';
 
 export const appRouter = router({
   auth: authRouter,
@@ -13,6 +14,7 @@ export const appRouter = router({
   joniScenario: joniScenarioRouter,
   joniScenarioGroup: joniScenarioGroupRouter,
   admin: adminRouter,
+  speech: speechRouter,
   // Add more routers here as your API grows
   // posts: postRouter,
   // comments: commentRouter,
