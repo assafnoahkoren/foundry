@@ -1,31 +1,29 @@
-import { useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { trpc } from '@/utils/trpc';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useAudioRecording } from '@/hooks/useAudioRecording';
-import { 
-  Loader2, 
-  ArrowLeft, 
-  ArrowRight, 
-  CheckCircle2,
-  Plane,
-  Radio,
-  User,
+import { trpc } from '@/utils/trpc';
+import {
+  ArrowLeft,
+  ArrowRight,
   Bot,
-  Info,
-  MapPin,
+  CheckCircle2,
   Cloud,
   Fuel,
+  Info,
+  Loader2,
+  MapPin,
   Mic,
-  MicOff,
+  Plane,
+  Radio,
   Square,
-  Edit3
+  User
 } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import type { FlightInformation } from '../types/scenario-practice.types';
 
 interface StepResponse {
@@ -43,9 +41,7 @@ export function JoniPracticeSession() {
   const [userResponse, setUserResponse] = useState('');
   const [stepResponses, setStepResponses] = useState<StepResponse[]>([]);
   const [isCompleted, setIsCompleted] = useState(false);
-  const [inputMode, setInputMode] = useState<'text' | 'voice'>('text');
   const [isTranscribing, setIsTranscribing] = useState(false);
-  const [streamingText, setStreamingText] = useState('');
   const audioChunksRef = useRef<Blob[]>([]);
   const lastProcessedChunkRef = useRef<number>(0);
 
@@ -58,14 +54,12 @@ export function JoniPracticeSession() {
   // Mutations
   const transcribeAudioMutation = trpc.speech.transcribeAudio.useMutation({
     onSuccess: (result) => {
-      // Since we're sending complete audio each time, replace the text
-      setStreamingText(result.text);
+      // Override the text in the textarea with the transcription
       setUserResponse(result.text);
       setIsTranscribing(false);
     },
     onError: (error) => {
       console.error('Transcription error:', error);
-      // Don't show toast for every chunk error during streaming
       setIsTranscribing(false);
     },
   });
@@ -85,12 +79,12 @@ export function JoniPracticeSession() {
       // Store all chunks
       audioChunksRef.current.push(blob);
       
-      // Process chunks every 3 seconds worth of audio
+      // Process chunks every 2 seconds worth of audio
       const currentChunkCount = audioChunksRef.current.length;
       const chunksToProcess = currentChunkCount - lastProcessedChunkRef.current;
       
-      // Only process if we have at least 3 seconds of new audio and not currently transcribing
-      if (chunksToProcess >= 3 && !isTranscribing) {
+      // Only process if we have at least 2 seconds of new audio and not currently transcribing
+      if (chunksToProcess >= 2 && !isTranscribing) {
         console.log(`Processing ${chunksToProcess} chunks into a complete audio segment`);
         
         // Get all chunks from the beginning to create a complete audio file
@@ -108,10 +102,13 @@ export function JoniPracticeSession() {
           
           console.log('Sending complete audio segment, size:', completeAudioBlob.size);
           
+          // Build context prompt from scenario information
+          const contextPrompt = buildTranscriptionPrompt();
+          
           transcribeAudioMutation.mutate({
             audioData: base64Audio,
             language: 'en',
-            prompt: 'Aviation communication between pilot and ATC. Previous context: ' + streamingText.slice(-100),
+            prompt: contextPrompt,
           });
           
           // Update the last processed chunk index
@@ -147,10 +144,47 @@ export function JoniPracticeSession() {
     return eventType.charAt(0).toUpperCase() + eventType.slice(1);
   };
 
+  // Build context-aware prompt for better transcription
+  const buildTranscriptionPrompt = () => {
+    const parts = ['Aviation radio communication.'];
+    
+    // Add scenario context
+    if (scenario) {
+      parts.push(`Scenario: ${scenario.name}.`);
+      
+      // Add current step context
+      if (currentStep) {
+        // Add who is speaking
+        const speaker = getActorName(currentStep.eventType, currentStep.actorRole);
+        parts.push(`Speaker is ${speaker}.`);
+        
+        // Add what they said (for context)
+        if (currentStep.eventMessage) {
+          parts.push(`Previous message: "${currentStep.eventMessage}"`);
+        }
+      }
+    }
+    
+    // Add flight information context
+    if (flightInfo) {
+      if (flightInfo.callsign) {
+        parts.push(`Aircraft callsign: ${flightInfo.callsign}.`);
+      }
+      if (flightInfo.aircraft?.type) {
+        parts.push(`Aircraft type: ${flightInfo.aircraft.type}.`);
+      }
+      if (flightInfo.route) {
+        parts.push(`Route: ${flightInfo.route.departure} to ${flightInfo.route.destination}.`);
+      }
+    }
+    
+    // Add common aviation terms to help with recognition
+    parts.push('Use aviation phraseology and terminology.');
+    
+    return parts.join(' ');
+  };
+
   const handleStartRecording = async () => {
-    setInputMode('voice');
-    setStreamingText('');
-    setUserResponse('');
     audioChunksRef.current = [];
     lastProcessedChunkRef.current = 0;
     await startRecording();
@@ -178,20 +212,20 @@ export function JoniPracticeSession() {
           
           console.log('Sending final complete audio, size:', completeAudioBlob.size);
           
+          // Build context prompt from scenario information
+          const contextPrompt = buildTranscriptionPrompt();
+          
           transcribeAudioMutation.mutate({
             audioData: base64Audio,
             language: 'en',
-            prompt: 'Aviation communication between pilot and ATC. Previous context: ' + streamingText.slice(-100),
+            prompt: contextPrompt,
           });
         };
         reader.readAsDataURL(completeAudioBlob);
       }
     }
     
-    // Ensure the final text is in userResponse
-    if (streamingText && !userResponse) {
-      setUserResponse(streamingText);
-    }
+    // No need to do anything else - text is already in userResponse
   };
 
   const handleSubmitResponse = () => {
@@ -433,90 +467,50 @@ export function JoniPracticeSession() {
                 {/* Response Input */}
                 <div className="space-y-4">
                   <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="text-sm font-medium">Your Response:</label>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant={inputMode === 'text' ? 'default' : 'outline'}
-                          onClick={() => setInputMode('text')}
-                          disabled={isRecording}
-                        >
-                          <Edit3 className="h-4 w-4 mr-1" />
-                          Type
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant={inputMode === 'voice' ? 'default' : 'outline'}
-                          onClick={() => setInputMode('voice')}
-                        >
-                          <Mic className="h-4 w-4 mr-1" />
-                          Voice
-                        </Button>
-                      </div>
-                    </div>
+                    <label className="text-sm font-medium mb-2 block">Your Response:</label>
                     
-                    {inputMode === 'text' ? (
+                    <div className="flex gap-5">
                       <Textarea
                         value={userResponse}
                         onChange={(e) => setUserResponse(e.target.value)}
                         placeholder="Enter your response using proper aviation phraseology..."
-                        className="min-h-[100px]"
+                        className="min-h-[100px] flex-1"
+                        disabled={isRecording}
                       />
-                    ) : (
-                      <div className="border rounded-lg p-4 min-h-[100px] bg-muted/50">
-                        {!isRecording && !userResponse && (
-                          <div className="flex flex-col items-center justify-center h-full min-h-[80px]">
-                            <MicOff className="h-8 w-8 text-muted-foreground mb-2" />
-                            <p className="text-sm text-muted-foreground">Click the microphone to start recording</p>
-                          </div>
-                        )}
-                        
-                        {isRecording && (
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-center space-x-4">
-                              <div className="flex items-center space-x-2">
-                                <div className="animate-pulse">
-                                  <div className="h-3 w-3 bg-red-500 rounded-full"></div>
-                                </div>
-                                <span className="text-sm font-medium">Recording: {formattedTime}</span>
-                              </div>
-                            </div>
-                            {streamingText && (
-                              <div className="mt-3 p-3 bg-background rounded-md">
-                                <p className="text-sm">{streamingText}</p>
-                                {isTranscribing && (
-                                  <span className="inline-flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                                    <Loader2 className="h-3 w-3 animate-spin" />
-                                    Processing audio...
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        
-                        {!isRecording && userResponse && (
-                          <div className="space-y-2">
-                            <Textarea
-                              value={userResponse}
-                              onChange={(e) => setUserResponse(e.target.value)}
-                              placeholder="Edit your transcribed response..."
-                              className="min-h-[80px] text-sm"
-                            />
-                            {isTranscribing && (
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                                Processing final audio...
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        
-                        {recordingError && (
-                          <div className="text-sm text-destructive">{recordingError}</div>
-                        )}
+                      
+                      {/* Voice button as sibling */}
+                      {!isRecording ? (
+                        <Button
+                          size="icon"
+                          className="rounded-full w-[100px] h-[100px] shrink-0 bg-black hover:bg-gray-800 text-white"
+                          onClick={handleStartRecording}
+                          title="Start voice recording"
+                        >
+                          <Mic className="!h-8 !w-8" />
+                        </Button>
+                      ) : (
+                        <Button
+                          size="icon"
+                          className="rounded-full w-[100px] h-[100px] shrink-0 bg-red-600 hover:bg-red-700 text-white flex flex-col items-center justify-center gap-1"
+                          onClick={handleStopRecording}
+                          title="Stop recording"
+                        >
+                          <Square className="h-5 w-5" />
+                          <span className="text-xs font-medium">{formattedTime}</span>
+                        </Button>
+                      )}
+                    </div>
+                    
+                    {/* Show transcribing status only */}
+                    {isTranscribing && !isRecording && (
+                      <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        <span>Transcribing...</span>
                       </div>
+                    )}
+                    
+                    {recordingError && (
+                      <div className="text-sm text-destructive mt-2">{recordingError}</div>
                     )}
                   </div>
                   
@@ -529,38 +523,6 @@ export function JoniPracticeSession() {
                       <ArrowLeft className="h-4 w-4 mr-2" />
                       Previous
                     </Button>
-                    
-                    {/* Recording controls for voice mode */}
-                    {inputMode === 'voice' && (
-                      <div className="flex gap-2">
-                        {!isRecording ? (
-                          <Button
-                            onClick={handleStartRecording}
-                            variant="default"
-                            className="bg-red-600 hover:bg-red-700"
-                          >
-                            <Mic className="h-4 w-4 mr-2" />
-                            Start Recording
-                          </Button>
-                        ) : (
-                          <Button
-                            onClick={handleStopRecording}
-                            variant="default"
-                          >
-                            <Square className="h-4 w-4 mr-2" />
-                            Stop Recording
-                          </Button>
-                        )}
-                        {userResponse && (
-                          <Button
-                            variant="outline"
-                            onClick={() => setUserResponse('')}
-                          >
-                            Clear
-                          </Button>
-                        )}
-                      </div>
-                    )}
                     
                     <Button
                       onClick={handleSubmitResponse}
