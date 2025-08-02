@@ -1,11 +1,11 @@
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { trpc } from '@/utils/trpc';
+import { Clock, Loader2, Plane, PlayCircle, Target, Trophy } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { trpc } from '@/utils/trpc';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, PlayCircle, Trophy, Clock, Target, Plane } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export function JoniScenarioPractice() {
   const navigate = useNavigate();
@@ -113,53 +113,58 @@ export function JoniScenarioPractice() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="space-y-4">
           {filteredScenarios.map((scenario) => (
             <Card key={scenario.id} className="hover:shadow-lg transition-shadow duration-200">
-              <CardHeader>
-                <div className="flex items-start justify-between mb-2">
-                  <CardTitle className="text-lg line-clamp-2">{scenario.name}</CardTitle>
-                  {scenario._count.responses > 0 && (
-                    <Badge variant="outline" className="ml-2">
-                      <Trophy className="h-3 w-3 mr-1" />
-                      {scenario._count.responses}
-                    </Badge>
-                  )}
-                </div>
-                <CardDescription className="line-clamp-2">
-                  {scenario.shortDescription || 'No description available'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap items-center gap-2 mb-4">
-                  <Badge variant="outline" className={getDifficultyColor(scenario.difficulty)}>
-                    {scenario.difficulty}
-                  </Badge>
-                  <Badge variant="outline" className="gap-1">
-                    <Clock className="h-3 w-3" />
-                    {scenario.estimatedMinutes} min
-                  </Badge>
-                  {scenario.subject && (
-                    <Badge variant="secondary" className="gap-1">
-                      <Plane className="h-3 w-3" />
-                      {scenario.subject.name}
-                    </Badge>
-                  )}
-                  {scenario.group && (
-                    <Badge variant="secondary">
-                      {scenario.group.name}
-                    </Badge>
-                  )}
+              <div className="flex items-center p-6">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <CardTitle className="text-lg">{scenario.name}</CardTitle>
+                        {scenario._count.responses > 0 && (
+                          <Badge variant="outline" className="shrink-0">
+                            <Trophy className="h-3 w-3 mr-1" />
+                            {scenario._count.responses}
+                          </Badge>
+                        )}
+                      </div>
+                      <CardDescription className="mb-3">
+                        {scenario.shortDescription || 'No description available'}
+                      </CardDescription>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant="outline" className={getDifficultyColor(scenario.difficulty)}>
+                          {scenario.difficulty}
+                        </Badge>
+                        <Badge variant="outline" className="gap-1">
+                          <Clock className="h-3 w-3" />
+                          {scenario.estimatedMinutes} min
+                        </Badge>
+                        {scenario.subject && (
+                          <Badge variant="secondary" className="gap-1">
+                            <Plane className="h-3 w-3" />
+                            {scenario.subject.name}
+                          </Badge>
+                        )}
+                        {scenario.group && (
+                          <Badge variant="secondary">
+                            {scenario.group.name}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 
                 <Button 
-                  className="w-full"
+                  size="icon"
+                  className="rounded-full h-12 w-12 ml-6 shrink-0"
                   onClick={() => handleStartPractice(scenario.id)}
+                  title="Start Practice"
                 >
-                  <PlayCircle className="h-4 w-4 mr-2" />
-                  Start Practice
+                  <PlayCircle  className="!h-6 !w-6"/>
                 </Button>
-              </CardContent>
+              </div>
             </Card>
           ))}
         </div>
