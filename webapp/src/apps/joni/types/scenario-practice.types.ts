@@ -63,6 +63,7 @@ export type ActorRole =
 
 export interface ExpectedComponent {
   component: string; // e.g., "callsign", "altitude", "heading"
+  value?: string; // e.g., "BAW123", "FL350", "090"
   required: boolean;
   description?: string;
 }

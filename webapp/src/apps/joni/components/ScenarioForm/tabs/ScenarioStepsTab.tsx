@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Trash2, Copy, GripVertical, X } from 'lucide-react';
 import { useState } from 'react';
 import type { ScenarioStep, EventType, ActorRole, ExpectedComponent } from '../../../types/scenario-practice.types';
+import { expectedComponentsData, getComponentsByCategory } from '@/apps/joni/data/expected-components';
 
 interface ScenarioStepsTabProps {
   steps: ScenarioStep[];
@@ -56,24 +57,15 @@ const ACTOR_ROLES_BY_TYPE: Record<EventType, Array<{ value: ActorRole; label: st
   ],
 };
 
-const COMMON_COMPONENTS = [
-  'callsign',
-  'altitude',
-  'heading',
-  'speed',
-  'position',
-  'intentions',
-  'acknowledgment',
-  'readback',
-  'clearance',
-  'frequency',
-  'squawk',
-  'runway',
-  'taxiway',
-  'gate',
-  'souls on board',
-  'fuel remaining',
-  'nature of emergency',
+// Group components by category for better organization
+const componentCategories = [
+  'Basic',
+  'Clearance', 
+  'Acknowledgment',
+  'Position Report',
+  'Standard Phraseology',
+  'Emergency',
+  'Numbers'
 ];
 
 export function ScenarioStepsTab({ steps, setSteps }: ScenarioStepsTabProps) {
@@ -134,18 +126,23 @@ export function ScenarioStepsTab({ steps, setSteps }: ScenarioStepsTabProps) {
     setSelectedStepIndex(index + 1);
   };
 
-  const addComponent = () => {
-    if (!componentInput.trim() || !selectedStep) return;
-    
-    const newComponent: ExpectedComponent = {
-      component: componentInput.trim(),
-      required: true,
-    };
-    
-    updateStep(selectedStepIndex, {
-      expectedComponents: [...selectedStep.expectedComponents, newComponent],
-    });
-    setComponentInput('');
+  const addComponent = (componentName?: string) => {
+    const component = componentName || componentInput.trim();
+    if (component && selectedStep) {
+      // Check if component already exists
+      const exists = selectedStep.expectedComponents.some(c => c.component === component);
+      if (!exists) {
+        const componentData = expectedComponentsData.find(c => c.component === component);
+        const newComponent: ExpectedComponent = {
+          component: component,
+          required: componentData?.required !== false // Default to true unless explicitly false
+        };
+        updateStep(selectedStepIndex, {
+          expectedComponents: [...selectedStep.expectedComponents, newComponent]
+        });
+      }
+      setComponentInput('');
+    }
   };
 
   const removeComponent = (componentIndex: number) => {
@@ -306,43 +303,129 @@ export function ScenarioStepsTab({ steps, setSteps }: ScenarioStepsTabProps) {
 
               {/* Expected Components */}
               <div className="space-y-2">
-                <Label>Expected Response Components</Label>
+                <Label>Expected Response Components (ICAO Standards)</Label>
                 <div className="flex gap-2 mb-2">
                   <Input
                     value={componentInput}
                     onChange={(e) => setComponentInput(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addComponent())}
-                    placeholder="Add a required component"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addComponent();
+                      }
+                    }}
+                    placeholder="Type component name (e.g., callsign, altitude)"
                   />
-                  <Button onClick={addComponent} size="sm">
+                  <Button onClick={() => addComponent()} size="sm">
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
                 
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {selectedStep.expectedComponents.map((comp, index) => (
-                    <Badge
-                      key={index}
-                      variant={comp.required ? 'default' : 'secondary'}
-                      className="cursor-pointer"
-                      onClick={() => toggleComponentRequired(index)}
-                    >
-                      {comp.component}
-                      <button
-                        className="ml-2"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeComponent(index);
-                        }}
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
+                {/* Quick add common components */}
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground">Quick add ICAO components:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {['callsign', 'altitude', 'heading', 'roger', 'wilco', 'affirm', 'negative', 'readback_altitude', 'readback_heading', 'mayday', 'pan_pan'].map(comp => {
+                      const isSelected = selectedStep.expectedComponents.some(c => c.component === comp);
+                      return (
+                        <Button
+                          key={comp}
+                          variant={isSelected ? "secondary" : "outline"}
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => !isSelected && addComponent(comp)}
+                          disabled={isSelected}
+                        >
+                          {comp}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                  <details className="text-xs">
+                    <summary className="cursor-pointer text-muted-foreground hover:text-foreground">View all ICAO components...</summary>
+                    <div className="mt-2 space-y-2 pl-2">
+                      {componentCategories.map(category => (
+                        <div key={category}>
+                          <p className="font-semibold text-muted-foreground mb-1">{category}:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {getComponentsByCategory(category).map(comp => {
+                              const isSelected = selectedStep.expectedComponents.some(c => c.component === comp.component);
+                              return (
+                                <Button
+                                  key={comp.component}
+                                  variant={isSelected ? "secondary" : "outline"} 
+                                  size="sm"
+                                  className="h-6 text-xs px-2"
+                                  onClick={() => !isSelected && addComponent(comp.component)}
+                                  disabled={isSelected}
+                                  title={`${comp.description}${comp.icaoRule ? ` (Rule ${comp.icaoRule})` : ''}`}
+                                >
+                                  {comp.component}
+                                  {comp.icaoRule && <span className="ml-1 opacity-50">({comp.icaoRule})</span>}
+                                </Button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
                 </div>
-
-                <div className="text-xs text-muted-foreground">
-                  Common: {COMMON_COMPONENTS.join(', ')}
+                
+                <div className="space-y-2">
+                  {selectedStep.expectedComponents.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground mb-2">
+                        Added components (click badge to toggle required/optional):
+                      </p>
+                      {selectedStep.expectedComponents.map((comp, index) => {
+                        const componentData = expectedComponentsData.find(c => c.component === comp.component);
+                        return (
+                          <div key={index} className="flex items-center gap-2">
+                            <Badge
+                              variant={comp.required ? 'default' : 'secondary'}
+                              className="cursor-pointer min-w-fit"
+                              onClick={() => toggleComponentRequired(index)}
+                            >
+                              <span className="font-mono text-xs">{comp.component}</span>
+                              {componentData?.icaoRule && (
+                                <span className="ml-1 text-xs opacity-70">({componentData.icaoRule})</span>
+                              )}
+                            </Badge>
+                            <Input
+                              value={comp.value || ''}
+                              onChange={(e) => {
+                                const newComponents = [...selectedStep.expectedComponents];
+                                newComponents[index].value = e.target.value;
+                                updateStep(selectedStepIndex, { expectedComponents: newComponents });
+                              }}
+                              placeholder={`Expected value (e.g., ${
+                                comp.component === 'callsign' ? 'BAW123' :
+                                comp.component === 'altitude' ? '5000' :
+                                comp.component === 'flight_level' ? 'FL350' :
+                                comp.component === 'heading' ? '090' :
+                                comp.component === 'squawk_code' ? '1234' :
+                                'specific value'
+                              })`}
+                              className="flex-1 h-8 text-sm"
+                            />
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8"
+                              onClick={() => removeComponent(index)}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  
+                  <p className="text-xs text-muted-foreground">
+                    Components marked as required must be included with their exact values in the pilot's response.
+                  </p>
                 </div>
               </div>
 

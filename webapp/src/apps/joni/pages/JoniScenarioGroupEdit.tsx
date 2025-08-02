@@ -355,13 +355,12 @@ export function JoniScenarioGroupEdit() {
           </div>
           <div className="flex-1 overflow-y-auto scrollbar-hide">
             <ScenarioForm
-            subjectId={group.subject.id}
-            groupId={group.id}
-            orderInGroup={group.scenarios.length}
-            onSuccess={() => {
-              setShowCreateDialog(false);
-              utils.joniScenarioGroup.getGroupById.invalidate(groupId);
-            }}
+              subjectId={group.subject.id}
+              groupId={group.id}
+              onSuccess={() => {
+                setShowCreateDialog(false);
+                utils.joniScenarioGroup.getGroupById.invalidate(groupId);
+              }}
               onCancel={() => setShowCreateDialog(false)}
             />
           </div>
@@ -381,8 +380,8 @@ export function JoniScenarioGroupEdit() {
             {editingScenarioId && (
             <ScenarioForm
               scenarioId={editingScenarioId}
-              onSuccess={() => {
-                setEditingScenarioId(null);
+              onUpdateSuccess={() => {
+                // Only invalidate the query, don't close the modal
                 utils.joniScenarioGroup.getGroupById.invalidate(groupId);
               }}
               onCancel={() => setEditingScenarioId(null)}

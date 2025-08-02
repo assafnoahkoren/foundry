@@ -51,6 +51,7 @@ export interface GeneratedScenarioData {
     eventMessage?: string;
     expectedComponents: Array<{
       component: string;
+      value?: string;
       required: boolean;
     }>;
     correctResponseExample?: string;
@@ -69,8 +70,12 @@ export class JoniScenarioAiService {
     description: string,
     subjectContext?: string
   ): Promise<GeneratedScenarioData> {
-    try {
-      const prompt = `You are an AI assistant specialized in creating aviation radiotelephony training scenarios.
+    // Try up to 2 times in case of JSON parsing errors
+    let lastError: Error | null = null;
+    
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+      const prompt = `You are an AI assistant specialized in creating aviation radiotelephony training scenarios that strictly follow ICAO standards.
 
 Given a description, generate a complete training scenario with multiple steps following this EXACT JSON structure:
 
@@ -125,55 +130,170 @@ Given a description, generate a complete training scenario with multiple steps f
       "eventMessage": "The actual radio call or message (optional)",
       "expectedComponents": [
         {
-          "component": "e.g., callsign, altitude, heading, acknowledgment",
-          "required": true
+          "component": "Component name (see ICAO components list below)",
+          "value": "The specific expected value for this component (optional)",
+          "required": true or false
         }
       ],
-      "correctResponseExample": "Example of correct pilot response (optional)",
+      "correctResponseExample": "Example of correct pilot response following ICAO standards",
       "nextStepCondition": "Condition for next step (optional)"
     }
   ]
 }
+
+ICAO EXPECTED COMPONENTS for Radio Communications:
+The expectedComponents array should include relevant items from this list based on the communication type:
+
+BASIC COMPONENTS:
+- "callsign" (required in most communications)
+- "aircraft_type" (required on initial contact)
+- "weight_category" (required if HEAVY or SUPER)
+- "stand_number" (for ground operations)
+- "atis_information" (required on initial contact)
+
+CLEARANCE COMPONENTS:
+- "departure_request" (IFR/VFR clearance)
+- "destination" (required for clearances)
+- "flight_level" or "altitude" (requested cruising level)
+- "departure_runway" (if assigned)
+- "sid" (Standard Instrument Departure)
+- "squawk_code" (transponder code)
+
+INSTRUCTION ACKNOWLEDGMENTS:
+- "readback_altitude" (must read back any altitude/FL change)
+- "readback_heading" (must read back heading changes)
+- "readback_frequency" (must read back frequency changes)
+- "readback_runway" (must read back runway assignments)
+- "readback_clearance" (must read back route clearances)
+- "roger" (acknowledgment without readback)
+- "wilco" (will comply)
+
+POSITION/STATUS REPORTS:
+- "current_position" (waypoint or location)
+- "current_level" (altitude or flight level)
+- "time_over_position" (in non-radar airspace)
+- "next_waypoint" (next position)
+- "estimate_next" (ETA at next waypoint)
+
+STANDARD PHRASEOLOGY:
+- "affirm" (for yes)
+- "negative" (for no)
+- "unable" (cannot comply)
+- "standby" (wait)
+- "correction" (to correct an error)
+- "say_again" (request repeat)
+
+EMERGENCY COMPONENTS:
+- "mayday" (3 times for distress)
+- "pan_pan" (3 times for urgency)
+- "nature_of_emergency" (what's wrong)
+- "intentions" (what pilot plans to do)
+- "souls_on_board" (number of people)
+- "fuel_remaining" (in time)
+
+NUMBERS AND VALUES:
+- "heading_three_digits" (e.g., "ZERO NINE ZERO")
+- "altitude_feet" (below FL180)
+- "flight_level" (FL180 and above)
+- "speed_knots" (airspeed)
+- "qnh_setting" (altimeter setting)
+- "frequency_decimal" (using DECIMAL)
 
 ${subjectContext ? `Subject Context: ${subjectContext}\n` : ''}
 Scenario Description: ${description}
 
 Important Guidelines:
 1. Generate 3-7 realistic scenario steps that build a coherent training exercise
-2. Include appropriate ATC communications, following standard phraseology
-3. For emergency scenarios, include progressive complications
-4. Ensure difficulty matches the complexity of steps
-5. Use realistic callsigns, locations, and aviation terminology
-6. Include a mix of routine and challenging communications
-7. Expected components should reflect standard radiotelephony requirements
-8. Make the scenario engaging and educational
+2. Follow ICAO standard phraseology EXACTLY - use capitals for emphasized words
+3. For each step, choose 2-5 relevant expectedComponents from the list above
+4. Include specific VALUES for components when they should match exactly:
+   - For callsign: include the exact callsign (e.g., "BAW123")
+   - For altitude/flight_level: include the exact level (e.g., "FL350" or "5000")
+   - For heading: include the exact heading (e.g., "090")
+   - For frequency: include the exact frequency (e.g., "121.5")
+   - For squawk: include the exact code (e.g., "1234")
+   - Leave value empty for generic acknowledgments (roger, wilco, affirm)
+5. Mark components as required:true if they are mandatory per ICAO rules
+6. Include standard words like ROGER, WILCO, AFFIRM, NEGATIVE appropriately
+7. Use phonetic alphabet for letters (ALFA, BRAVO, etc.)
+8. Pronounce numbers individually (TWO THREE ZERO, not two-thirty)
+9. For emergency scenarios, include progressive complications
+10. Ensure correctResponseExample follows exact ICAO format and includes all expected values
 
-Return ONLY the JSON object, no additional text or formatting.`;
+CRITICAL: Return ONLY valid JSON without any markdown formatting, code blocks, or additional text.
+The response must start with { and end with } and be valid, parseable JSON.`;
 
       const response = await openAiService.askLLM(prompt);
       
       // Clean the response to ensure it's valid JSON
-      const cleanedResponse = response.trim();
-      const jsonMatch = cleanedResponse.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error('No valid JSON found in response');
+      let cleanedResponse = response.trim();
+      
+      // Try to extract JSON from the response
+      // First, try to find JSON between code blocks
+      const codeBlockMatch = cleanedResponse.match(/```json?\s*([\s\S]*?)```/);
+      if (codeBlockMatch) {
+        cleanedResponse = codeBlockMatch[1].trim();
       }
-
-      const parsedData = JSON.parse(jsonMatch[0]) as GeneratedScenarioData;
+      
+      // Remove any trailing commas before closing braces/brackets (common JSON error)
+      cleanedResponse = cleanedResponse.replace(/,(\s*[}\]])/g, '$1');
+      
+      // Remove any non-printable characters (excluding newlines and tabs)
+      // eslint-disable-next-line no-control-regex
+      cleanedResponse = cleanedResponse.replace(/[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F-\x9F]/g, '');
+      
+      // Try to find the first complete JSON object
+      let jsonStr = cleanedResponse;
+      const startIndex = cleanedResponse.indexOf('{');
+      if (startIndex >= 0) {
+        // Find the matching closing brace
+        let braceCount = 0;
+        let endIndex = -1;
+        for (let i = startIndex; i < cleanedResponse.length; i++) {
+          if (cleanedResponse[i] === '{') braceCount++;
+          else if (cleanedResponse[i] === '}') braceCount--;
+          
+          if (braceCount === 0) {
+            endIndex = i;
+            break;
+          }
+        }
+        
+        if (endIndex > startIndex) {
+          jsonStr = cleanedResponse.substring(startIndex, endIndex + 1);
+        }
+      }
+      
+      let parsedData: GeneratedScenarioData;
+      try {
+        parsedData = JSON.parse(jsonStr) as GeneratedScenarioData;
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError);
+        console.error('Attempted to parse:', jsonStr.substring(0, 500) + '...');
+        throw new Error(`Invalid JSON in AI response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
+      }
 
       // Validate the structure
       this.validateGeneratedScenario(parsedData);
 
       return parsedData;
-    } catch (error) {
-      console.error('Error generating scenario from text:', error);
-      
-      if (error instanceof Error) {
-        throw new Error(`Failed to generate scenario: ${error.message}`);
+      } catch (error) {
+        console.error(`Attempt ${attempt} failed:`, error);
+        lastError = error instanceof Error ? error : new Error('Unknown error');
+        
+        // If this isn't the last attempt and it's a JSON parsing error, try again
+        if (attempt < 2 && error instanceof Error && error.message.includes('JSON')) {
+          console.log('Retrying due to JSON parsing error...');
+          continue;
+        }
+        
+        // Otherwise, throw immediately
+        throw error;
       }
-      
-      throw new Error('Failed to generate scenario from text');
     }
+    
+    // If we get here, all attempts failed
+    throw new Error(`Failed to generate scenario after 2 attempts: ${lastError?.message || 'Unknown error'}`);
   }
 
   private validateGeneratedScenario(data: any): asserts data is GeneratedScenarioData {

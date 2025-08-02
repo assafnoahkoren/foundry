@@ -314,6 +314,118 @@ export class JoniScenarioService {
       };
     });
   }
+
+  async updateScenarioWithSteps(
+    scenarioId: string,
+    data: {
+      scenario: {
+        name?: string;
+        shortDescription?: string;
+        subjectId?: string;
+        groupId?: string;
+        scenarioType?: string;
+        difficulty?: string;
+        estimatedMinutes?: number;
+        initialContext?: string;
+        flightInformationJson?: any;
+        flightInformation?: string;
+        expectedAnswer?: string;
+        currentStatus?: string;
+      };
+      steps: Array<{
+        id?: string; // For existing steps
+        stepOrder: number;
+        eventType: string;
+        actorRole?: string;
+        eventDescription: string;
+        eventMessage?: string;
+        expectedComponents?: any;
+        correctResponseExample?: string;
+        nextStepCondition?: string;
+      }>;
+    }
+  ): Promise<JoniScenario & { steps: JoniScenarioStep[] }> {
+    return prisma.$transaction(async (tx) => {
+      // Update the scenario
+      const scenario = await tx.joniScenario.update({
+        where: { id: scenarioId },
+        data: data.scenario,
+        include: {
+          subject: true,
+          group: {
+            select: { id: true, name: true }
+          }
+        }
+      });
+
+      // Get existing steps
+      const existingSteps = await tx.joniScenarioStep.findMany({
+        where: { scenarioId },
+        select: { id: true }
+      });
+      const existingStepIds = existingSteps.map(s => s.id);
+
+      // Determine which steps to keep, update, create, or delete
+      const stepsToKeep = data.steps.filter(s => s.id && existingStepIds.includes(s.id));
+      const stepsToCreate = data.steps.filter(s => !s.id);
+      const stepIdsToKeep = stepsToKeep.map(s => s.id!);
+      const stepIdsToDelete = existingStepIds.filter(id => !stepIdsToKeep.includes(id));
+
+      // Delete removed steps
+      if (stepIdsToDelete.length > 0) {
+        await tx.joniScenarioStep.deleteMany({
+          where: {
+            id: { in: stepIdsToDelete }
+          }
+        });
+      }
+
+      // Update existing steps
+      for (const step of stepsToKeep) {
+        await tx.joniScenarioStep.update({
+          where: { id: step.id },
+          data: {
+            stepOrder: step.stepOrder,
+            eventType: step.eventType,
+            actorRole: step.actorRole || null,
+            eventDescription: step.eventDescription,
+            eventMessage: step.eventMessage || '',
+            expectedComponents: step.expectedComponents || [],
+            correctResponseExample: step.correctResponseExample || '',
+            nextStepCondition: step.nextStepCondition || null
+          }
+        });
+      }
+
+      // Create new steps
+      for (const step of stepsToCreate) {
+        await tx.joniScenarioStep.create({
+          data: {
+            scenarioId,
+            stepOrder: step.stepOrder,
+            eventType: step.eventType,
+            actorRole: step.actorRole || null,
+            eventDescription: step.eventDescription,
+            eventMessage: step.eventMessage || '',
+            expectedComponents: step.expectedComponents || [],
+            correctResponseExample: step.correctResponseExample || '',
+            nextStepCondition: step.nextStepCondition || null
+          }
+        });
+      }
+
+      // Get all steps in correct order
+      const steps = await tx.joniScenarioStep.findMany({
+        where: { scenarioId },
+        orderBy: { stepOrder: 'asc' }
+      });
+
+      return {
+        ...scenario,
+        steps
+      };
+    });
+  }
 }
 
 export const joniScenarioService = new JoniScenarioService();

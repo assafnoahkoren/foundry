@@ -154,6 +154,7 @@ const createScenarioStepSchema = z.object({
   eventMessage: z.string().optional(),
   expectedComponents: z.array(z.object({
     component: z.string(),
+    value: z.string().optional(),
     required: z.boolean().default(true)
   })).default([]),
   correctResponseExample: z.string().optional(),
@@ -354,6 +355,107 @@ ${flightInfo.weather ? `Weather: ${flightInfo.weather.conditions || 'Not specifi
             message: 'Subject not found'
           });
         }
+        if (error.code === 'P2025') {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Scenario not found'
+          });
+        }
+        throw error;
+      }
+    }),
+
+  updateScenarioWithSteps: requireBackofficeScenario
+    .input(z.object({
+      scenarioId: z.string(),
+      scenario: z.object({
+        name: z.string().min(1).max(200).optional(),
+        shortDescription: z.string().max(150).optional(),
+        subjectId: z.string().optional(),
+        groupId: z.string().optional(),
+        scenarioType: z.enum(['standard', 'emergency', 'crm', 'technical', 'weather', 'medical', 'security']).optional(),
+        difficulty: z.enum(['beginner', 'intermediate', 'advanced']).optional(),
+        estimatedMinutes: z.number().int().min(1).max(120).optional(),
+        initialContext: z.string().optional(),
+        flightInformationJson: z.object({
+          aircraft: z.object({
+            type: z.string(),
+            registration: z.string().optional(),
+            weightCategory: z.enum(['LIGHT', 'MEDIUM', 'HEAVY', 'SUPER']).default('MEDIUM')
+          }),
+          callsign: z.string(),
+          route: z.object({
+            departure: z.string().optional(),
+            destination: z.string().optional(),
+            alternate: z.string().optional(),
+            flightRules: z.enum(['IFR', 'VFR', 'Y', 'Z']).optional(),
+            cruiseAltitude: z.string().optional()
+          }).optional(),
+          currentPosition: z.object({
+            phase: z.enum(['ground', 'taxi', 'takeoff', 'climb', 'cruise', 'descent', 'approach', 'landing', 'go_around']),
+            location: z.string().optional(),
+            altitude: z.string().optional(),
+            heading: z.number().int().min(0).max(360).optional(),
+            speed: z.string().optional()
+          }).optional(),
+          weather: z.object({
+            conditions: z.string().optional(),
+            wind: z.string().optional(),
+            visibility: z.string().optional(),
+            qnh: z.string().optional()
+          }).optional(),
+          fuel: z.object({
+            fob: z.string().optional(),
+            endurance: z.string().optional()
+          }).optional(),
+          passengers: z.object({
+            pob: z.number().int().optional(),
+            specialRequirements: z.string().optional()
+          }).optional()
+        }).optional(),
+        flightInformation: z.string().optional(),
+        expectedAnswer: z.string().optional(),
+        currentStatus: z.string().optional()
+      }),
+      steps: z.array(z.object({
+        id: z.string().optional(),
+        stepOrder: z.number().int().min(1),
+        eventType: z.enum(['atc', 'crew', 'cockpit', 'emergency', 'technical', 'weather', 'company', 'passenger']),
+        actorRole: z.enum([
+          'clearance_delivery', 'ground', 'tower', 'departure', 'center', 'approach', 'ramp',
+          'flight_attendant', 'purser', 'copilot', 'relief_pilot', 'maintenance', 'dispatch', 'doctor_onboard'
+        ]).optional(),
+        eventDescription: z.string().min(1),
+        eventMessage: z.string().optional(),
+        expectedComponents: z.array(z.object({
+          component: z.string(),
+          value: z.string().optional(),
+          required: z.boolean().default(true)
+        })).default([]),
+        correctResponseExample: z.string().optional(),
+        nextStepCondition: z.string().optional()
+      }))
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        // Generate legacy fields if flightInformationJson is provided
+        const flightInfo = input.scenario.flightInformationJson;
+        const legacyFlightInfo = flightInfo && !input.scenario.flightInformation
+          ? `Aircraft: ${flightInfo.aircraft.type} (${flightInfo.aircraft.weightCategory})
+Callsign: ${flightInfo.callsign}
+${flightInfo.route ? `Route: ${flightInfo.route.departure || 'N/A'} to ${flightInfo.route.destination || 'N/A'}` : ''}
+${flightInfo.currentPosition ? `Current Position: ${flightInfo.currentPosition.phase.replace('_', ' ')} phase${flightInfo.currentPosition.location ? ` at ${flightInfo.currentPosition.location}` : ''}` : ''}
+${flightInfo.weather ? `Weather: ${flightInfo.weather.conditions || 'Not specified'}` : ''}`
+          : undefined;
+
+        return await joniScenarioService.updateScenarioWithSteps(input.scenarioId, {
+          scenario: {
+            ...input.scenario,
+            ...(legacyFlightInfo ? { flightInformation: legacyFlightInfo } : {})
+          },
+          steps: input.steps
+        });
+      } catch (error: any) {
         if (error.code === 'P2025') {
           throw new TRPCError({
             code: 'NOT_FOUND',

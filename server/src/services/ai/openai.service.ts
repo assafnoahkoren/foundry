@@ -24,9 +24,8 @@ export class OpenAiService implements AiService {
             content: question,
           },
         ],
-        model: 'gpt-3.5-turbo',
-        temperature: 0.7,
-        max_tokens: 1000,
+        model: 'gpt-4o-mini',
+        temperature: 0,
       });
 
       const response = completion.choices[0]?.message?.content;
@@ -67,9 +66,8 @@ export class OpenAiService implements AiService {
             content: question,
           },
         ],
-        model: options?.model || 'gpt-3.5-turbo',
-        temperature: options?.temperature ?? 0.7,
-        max_tokens: options?.maxTokens || 1000,
+        model: options?.model || 'gpt-4o-mini',
+        temperature: options?.temperature ?? 0,
         response_format: { type: 'json_object' },
       });
 

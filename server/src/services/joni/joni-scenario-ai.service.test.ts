@@ -58,8 +58,8 @@ describe('JoniScenarioAiService', () => {
             eventMessage: "MAYDAY MAYDAY MAYDAY, BAW123 bird strike, engine failure, going around",
             expectedComponents: [
               { component: "mayday", required: true },
-              { component: "callsign", required: true },
-              { component: "nature", required: true }
+              { component: "callsign", value: "BAW123", required: true },
+              { component: "nature_of_emergency", value: "engine failure", required: true }
             ],
             correctResponseExample: "BAW123, roger MAYDAY, turn left heading 180, climb flight level 70",
             nextStepCondition: "After go-around initiated"

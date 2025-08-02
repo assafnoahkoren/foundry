@@ -13,12 +13,14 @@ import type {
   ScenarioFormData, 
   FlightInformation
 } from '../../types/scenario-form.types';
+import type { ScenarioStep } from '../../types/scenario-practice.types';
 
 interface ScenarioFormProps {
   scenarioId?: string;
   subjectId?: string;
   groupId?: string;
   onSuccess?: () => void;
+  onUpdateSuccess?: () => void; // Separate callback for update success
   onCancel?: () => void;
 }
 
@@ -27,10 +29,12 @@ export function ScenarioForm({
   subjectId: defaultSubjectId, 
   groupId: defaultGroupId, 
   onSuccess, 
+  onUpdateSuccess,
   onCancel 
 }: ScenarioFormProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const utils = trpc.useUtils();
   const isEditMode = !!scenarioId;
   const [activeTab, setActiveTab] = useState('overview');
 
@@ -76,6 +80,8 @@ export function ScenarioForm({
   const createMutation = trpc.joniScenario.createScenarioWithSteps.useMutation({
     onSuccess: () => {
       toast({ title: 'Success', description: 'Scenario created successfully' });
+      // Invalidate the scenarios list
+      utils.joniScenario.getAllScenarios.invalidate();
       onSuccess?.();
     },
     onError: (error) => {
@@ -87,10 +93,24 @@ export function ScenarioForm({
     }
   });
 
-  const updateMutation = trpc.joniScenario.updateScenario.useMutation({
+  const updateMutation = trpc.joniScenario.updateScenarioWithSteps.useMutation({
     onSuccess: () => {
       toast({ title: 'Success', description: 'Scenario updated successfully' });
-      onSuccess?.();
+      // Invalidate both the specific scenario and the list
+      if (scenarioId) {
+        utils.joniScenario.getScenarioById.invalidate(scenarioId);
+      }
+      utils.joniScenario.getAllScenarios.invalidate();
+      // Also invalidate the steps query if it exists
+      if (scenarioId) {
+        utils.joniScenario.getScenarioSteps.invalidate(scenarioId);
+      }
+      // Use the update-specific callback if provided, otherwise use the general onSuccess
+      if (onUpdateSuccess) {
+        onUpdateSuccess();
+      } else {
+        onSuccess?.();
+      }
     },
     onError: (error) => {
       toast({ 
@@ -122,7 +142,7 @@ export function ScenarioForm({
         actorRole: step.actorRole || undefined,
         eventDescription: step.eventDescription,
         eventMessage: step.eventMessage || '',
-        expectedComponents: step.expectedComponents as Array<{ component: string; required: boolean }> || [],
+        expectedComponents: step.expectedComponents as Array<{ component: string; value?: string; required: boolean }> || [],
         correctResponseExample: step.correctResponseExample || '',
         nextStepCondition: step.nextStepCondition || ''
       })) || [];
@@ -162,10 +182,10 @@ export function ScenarioForm({
     }
 
     if (isEditMode) {
-      // For edit mode, just update the scenario basic info
+      // For edit mode, update scenario with steps
       const updateData = {
-        id: scenarioId!,
-        data: {
+        scenarioId: scenarioId!,
+        scenario: {
           name: formData.name,
           shortDescription: formData.shortDescription,
           subjectId: formData.subjectId,
@@ -181,7 +201,18 @@ export function ScenarioForm({
             ? formData.steps[0].correctResponseExample 
             : legacyFields.expectedAnswer,
           currentStatus: legacyFields.currentStatus
-        }
+        },
+        steps: formData.steps.map((step, index) => ({
+          id: step.id,
+          stepOrder: index + 1,
+          eventType: step.eventType,
+          actorRole: step.actorRole,
+          eventDescription: step.eventDescription,
+          eventMessage: step.eventMessage,
+          expectedComponents: step.expectedComponents,
+          correctResponseExample: step.correctResponseExample,
+          nextStepCondition: step.nextStepCondition
+        }))
       };
       updateMutation.mutate(updateData);
     } else {
