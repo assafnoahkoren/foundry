@@ -55,9 +55,10 @@ export class JoniScenarioGroupService {
       name: string;
       shortDescription: string | null;
       flightInformation: string;
-      expectedAnswer: string;
-      currentStatus: string;
-      orderInGroup: number;
+      expectedAnswer: string | null;
+      currentStatus: string | null;
+      difficulty: string;
+      estimatedMinutes: number;
     }[];
   }) | null> {
     return prisma.joniScenarioGroup.findUnique({
@@ -74,10 +75,11 @@ export class JoniScenarioGroupService {
             flightInformation: true,
             expectedAnswer: true,
             currentStatus: true,
-            orderInGroup: true,
+            difficulty: true,
+            estimatedMinutes: true,
           },
           orderBy: [
-            { orderInGroup: 'asc' },
+            { difficulty: 'asc' },
             { createdAt: 'asc' }
           ]
         }
@@ -110,40 +112,14 @@ export class JoniScenarioGroupService {
   // ===== SCENARIO MANAGEMENT =====
   async moveScenarioToGroup(
     scenarioId: string,
-    groupId: string,
-    orderInGroup?: number
+    groupId: string
   ): Promise<JoniScenario> {
-    // If no order specified, put it at the end
-    if (orderInGroup === undefined) {
-      const maxOrder = await prisma.joniScenario.aggregate({
-        where: { groupId },
-        _max: { orderInGroup: true }
-      });
-      orderInGroup = (maxOrder._max.orderInGroup ?? -1) + 1;
-    }
-
     return prisma.joniScenario.update({
       where: { id: scenarioId },
       data: {
-        groupId,
-        orderInGroup
+        groupId
       }
     });
-  }
-
-  async reorderScenariosInGroup(
-    groupId: string,
-    scenarioOrders: { scenarioId: string; orderInGroup: number }[]
-  ): Promise<void> {
-    // Use transaction to update all orders atomically
-    await prisma.$transaction(
-      scenarioOrders.map(({ scenarioId, orderInGroup }) =>
-        prisma.joniScenario.update({
-          where: { id: scenarioId },
-          data: { orderInGroup }
-        })
-      )
-    );
   }
 
   // ===== UTILITIES =====
@@ -167,17 +143,16 @@ export class JoniScenarioGroupService {
     // Copy scenarios to new group
     if (originalGroup.scenarios.length > 0) {
       await prisma.$transaction(
-        originalGroup.scenarios.map((scenario, index) =>
+        originalGroup.scenarios.map((scenario) =>
           prisma.joniScenario.create({
             data: {
               name: scenario.name + ' (Copy)',
               shortDescription: scenario.shortDescription,
               subjectId: originalGroup.subjectId,
               groupId: newGroup.id,
-              orderInGroup: index,
               flightInformation: scenario.flightInformation,
-              expectedAnswer: scenario.expectedAnswer,
-              currentStatus: scenario.currentStatus,
+              expectedAnswer: scenario.expectedAnswer || '',
+              currentStatus: scenario.currentStatus || '',
             }
           })
         )

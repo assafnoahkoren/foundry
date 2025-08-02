@@ -72,7 +72,7 @@ export class JoniScenarioService {
 
   async getAllScenarios(subjectId?: string): Promise<(JoniScenario & {
     subject: JoniScenarioSubject;
-    group: { id: string; name: string };
+    group: { id: string; name: string } | null;
     _count: { responses: number };
   })[]> {
     return prisma.joniScenario.findMany({
@@ -88,7 +88,7 @@ export class JoniScenarioService {
       },
       orderBy: [
         { groupId: 'asc' },
-        { orderInGroup: 'asc' },
+        { difficulty: 'asc' },
         { createdAt: 'desc' }
       ]
     });
@@ -96,7 +96,7 @@ export class JoniScenarioService {
 
   async getScenarioById(id: string): Promise<(JoniScenario & {
     subject: JoniScenarioSubject;
-    group: { id: string; name: string };
+    group: { id: string; name: string } | null;
     _count: { responses: number };
   }) | null> {
     return prisma.joniScenario.findUnique({

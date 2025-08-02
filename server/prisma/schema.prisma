@@ -29,6 +29,7 @@ model User {
   userAccess   UserAccess[] @relation("UserAccess")
   grantedAccess UserAccess[] @relation("GrantedBy")
   joniScenarioResponses JoniScenarioResponse[]
+  joniScenarioPractices JoniScenarioPractice[]
 }
 
 model UserAccess {
@@ -53,20 +54,25 @@ model UserAccess {
 }
 
 // Joni Scenario Practice Models
+// Subject represents high-level training areas (e.g., "Radio Communications", "Emergency Procedures")
 model JoniScenarioSubject {
   id          String              @id @default(cuid())
   name        String              @unique
   description String?
+  icon        String?             // Optional icon identifier for UI
+  orderIndex  Int                 @default(1) // Display order
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
-  scenarios   JoniScenario[]
-  groups      JoniScenarioGroup[]
+  scenarios   JoniScenario[]      // Direct scenarios without groups
+  groups      JoniScenarioGroup[] // Grouped scenarios
 }
 
 model JoniScenarioGroup {
   id          String         @id @default(cuid())
   name        String
   description String?
+  groupType   String         @default("module") // "module", "difficulty", "training_program", "category"
+  orderInSubject Int         @default(1) // Order of this group within the subject
   subjectId   String
   subject     JoniScenarioSubject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   createdAt   DateTime       @default(now())
@@ -74,27 +80,39 @@ model JoniScenarioGroup {
   scenarios   JoniScenario[]
   
   @@index([subjectId])
+  @@index([subjectId, orderInSubject])
 }
 
+// A scenario represents a complete training exercise with multiple steps
 model JoniScenario {
   id                String                 @id @default(cuid())
-  name              String
-  shortDescription  String?
+  name              String                 // e.g., "Medical Emergency Over Atlantic"
+  shortDescription  String?                // Brief overview of the scenario
   subjectId         String
   subject           JoniScenarioSubject    @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  groupId           String
-  group             JoniScenarioGroup      @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  orderInGroup      Int
+  groupId           String?                // Optional - scenarios can exist without groups
+  group             JoniScenarioGroup?     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  difficulty        String                 @default("intermediate") // "beginner", "intermediate", "advanced"
+  estimatedMinutes  Int                    @default(15) // Estimated completion time
+  // Keep old field for migration
   flightInformation String                 @db.Text
-  expectedAnswer    String                 @db.Text
-  currentStatus     String                 @db.Text
+  // New fields for dynamic scenarios
+  flightInformationJson Json?              // Flexible flight data (aircraft, route, weather, etc.)
+  scenarioType      String                 @default("standard") // "standard", "emergency", "crm", "technical", "weather"
+  initialContext    String?                @db.Text // Sets the scene for the pilot
+  // Legacy fields - kept for backward compatibility
+  expectedAnswer    String?                @db.Text
+  currentStatus     String?                @db.Text
   createdAt         DateTime               @default(now())
   updatedAt         DateTime               @updatedAt
-  responses         JoniScenarioResponse[]
+  steps             JoniScenarioStep[]     // The sequence of events in this scenario
+  responses         JoniScenarioResponse[] // Legacy single responses
+  practices         JoniScenarioPractice[] // Practice sessions for this scenario
   
   @@index([subjectId])
   @@index([groupId])
-  @@index([groupId, orderInGroup])
+  @@index([scenarioType])
+  @@index([difficulty])
 }
 
 model JoniScenarioResponse {
@@ -112,4 +130,57 @@ model JoniScenarioResponse {
   @@index([scenarioId])
   @@index([userId])
   @@index([createdAt])
+}
+
+model JoniScenarioStep {
+  id                    String                     @id @default(cuid())
+  scenarioId            String
+  scenario              JoniScenario               @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  stepOrder             Int
+  eventType             String                     // "atc", "crew", "emergency", "technical", etc.
+  actorRole             String?                    // "tower", "ground", "flightAttendant", "copilot", etc.
+  eventDescription      String                     @db.Text
+  eventMessage          String                     @db.Text
+  expectedComponents    Json                       // Array of required response components
+  correctResponseExample String                    @db.Text
+  nextStepCondition     String?                    // For branching logic
+  createdAt             DateTime                   @default(now())
+  updatedAt             DateTime                   @updatedAt
+  stepResponses         JoniScenarioStepResponse[]
+  
+  @@index([scenarioId, stepOrder])
+  @@unique([scenarioId, stepOrder])
+}
+
+model JoniScenarioPractice {
+  id                String                      @id @default(cuid())
+  scenarioId        String
+  scenario          JoniScenario                @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  userId            String
+  user              User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status            String                      @default("in_progress") // "in_progress", "completed", "abandoned"
+  currentStepOrder  Int                         @default(1)
+  startedAt         DateTime                    @default(now())
+  completedAt       DateTime?
+  totalScore        Float?
+  stepResponses     JoniScenarioStepResponse[]
+  
+  @@index([userId, scenarioId])
+  @@index([status])
+}
+
+model JoniScenarioStepResponse {
+  id                String               @id @default(cuid())
+  practiceId        String
+  practice          JoniScenarioPractice @relation(fields: [practiceId], references: [id], onDelete: Cascade)
+  stepId            String
+  step              JoniScenarioStep     @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  userResponse      String               @db.Text
+  responseAnalysis  Json
+  correctness       Float                // 0 to 10 score
+  attempts          Int                  @default(1)
+  createdAt         DateTime             @default(now())
+  
+  @@index([practiceId, stepId])
+  @@unique([practiceId, stepId])
 }
