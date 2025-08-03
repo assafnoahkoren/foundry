@@ -730,7 +730,8 @@ ${flightInfo.weather ? `Weather: ${flightInfo.weather.conditions || 'Not specifi
           step.correctResponseExample,
           step.expectedComponents as any,
           step.eventType,
-          step.eventMessage
+          step.eventMessage,
+          false // enforceComponentOrder - default to false for now since it's not in the database
         );
 
         // If practiceId is provided, save the response to the practice session

@@ -79,6 +79,7 @@ export interface ScenarioStep {
   eventDescription: string;
   eventMessage: string;
   expectedComponents: ExpectedComponent[];
+  enforceComponentOrder?: boolean; // If true, components must appear in the same order as listed
   correctResponseExample: string;
   nextStepCondition?: string; // For branching logic
 }

@@ -86,6 +86,7 @@ export function ScenarioStepsTab({ steps, setSteps }: ScenarioStepsTabProps) {
       eventDescription: '',
       eventMessage: '',
       expectedComponents: [],
+      enforceComponentOrder: false,
       correctResponseExample: '',
     };
     setSteps([...steps, newStep]);
@@ -329,7 +330,33 @@ export function ScenarioStepsTab({ steps, setSteps }: ScenarioStepsTabProps) {
 
               {/* Expected Components */}
               <div className="space-y-2">
-                <Label>Expected Response Components (ICAO Standards)</Label>
+                <div className="flex items-center justify-between">
+                  <Label>Expected Response Components (ICAO Standards)</Label>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="enforce-order" className="text-sm font-normal cursor-pointer">
+                      Enforce component order
+                    </Label>
+                    <button
+                      id="enforce-order"
+                      type="button"
+                      role="switch"
+                      aria-checked={selectedStep.enforceComponentOrder || false}
+                      onClick={() => updateStep(selectedStepIndex, { enforceComponentOrder: !selectedStep.enforceComponentOrder })}
+                      className={`
+                        relative inline-flex h-6 w-11 items-center rounded-full transition-colors
+                        ${selectedStep.enforceComponentOrder ? 'bg-primary' : 'bg-gray-200 dark:bg-gray-700'}
+                      `}
+                    >
+                      <span className="sr-only">Enforce component order</span>
+                      <span
+                        className={`
+                          inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+                          ${selectedStep.enforceComponentOrder ? 'translate-x-6' : 'translate-x-1'}
+                        `}
+                      />
+                    </button>
+                  </div>
+                </div>
                 <div className="flex gap-2 mb-2">
                   <Input
                     value={componentInput}
@@ -412,6 +439,7 @@ export function ScenarioStepsTab({ steps, setSteps }: ScenarioStepsTabProps) {
                               variant={comp.required ? 'default' : 'secondary'}
                               className="cursor-pointer min-w-fit"
                               onClick={() => toggleComponentRequired(index)}
+                              title="Click to toggle required/optional"
                             >
                               <span className="font-mono text-xs">{comp.component}</span>
                               {componentData?.icaoRule && (
@@ -493,7 +521,13 @@ export function ScenarioStepsTab({ steps, setSteps }: ScenarioStepsTabProps) {
                   )}
                   
                   <p className="text-xs text-muted-foreground">
-                    Components marked as required must be included in the pilot's response. For components with multiple values, any one of the values will be accepted.
+                    Components marked as <span className="font-semibold">required</span> must be included in the pilot's response. 
+                    For components with multiple values, any one of the values will be accepted.
+                    {selectedStep.enforceComponentOrder && (
+                      <span className="block mt-1 text-yellow-600 dark:text-yellow-400">
+                        ⚠️ Component order enforcement is ON - components must appear in the order listed above.
+                      </span>
+                    )}
                   </p>
                 </div>
               </div>

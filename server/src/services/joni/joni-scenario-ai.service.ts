@@ -465,7 +465,8 @@ Return only the description text, no quotes or additional formatting.`;
     correctResponseExample: string,
     expectedComponents: ExpectedComponent[],
     eventType: string,
-    eventMessage: string
+    eventMessage: string,
+    enforceComponentOrder: boolean = false
   ): Promise<ResponseEvaluationResult> {
     try {
       const prompt = `You are an expert aviation communications instructor evaluating a pilot's radio response according to ICAO standards.
@@ -476,7 +477,7 @@ Message Received: "${eventMessage}"
 Correct Response Example: "${correctResponseExample}"
 
 Expected Components:
-${expectedComponents.map(comp => {
+${expectedComponents.map((comp) => {
   let valueStr = '';
   if (comp.values && comp.values.length > 0) {
     valueStr = ` (acceptable values: ${comp.values.map(v => `"${v}"`).join(' OR ')})`;
@@ -485,6 +486,8 @@ ${expectedComponents.map(comp => {
   }
   return `- ${comp.component}${valueStr}${comp.required ? ' [REQUIRED]' : ' [OPTIONAL]'}`;
 }).join('\n')}
+
+${enforceComponentOrder ? 'ORDER ENFORCEMENT: Components must appear in the EXACT order listed above.' : ''}
 
 USER'S RESPONSE TO EVALUATE:
 "${userResponse}"
@@ -518,10 +521,15 @@ EVALUATION FOCUS:
 2. Component values must match exactly when specified
    - When multiple values are acceptable (shown with OR), ANY ONE of them is correct
    - Example: altitude (acceptable values: "5000" OR "FIVE THOUSAND") - either is correct
-3. ICAO phraseology standards (phonetic alphabet, number pronunciation)
-4. Callsign position (usually at the end for pilot responses)
-5. Readback accuracy for clearances, altitudes, headings, frequencies
-6. No extra or confusing information
+3. Component order (when ORDER ENFORCEMENT is active)
+   - ALL components must appear in the EXACT order they are listed
+   - Example: if the list shows "altitude, heading, callsign", they must appear in that order
+   - Order is based on the order of components in the pilot's response, not the exact word position
+   - This applies to ALL components in the list when order enforcement is enabled
+4. ICAO phraseology standards (phonetic alphabet, number pronunciation)
+5. Callsign position (usually at the end for pilot responses)
+6. Readback accuracy for clearances, altitudes, headings, frequencies
+7. No extra or confusing information
 
 EVALUATION ITEM TYPES:
 - "correct": Things done correctly (e.g., "Correct callsign placement", "Proper readback of altitude")
@@ -543,6 +551,7 @@ CORRECT:
 WRONG:
 - Missing required components
 - Incorrect values for critical information
+- Components in wrong order when order is enforced
 - Major phraseology errors
 - Safety-critical mistakes
 
