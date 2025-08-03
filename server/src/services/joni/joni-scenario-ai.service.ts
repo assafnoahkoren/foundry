@@ -3,7 +3,8 @@ import { openAiService } from '../ai/openai.service';
 // Local type definition to match the ExpectedComponent from frontend
 interface ExpectedComponent {
   component: string;
-  value?: string;
+  value?: string; // DEPRECATED: Use values array instead
+  values?: string[]; // Array of acceptable values with OR relationship
   required: boolean;
   description?: string;
 }
@@ -154,8 +155,20 @@ Given a description, generate a complete training scenario with multiple steps f
       "expectedComponents": [
         {
           "component": "Component name (see ICAO components list below)",
-          "value": "The specific expected value for this component (optional)",
+          "values": ["array", "of", "acceptable", "values"], // Include variations when appropriate
           "required": true or false
+        },
+        // Example with multiple values (when variations are common):
+        {
+          "component": "altitude",
+          "values": ["6000", "SIX THOUSAND"],
+          "required": true
+        },
+        // Example with single value (when only one format is standard):
+        {
+          "component": "squawk_code",
+          "values": ["1234"],
+          "required": true
         }
       ],
       "correctResponseExample": "Example of correct pilot response following ICAO standards",
@@ -263,13 +276,17 @@ Important Guidelines:
      - correctResponseExample: "Cleared to London Heathrow via PURLA 1A, climb 6000 feet..."
 8. Follow ICAO standard phraseology EXACTLY - use capitals for emphasized words
 9. For each step, choose 2-5 relevant expectedComponents from the list above
-10. Include specific VALUES for components when they should match exactly:
-   - For callsign: include the exact callsign (e.g., "BAW123")
-   - For altitude/flight_level: include the exact level (e.g., "FL350" or "5000")
-   - For heading: include the exact heading (e.g., "090")
-   - For frequency: include the exact frequency (e.g., "121.5")
-   - For squawk: include the exact code (e.g., "1234")
-   - Leave value empty for generic acknowledgments (roger, wilco, affirm)
+10. IMPORTANT FEATURE - Multiple Acceptable Values: The system supports multiple correct variations for each component. When appropriate, include multiple VALUES in the array to accept different valid variations that pilots might realistically use:
+   - For numeric values where pilots commonly use different formats, include variations:
+     * Altitude: could include ["5000", "FIVE THOUSAND"] if both are commonly used
+     * Flight level: could include ["FL350", "FL THREE FIVE ZERO"] for flexibility
+     * Heading: could include ["090", "ZERO NINE ZERO"] if appropriate
+     * Frequency: could include ["121.5", "ONE TWO ONE DECIMAL FIVE"]
+   - For callsigns with known variations (e.g., airline callsigns like BAW/SPEEDBIRD)
+   - For values that have standard variations in different regions or contexts
+   - Use your judgment: only include variations that are realistically used and acceptable
+   - For simple acknowledgments (roger, wilco) or when only one format is standard, use a single value
+   - Leave values array empty for generic components without specific values
 11. Mark components as required:true if they are mandatory per ICAO rules
 12. Include standard words like ROGER, WILCO, AFFIRM, NEGATIVE appropriately
 13. Use phonetic alphabet for letters (ALFA, BRAVO, etc.)
@@ -459,9 +476,15 @@ Message Received: "${eventMessage}"
 Correct Response Example: "${correctResponseExample}"
 
 Expected Components:
-${expectedComponents.map(comp => 
-  `- ${comp.component}${comp.value ? ` (value: "${comp.value}")` : ''}${comp.required ? ' [REQUIRED]' : ' [OPTIONAL]'}`
-).join('\n')}
+${expectedComponents.map(comp => {
+  let valueStr = '';
+  if (comp.values && comp.values.length > 0) {
+    valueStr = ` (acceptable values: ${comp.values.map(v => `"${v}"`).join(' OR ')})`;
+  } else if (comp.value) {
+    valueStr = ` (value: "${comp.value}")`;
+  }
+  return `- ${comp.component}${valueStr}${comp.required ? ' [REQUIRED]' : ' [OPTIONAL]'}`;
+}).join('\n')}
 
 USER'S RESPONSE TO EVALUATE:
 "${userResponse}"
@@ -493,6 +516,8 @@ SCORING CRITERIA:
 EVALUATION FOCUS:
 1. Required components MUST be present and correct
 2. Component values must match exactly when specified
+   - When multiple values are acceptable (shown with OR), ANY ONE of them is correct
+   - Example: altitude (acceptable values: "5000" OR "FIVE THOUSAND") - either is correct
 3. ICAO phraseology standards (phonetic alphabet, number pronunciation)
 4. Callsign position (usually at the end for pilot responses)
 5. Readback accuracy for clearances, altitudes, headings, frequencies

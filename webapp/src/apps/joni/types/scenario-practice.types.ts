@@ -65,7 +65,8 @@ export type ActorRole =
 
 export interface ExpectedComponent {
   component: string; // e.g., "callsign", "altitude", "heading"
-  value?: string; // e.g., "BAW123", "FL350", "090"
+  value?: string; // DEPRECATED: Use values array instead
+  values?: string[]; // Array of acceptable values with OR relationship, e.g., ["FL350", "FL THREE FIVE ZERO", "Flight Level 350"]
   required: boolean;
   description?: string;
 }

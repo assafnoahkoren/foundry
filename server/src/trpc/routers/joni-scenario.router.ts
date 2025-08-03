@@ -154,7 +154,8 @@ const createScenarioStepSchema = z.object({
   eventMessage: z.string().optional(),
   expectedComponents: z.array(z.object({
     component: z.string(),
-    value: z.string().optional(),
+    value: z.string().optional(), // DEPRECATED: Use values instead
+    values: z.array(z.string()).optional(), // Array of acceptable values with OR relationship
     required: z.boolean().default(true)
   })).default([]),
   correctResponseExample: z.string().optional(),
@@ -174,6 +175,8 @@ const updateScenarioStepSchema = z.object({
     eventMessage: z.string().optional(),
     expectedComponents: z.array(z.object({
       component: z.string(),
+      value: z.string().optional(), // DEPRECATED: Use values instead
+      values: z.array(z.string()).optional(), // Array of acceptable values with OR relationship
       required: z.boolean().default(true)
     })).optional(),
     correctResponseExample: z.string().optional(),
@@ -429,7 +432,8 @@ ${flightInfo.weather ? `Weather: ${flightInfo.weather.conditions || 'Not specifi
         eventMessage: z.string().optional(),
         expectedComponents: z.array(z.object({
           component: z.string(),
-          value: z.string().optional(),
+          value: z.string().optional(), // DEPRECATED: Use values instead
+          values: z.array(z.string()).optional(), // Array of acceptable values with OR relationship
           required: z.boolean().default(true)
         })).default([]),
         correctResponseExample: z.string().optional(),
@@ -655,6 +659,8 @@ ${flightInfo.weather ? `Weather: ${flightInfo.weather.conditions || 'Not specifi
         eventMessage: z.string().optional(),
         expectedComponents: z.array(z.object({
           component: z.string(),
+          value: z.string().optional(), // DEPRECATED: Use values instead
+          values: z.array(z.string()).optional(), // Array of acceptable values with OR relationship
           required: z.boolean().default(true)
         })).default([]),
         correctResponseExample: z.string().optional(),

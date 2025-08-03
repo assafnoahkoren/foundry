@@ -139,7 +139,8 @@ export function ScenarioStepsTab({ steps, setSteps }: ScenarioStepsTabProps) {
         const componentData = expectedComponentsData.find(c => c.component === component);
         const newComponent: ExpectedComponent = {
           component: component,
-          required: componentData?.required !== false // Default to true unless explicitly false
+          required: componentData?.required !== false, // Default to true unless explicitly false
+          values: [] // Initialize with empty array for multiple values
         };
         updateStep(selectedStepIndex, {
           expectedComponents: [...selectedStep.expectedComponents, newComponent]
@@ -417,23 +418,66 @@ export function ScenarioStepsTab({ steps, setSteps }: ScenarioStepsTabProps) {
                                 <span className="ml-1 text-xs opacity-70">({componentData.icaoRule})</span>
                               )}
                             </Badge>
-                            <Input
-                              value={comp.value || ''}
-                              onChange={(e) => {
-                                const newComponents = [...selectedStep.expectedComponents];
-                                newComponents[index].value = e.target.value;
-                                updateStep(selectedStepIndex, { expectedComponents: newComponents });
-                              }}
-                              placeholder={`Expected value (e.g., ${
-                                comp.component === 'callsign' ? 'BAW123' :
-                                comp.component === 'altitude' ? '5000' :
-                                comp.component === 'flight_level' ? 'FL350' :
-                                comp.component === 'heading' ? '090' :
-                                comp.component === 'squawk_code' ? '1234' :
-                                'specific value'
-                              })`}
-                              className="flex-1 h-8 text-sm"
-                            />
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {/* Input for adding new values */}
+                                <Input
+                                  placeholder={`Add value (e.g., ${
+                                    comp.component === 'callsign' ? 'BAW123' :
+                                    comp.component === 'altitude' ? '5000' :
+                                    comp.component === 'flight_level' ? 'FL350' :
+                                    comp.component === 'heading' ? '090' :
+                                    comp.component === 'squawk_code' ? '1234' :
+                                    'specific value'
+                                  })`}
+                                  className="h-8 text-sm w-48"
+                                  onKeyPress={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      const value = e.currentTarget.value.trim();
+                                      if (value) {
+                                        const newComponents = [...selectedStep.expectedComponents];
+                                        if (!newComponents[index].values) {
+                                          newComponents[index].values = [];
+                                        }
+                                        if (!newComponents[index].values.includes(value)) {
+                                          newComponents[index].values.push(value);
+                                        }
+                                        updateStep(selectedStepIndex, { expectedComponents: newComponents });
+                                        e.currentTarget.value = '';
+                                      }
+                                    }
+                                  }}
+                                />
+                                {/* Display existing values - support both old value and new values array */}
+                                {(comp.values || (comp.value ? [comp.value] : [])).map((val, valIndex) => (
+                                  <Badge
+                                    key={valIndex}
+                                    variant="secondary"
+                                    className="text-xs"
+                                  >
+                                    {val}
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      className="h-4 w-4 ml-1 p-0"
+                                      onClick={() => {
+                                        const newComponents = [...selectedStep.expectedComponents];
+                                        newComponents[index].values = newComponents[index].values?.filter((_, i) => i !== valIndex) || [];
+                                        updateStep(selectedStepIndex, { expectedComponents: newComponents });
+                                      }}
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </Button>
+                                  </Badge>
+                                ))}
+                              </div>
+                              {comp.values && comp.values.length > 0 && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Any of these values will be accepted (OR relationship)
+                                </p>
+                              )}
+                            </div>
                             <Button
                               size="icon"
                               variant="ghost"
@@ -449,7 +493,7 @@ export function ScenarioStepsTab({ steps, setSteps }: ScenarioStepsTabProps) {
                   )}
                   
                   <p className="text-xs text-muted-foreground">
-                    Components marked as required must be included with their exact values in the pilot's response.
+                    Components marked as required must be included in the pilot's response. For components with multiple values, any one of the values will be accepted.
                   </p>
                 </div>
               </div>
