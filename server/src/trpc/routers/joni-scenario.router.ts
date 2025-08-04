@@ -158,6 +158,7 @@ const createScenarioStepSchema = z.object({
     values: z.array(z.string()).optional(), // Array of acceptable values with OR relationship
     required: z.boolean().default(true)
   })).default([]),
+  enforceComponentOrder: z.boolean().optional(),
   correctResponseExample: z.string().optional(),
   nextStepCondition: z.string().optional()
 });
@@ -179,6 +180,7 @@ const updateScenarioStepSchema = z.object({
       values: z.array(z.string()).optional(), // Array of acceptable values with OR relationship
       required: z.boolean().default(true)
     })).optional(),
+    enforceComponentOrder: z.boolean().optional(),
     correctResponseExample: z.string().optional(),
     nextStepCondition: z.string().optional().nullable()
   })
@@ -436,6 +438,7 @@ ${flightInfo.weather ? `Weather: ${flightInfo.weather.conditions || 'Not specifi
           values: z.array(z.string()).optional(), // Array of acceptable values with OR relationship
           required: z.boolean().default(true)
         })).default([]),
+        enforceComponentOrder: z.boolean().optional(),
         correctResponseExample: z.string().optional(),
         nextStepCondition: z.string().optional()
       }))
@@ -663,6 +666,7 @@ ${flightInfo.weather ? `Weather: ${flightInfo.weather.conditions || 'Not specifi
           values: z.array(z.string()).optional(), // Array of acceptable values with OR relationship
           required: z.boolean().default(true)
         })).default([]),
+        enforceComponentOrder: z.boolean().optional(),
         correctResponseExample: z.string().optional(),
         nextStepCondition: z.string().optional()
       }))
@@ -724,14 +728,23 @@ ${flightInfo.weather ? `Weather: ${flightInfo.weather.conditions || 'Not specifi
           });
         }
 
+        // Extract enforceComponentOrder from expectedComponents JSON
+        const expectedComponents = step.expectedComponents as any;
+        let enforceComponentOrder = false;
+        if (expectedComponents && expectedComponents._enforceOrder !== undefined) {
+          enforceComponentOrder = expectedComponents._enforceOrder;
+          // Remove the special property before passing to AI service
+          delete expectedComponents._enforceOrder;
+        }
+        
         // Evaluate the response using AI
         const evaluation = await joniScenarioAiService.evaluateResponse(
           input.userResponse,
           step.correctResponseExample,
-          step.expectedComponents as any,
+          expectedComponents,
           step.eventType,
           step.eventMessage,
-          false // enforceComponentOrder - default to false for now since it's not in the database
+          enforceComponentOrder
         );
 
         // If practiceId is provided, save the response to the practice session

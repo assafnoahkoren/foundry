@@ -104,7 +104,7 @@ export class JoniScenarioService {
     steps: JoniScenarioStep[];
     _count: { responses: number };
   }) | null> {
-    return prisma.joniScenario.findUnique({
+    const scenario = await prisma.joniScenario.findUnique({
       where: { id },
       include: {
         subject: true,
@@ -119,6 +119,42 @@ export class JoniScenarioService {
         }
       }
     });
+    
+    if (!scenario) return null;
+    
+    // Extract enforceComponentOrder from expectedComponents JSON for each step
+    const stepsWithEnforceOrder = scenario.steps.map(step => {
+      
+      let enforceComponentOrder: boolean | undefined;
+      let expectedComponents: any = step.expectedComponents as any;
+      
+      // Check if expectedComponents is wrapped in an object with items and _enforceOrder
+      if (expectedComponents && typeof expectedComponents === 'object' && !Array.isArray(expectedComponents)) {
+        if ('items' in expectedComponents && '_enforceOrder' in expectedComponents) {
+          enforceComponentOrder = expectedComponents._enforceOrder as boolean;
+          expectedComponents = expectedComponents.items || [];
+        } else if ('_enforceOrder' in expectedComponents) {
+          // Legacy format where _enforceOrder might be directly in the object
+          enforceComponentOrder = expectedComponents._enforceOrder as boolean;
+          // Remove _enforceOrder and keep the rest
+          const { _enforceOrder, ...rest } = expectedComponents;
+          expectedComponents = rest;
+        }
+      }
+      
+      const result = {
+        ...step,
+        expectedComponents,
+        enforceComponentOrder
+      };
+      
+      return result as any;
+    });
+    
+    return {
+      ...scenario,
+      steps: stepsWithEnforceOrder
+    };
   }
 
   async updateScenario(
@@ -188,9 +224,20 @@ export class JoniScenarioService {
     eventDescription: string;
     eventMessage?: string;
     expectedComponents?: any;
+    enforceComponentOrder?: boolean;
     correctResponseExample?: string;
     nextStepCondition?: string;
   }): Promise<JoniScenarioStep> {
+    // Store enforceComponentOrder inside expectedComponents JSON
+    let expectedComponentsWithOrder: any = data.expectedComponents || [];
+    if (data.enforceComponentOrder !== undefined) {
+      // Wrap in an object to store both array and enforceOrder
+      expectedComponentsWithOrder = {
+        items: Array.isArray(data.expectedComponents) ? data.expectedComponents : [],
+        _enforceOrder: data.enforceComponentOrder
+      };
+    }
+    
     return prisma.joniScenarioStep.create({
       data: {
         scenarioId: data.scenarioId,
@@ -199,7 +246,7 @@ export class JoniScenarioService {
         actorRole: data.actorRole || null,
         eventDescription: data.eventDescription,
         eventMessage: data.eventMessage || '',
-        expectedComponents: data.expectedComponents || [],
+        expectedComponents: expectedComponentsWithOrder,
         correctResponseExample: data.correctResponseExample || '',
         nextStepCondition: data.nextStepCondition || null
       }
@@ -207,9 +254,35 @@ export class JoniScenarioService {
   }
 
   async getScenarioSteps(scenarioId: string): Promise<JoniScenarioStep[]> {
-    return prisma.joniScenarioStep.findMany({
+    const steps = await prisma.joniScenarioStep.findMany({
       where: { scenarioId },
       orderBy: { stepOrder: 'asc' }
+    });
+    
+    // Extract enforceComponentOrder from expectedComponents JSON
+    return steps.map(step => {
+      let enforceComponentOrder: boolean | undefined;
+      let expectedComponents: any = step.expectedComponents as any;
+      
+      // Check if expectedComponents is wrapped in an object with items and _enforceOrder
+      if (expectedComponents && typeof expectedComponents === 'object' && !Array.isArray(expectedComponents)) {
+        if ('items' in expectedComponents && '_enforceOrder' in expectedComponents) {
+          enforceComponentOrder = expectedComponents._enforceOrder as boolean;
+          expectedComponents = expectedComponents.items || [];
+        } else if ('_enforceOrder' in expectedComponents) {
+          // Legacy format where _enforceOrder might be directly in the object
+          enforceComponentOrder = expectedComponents._enforceOrder as boolean;
+          // Remove _enforceOrder and keep the rest
+          const { _enforceOrder, ...rest } = expectedComponents;
+          expectedComponents = rest;
+        }
+      }
+      
+      return {
+        ...step,
+        expectedComponents,
+        enforceComponentOrder
+      } as any;
     });
   }
 
@@ -222,12 +295,40 @@ export class JoniScenarioService {
       eventDescription?: string;
       eventMessage?: string;
       expectedComponents?: any;
+      enforceComponentOrder?: boolean;
       correctResponseExample?: string;
       nextStepCondition?: string | null;
     }
   ): Promise<JoniScenarioStep> {
     const updateData: any = { ...data };
-    // expectedComponents is already in the correct format
+    
+    // If expectedComponents is provided, handle enforceComponentOrder
+    if (data.expectedComponents !== undefined || data.enforceComponentOrder !== undefined) {
+      const existingStep = await prisma.joniScenarioStep.findUnique({
+        where: { id },
+        select: { expectedComponents: true }
+      });
+      
+      const currentComponents = data.expectedComponents !== undefined 
+        ? data.expectedComponents 
+        : (existingStep?.expectedComponents && typeof existingStep.expectedComponents === 'object' && 'items' in existingStep.expectedComponents
+            ? existingStep.expectedComponents.items
+            : existingStep?.expectedComponents || []);
+      
+      if (data.enforceComponentOrder !== undefined) {
+        // Wrap in an object to store both array and enforceOrder
+        updateData.expectedComponents = {
+          items: Array.isArray(currentComponents) ? currentComponents : [],
+          _enforceOrder: data.enforceComponentOrder
+        };
+      } else {
+        updateData.expectedComponents = currentComponents;
+      }
+    }
+    
+    // Remove enforceComponentOrder from updateData as it's stored inside expectedComponents
+    delete updateData.enforceComponentOrder;
+    
     return prisma.joniScenarioStep.update({
       where: { id },
       data: updateData
@@ -277,6 +378,7 @@ export class JoniScenarioService {
       eventDescription: string;
       eventMessage?: string;
       expectedComponents?: any;
+      enforceComponentOrder?: boolean;
       correctResponseExample?: string;
       nextStepCondition?: string;
     }>;
@@ -291,8 +393,18 @@ export class JoniScenarioService {
       });
 
       const steps = await Promise.all(
-        data.steps.map(step =>
-          tx.joniScenarioStep.create({
+        data.steps.map(step => {
+          // Store enforceComponentOrder inside expectedComponents JSON
+          let expectedComponentsWithOrder: any = step.expectedComponents || [];
+          if (step.enforceComponentOrder !== undefined) {
+            // Wrap in an object to store both array and enforceOrder
+            expectedComponentsWithOrder = {
+              items: Array.isArray(step.expectedComponents) ? step.expectedComponents : [],
+              _enforceOrder: step.enforceComponentOrder
+            };
+          }
+          
+          return tx.joniScenarioStep.create({
             data: {
               scenarioId: scenario.id,
               stepOrder: step.stepOrder,
@@ -300,17 +412,43 @@ export class JoniScenarioService {
               actorRole: step.actorRole || null,
               eventDescription: step.eventDescription,
               eventMessage: step.eventMessage || '',
-              expectedComponents: step.expectedComponents || [],
+              expectedComponents: expectedComponentsWithOrder,
               correctResponseExample: step.correctResponseExample || '',
               nextStepCondition: step.nextStepCondition || null
             }
-          })
-        )
+          });
+        })
       );
+      
+      // Extract enforceComponentOrder from expectedComponents JSON for each step
+      const stepsWithEnforceOrder = steps.map(step => {
+        let enforceComponentOrder: boolean | undefined;
+        let expectedComponents: any = step.expectedComponents;
+        
+        // Check if expectedComponents is wrapped in an object with items and _enforceOrder
+        if (expectedComponents && typeof expectedComponents === 'object' && !Array.isArray(expectedComponents)) {
+          if ('items' in expectedComponents && '_enforceOrder' in expectedComponents) {
+            enforceComponentOrder = expectedComponents._enforceOrder;
+            expectedComponents = expectedComponents.items || [];
+          } else if ('_enforceOrder' in expectedComponents) {
+            // Legacy format where _enforceOrder might be directly in the object
+            enforceComponentOrder = expectedComponents._enforceOrder;
+            // Remove _enforceOrder and keep the rest
+            const { _enforceOrder, ...rest } = expectedComponents;
+            expectedComponents = rest;
+          }
+        }
+        
+        return {
+          ...step,
+          expectedComponents,
+          enforceComponentOrder
+        } as any;
+      });
 
       return {
         ...scenario,
-        steps
+        steps: stepsWithEnforceOrder
       };
     });
   }
@@ -340,6 +478,7 @@ export class JoniScenarioService {
         eventDescription: string;
         eventMessage?: string;
         expectedComponents?: any;
+        enforceComponentOrder?: boolean;
         correctResponseExample?: string;
         nextStepCondition?: string;
       }>;
@@ -382,6 +521,16 @@ export class JoniScenarioService {
 
       // Update existing steps
       for (const step of stepsToKeep) {
+        // Store enforceComponentOrder inside expectedComponents JSON
+        let expectedComponentsWithOrder: any = step.expectedComponents || [];
+        if (step.enforceComponentOrder !== undefined) {
+          // Wrap in an object to store both array and enforceOrder
+          expectedComponentsWithOrder = {
+            items: Array.isArray(step.expectedComponents) ? step.expectedComponents : [],
+            _enforceOrder: step.enforceComponentOrder
+          };
+        }
+        
         await tx.joniScenarioStep.update({
           where: { id: step.id },
           data: {
@@ -390,7 +539,7 @@ export class JoniScenarioService {
             actorRole: step.actorRole || null,
             eventDescription: step.eventDescription,
             eventMessage: step.eventMessage || '',
-            expectedComponents: step.expectedComponents || [],
+            expectedComponents: expectedComponentsWithOrder,
             correctResponseExample: step.correctResponseExample || '',
             nextStepCondition: step.nextStepCondition || null
           }
@@ -399,6 +548,16 @@ export class JoniScenarioService {
 
       // Create new steps
       for (const step of stepsToCreate) {
+        // Store enforceComponentOrder inside expectedComponents JSON
+        let expectedComponentsWithOrder: any = step.expectedComponents || [];
+        if (step.enforceComponentOrder !== undefined) {
+          // Wrap in an object to store both array and enforceOrder
+          expectedComponentsWithOrder = {
+            items: Array.isArray(step.expectedComponents) ? step.expectedComponents : [],
+            _enforceOrder: step.enforceComponentOrder
+          };
+        }
+        
         await tx.joniScenarioStep.create({
           data: {
             scenarioId,
@@ -407,7 +566,7 @@ export class JoniScenarioService {
             actorRole: step.actorRole || null,
             eventDescription: step.eventDescription,
             eventMessage: step.eventMessage || '',
-            expectedComponents: step.expectedComponents || [],
+            expectedComponents: expectedComponentsWithOrder,
             correctResponseExample: step.correctResponseExample || '',
             nextStepCondition: step.nextStepCondition || null
           }
@@ -419,18 +578,70 @@ export class JoniScenarioService {
         where: { scenarioId },
         orderBy: { stepOrder: 'asc' }
       });
+      
+      // Extract enforceComponentOrder from expectedComponents JSON for each step
+      const stepsWithEnforceOrder = steps.map(step => {
+        let enforceComponentOrder: boolean | undefined;
+        let expectedComponents: any = step.expectedComponents;
+        
+        // Check if expectedComponents is wrapped in an object with items and _enforceOrder
+        if (expectedComponents && typeof expectedComponents === 'object' && !Array.isArray(expectedComponents)) {
+          if ('items' in expectedComponents && '_enforceOrder' in expectedComponents) {
+            enforceComponentOrder = expectedComponents._enforceOrder;
+            expectedComponents = expectedComponents.items || [];
+          } else if ('_enforceOrder' in expectedComponents) {
+            // Legacy format where _enforceOrder might be directly in the object
+            enforceComponentOrder = expectedComponents._enforceOrder;
+            // Remove _enforceOrder and keep the rest
+            const { _enforceOrder, ...rest } = expectedComponents;
+            expectedComponents = rest;
+          }
+        }
+        
+        return {
+          ...step,
+          expectedComponents,
+          enforceComponentOrder
+        } as any;
+      });
 
       return {
         ...scenario,
-        steps
+        steps: stepsWithEnforceOrder
       };
     });
   }
 
   async getScenarioStep(stepId: string): Promise<JoniScenarioStep | null> {
-    return prisma.joniScenarioStep.findUnique({
+    const step = await prisma.joniScenarioStep.findUnique({
       where: { id: stepId }
     });
+    
+    if (!step) return null;
+    
+    // Extract enforceComponentOrder from expectedComponents JSON
+    let enforceComponentOrder: boolean | undefined;
+    let expectedComponents: any = step.expectedComponents;
+    
+    // Check if expectedComponents is wrapped in an object with items and _enforceOrder
+    if (expectedComponents && typeof expectedComponents === 'object' && !Array.isArray(expectedComponents)) {
+      if ('items' in expectedComponents && '_enforceOrder' in expectedComponents) {
+        enforceComponentOrder = expectedComponents._enforceOrder;
+        expectedComponents = expectedComponents.items || [];
+      } else if ('_enforceOrder' in expectedComponents) {
+        // Legacy format where _enforceOrder might be directly in the object
+        enforceComponentOrder = expectedComponents._enforceOrder;
+        // Remove _enforceOrder and keep the rest
+        const { _enforceOrder, ...rest } = expectedComponents;
+        expectedComponents = rest;
+      }
+    }
+    
+    return {
+      ...step,
+      expectedComponents,
+      enforceComponentOrder
+    } as any;
   }
 
   async saveStepResponse(data: {

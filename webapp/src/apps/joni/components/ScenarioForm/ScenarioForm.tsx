@@ -136,16 +136,27 @@ export function ScenarioForm({
       }
 
       // Convert steps from database format to form format
-      const formSteps: ScenarioStep[] = scenario.steps?.map(step => ({
-        id: step.id,
-        eventType: step.eventType as ScenarioStep['eventType'],
-        actorRole: step.actorRole || undefined,
-        eventDescription: step.eventDescription,
-        eventMessage: step.eventMessage || '',
-        expectedComponents: step.expectedComponents as Array<{ component: string; value?: string; required: boolean }> || [],
-        correctResponseExample: step.correctResponseExample || '',
-        nextStepCondition: step.nextStepCondition || ''
-      })) || [];
+      const formSteps: ScenarioStep[] = scenario.steps?.map(step => {
+        // The backend now returns enforceComponentOrder as a separate field
+        const enforceComponentOrder = step.enforceComponentOrder || false;
+        
+        // expectedComponents should be a regular array
+        const expectedComponents = Array.isArray(step.expectedComponents) 
+          ? step.expectedComponents as Array<{ component: string; value?: string; values?: string[]; required: boolean }>
+          : [];
+        
+        return {
+          id: step.id,
+          eventType: step.eventType as ScenarioStep['eventType'],
+          actorRole: step.actorRole || undefined,
+          eventDescription: step.eventDescription,
+          eventMessage: step.eventMessage || '',
+          expectedComponents,
+          enforceComponentOrder,
+          correctResponseExample: step.correctResponseExample || '',
+          nextStepCondition: step.nextStepCondition || ''
+        };
+      }) || [];
 
       setFormData({
         name: scenario.name,
@@ -210,6 +221,7 @@ export function ScenarioForm({
           eventDescription: step.eventDescription,
           eventMessage: step.eventMessage,
           expectedComponents: step.expectedComponents,
+          enforceComponentOrder: step.enforceComponentOrder,
           correctResponseExample: step.correctResponseExample,
           nextStepCondition: step.nextStepCondition
         }))
@@ -236,6 +248,7 @@ export function ScenarioForm({
           eventDescription: step.eventDescription,
           eventMessage: step.eventMessage,
           expectedComponents: step.expectedComponents,
+          enforceComponentOrder: step.enforceComponentOrder,
           correctResponseExample: step.correctResponseExample,
           nextStepCondition: step.nextStepCondition
         }))

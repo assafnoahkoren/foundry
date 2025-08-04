@@ -90,7 +90,7 @@ describe('JoniScenarioAiService', () => {
 
       await expect(
         joniScenarioAiService.generateScenarioFromText('Test scenario')
-      ).rejects.toThrow('Failed to generate scenario: No valid JSON found in response');
+      ).rejects.toThrow('Invalid JSON in AI response');
     });
 
     it('should throw error if name is missing', async () => {
@@ -107,7 +107,7 @@ describe('JoniScenarioAiService', () => {
 
       await expect(
         joniScenarioAiService.generateScenarioFromText('Test scenario')
-      ).rejects.toThrow('Failed to generate scenario: Invalid or missing scenario name');
+      ).rejects.toThrow('Invalid or missing scenario name');
     });
 
     it('should throw error if invalid scenario type', async () => {
@@ -125,7 +125,7 @@ describe('JoniScenarioAiService', () => {
 
       await expect(
         joniScenarioAiService.generateScenarioFromText('Test scenario')
-      ).rejects.toThrow('Failed to generate scenario: Invalid scenario type');
+      ).rejects.toThrow('Invalid scenario type');
     });
 
     it('should throw error if steps array is empty', async () => {
@@ -143,7 +143,125 @@ describe('JoniScenarioAiService', () => {
 
       await expect(
         joniScenarioAiService.generateScenarioFromText('Test scenario')
-      ).rejects.toThrow('Failed to generate scenario: Invalid or empty steps array');
+      ).rejects.toThrow('Invalid or empty steps array');
+    });
+  });
+
+  describe('evaluateResponse', () => {
+    it('should evaluate response with correct components', async () => {
+      const mockResponse = JSON.stringify({
+        score: 10,
+        items: [
+          { type: 'correct', title: 'Callsign included', description: 'Callsign BAW123 correctly included' },
+          { type: 'correct', title: 'Altitude readback', description: 'Altitude correctly read back' }
+        ],
+        feedback: 'Perfect response with all required components',
+        missingComponents: [],
+        incorrectComponents: [],
+        extraComponents: []
+      });
+
+      vi.mocked(openAiService.askLLM).mockResolvedValue(mockResponse);
+
+      const result = await joniScenarioAiService.evaluateResponse(
+        'BAW123, climbing flight level 100',
+        'BAW123, climb flight level 100',
+        [
+          { component: 'callsign', values: ['BAW123'], required: true },
+          { component: 'flight_level', values: ['100', 'ONE ZERO ZERO'], required: true }
+        ],
+        'atc',
+        'BAW123, climb flight level 100',
+        false
+      );
+
+      expect(result.score).toBe(10);
+      expect(result.items).toHaveLength(2);
+      expect(result.missingComponents).toHaveLength(0);
+    });
+
+    it('should evaluate response with enforced component order', async () => {
+      const mockResponse = JSON.stringify({
+        score: 7,
+        items: [
+          { type: 'wrong', title: 'Incorrect order', description: 'Components are in wrong order' },
+          { type: 'correct', title: 'All components present', description: 'All required components included' }
+        ],
+        feedback: 'Components present but in wrong order',
+        missingComponents: [],
+        incorrectComponents: ['Component order'],
+        extraComponents: []
+      });
+
+      vi.mocked(openAiService.askLLM).mockResolvedValue(mockResponse);
+
+      const result = await joniScenarioAiService.evaluateResponse(
+        'Climbing flight level 100, BAW123',
+        'BAW123, climb flight level 100',
+        [
+          { component: 'callsign', values: ['BAW123'], required: true },
+          { component: 'flight_level', values: ['100'], required: true }
+        ],
+        'atc',
+        'BAW123, climb flight level 100',
+        true // enforceComponentOrder
+      );
+
+      expect(result.score).toBe(7);
+      expect(result.incorrectComponents).toContain('Component order');
+      expect(openAiService.askLLM).toHaveBeenCalledWith(
+        expect.stringContaining('ORDER ENFORCEMENT: Components must appear in the EXACT order listed above.')
+      );
+    });
+
+    it('should handle multiple acceptable values with OR relationship', async () => {
+      const mockResponse = JSON.stringify({
+        score: 10,
+        items: [
+          { type: 'correct', title: 'Altitude correct', description: 'Altitude value accepted' }
+        ],
+        feedback: 'Correct response',
+        missingComponents: [],
+        incorrectComponents: [],
+        extraComponents: []
+      });
+
+      vi.mocked(openAiService.askLLM).mockResolvedValue(mockResponse);
+
+      const result = await joniScenarioAiService.evaluateResponse(
+        'BAW123, climbing FIVE THOUSAND feet',
+        'BAW123, climbing 5000 feet',
+        [
+          { component: 'callsign', values: ['BAW123'], required: true },
+          { component: 'altitude', values: ['5000', 'FIVE THOUSAND'], required: true }
+        ],
+        'atc',
+        'BAW123, climb 5000 feet',
+        false
+      );
+
+      expect(result.score).toBe(10);
+      expect(openAiService.askLLM).toHaveBeenCalledWith(
+        expect.stringContaining('(acceptable values: "5000" OR "FIVE THOUSAND")')
+      );
+    });
+
+    it('should handle evaluation errors gracefully', async () => {
+      vi.mocked(openAiService.askLLM).mockResolvedValue('Invalid JSON');
+
+      const result = await joniScenarioAiService.evaluateResponse(
+        'Test response',
+        'Correct response',
+        [],
+        'atc',
+        'Test message',
+        false
+      );
+
+      expect(result.score).toBe(0);
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0].type).toBe('wrong');
+      expect(result.items[0].title).toBe('Evaluation Error');
     });
   });
 
