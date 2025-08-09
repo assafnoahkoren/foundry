@@ -30,6 +30,9 @@ model User {
   grantedAccess UserAccess[] @relation("GrantedBy")
   joniScenarioResponses JoniScenarioResponse[]
   joniScenarioPractices JoniScenarioPractice[]
+  joniCommBlockProgress JoniCommBlockProgress[]
+  joniTransmissionPractices JoniTransmissionPractice[]
+  joniScriptPractices JoniScriptPractice[]
 }
 
 model UserAccess {
@@ -183,4 +186,164 @@ model JoniScenarioStepResponse {
   
   @@index([practiceId, stepId])
   @@unique([practiceId, stepId])
+}
+
+// ============================================
+// MODULAR ICAO-COMPLIANT COMMUNICATION TRAINING SYSTEM
+// ============================================
+// This system breaks down aviation radio communications into modular, reusable components
+// following ICAO phraseology standards. The hierarchy is:
+// 1. CommBlocks: Atomic units (e.g., how to say altitude, callsign, heading)
+// 2. Transmissions: Complete radio calls composed of multiple blocks
+// 3. Scripts: Full scenarios with back-and-forth transmissions between pilot and ATC
+
+// JoniCommBlock: Atomic ICAO phraseology unit - the smallest teachable element of radio communication
+model JoniCommBlock {
+  id                String                @id @default(cuid())
+  code              String                @unique // e.g., "callsign", "altitude", "heading", "speed"
+  name              String                // Human-readable name: "Aircraft Callsign"
+  category          String                // "identification", "instruction", "readback", "information"
+  description       String?               @db.Text
+  icaoReference     String?               // Reference to ICAO Doc 9432 or other standards
+  rules             Json                  // Validation rules and patterns
+  examples          Json                  // Array of correct examples
+  commonErrors      Json?                 // Common mistakes to watch for
+  difficultyLevel   Int                   @default(1) // 1-5 difficulty scale
+  orderIndex        Int                   @default(1) // Display order within category
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  
+  // Relations
+  userProgress      JoniCommBlockProgress[]
+  
+  @@index([category])
+  @@index([code])
+}
+
+// JoniTransmissionTemplate: A complete radio transmission composed of ordered CommBlocks
+// Examples: "Initial contact with tower", "Request for altitude change", "Landing clearance readback"
+// Each transmission combines multiple CommBlocks in a specific order with parameters
+model JoniTransmissionTemplate {
+  id                String                @id @default(cuid())
+  code              String                @unique // e.g., "initial_contact", "altitude_change"
+  name              String                // "Initial Contact with Tower"
+  description       String?               @db.Text
+  transmissionType  String                // "pilot_to_atc", "atc_to_pilot"
+  context           String                // "ground", "tower", "departure", "approach", "enroute"
+  difficultyLevel   Int                   @default(2)
+  estimatedSeconds  Int                   @default(10) // Typical transmission duration
+  blocks            Json                  // Array of {blockId, order, parameters, isOptional}
+  metadata          Json?                 // Additional context (weather, traffic, etc.)
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  
+  // Relations
+  scriptTransmissions JoniScriptTransmission[]
+  practices         JoniTransmissionPractice[]
+  
+  @@index([transmissionType])
+  @@index([context])
+}
+
+// JoniScript: A complete training scenario with multiple back-and-forth transmissions
+// Simulates real-world radio exchanges between pilot and ATC from start to finish
+// Examples: "VFR pattern work", "IFR departure from JFK", "Emergency descent procedure"
+model JoniScript {
+  id                String                @id @default(cuid())
+  code              String                @unique
+  name              String                // "IFR Departure from JFK"
+  description       String?               @db.Text
+  scriptType        String                // "training", "evaluation", "scenario"
+  phase             String                // "ground", "departure", "enroute", "approach", "emergency"
+  difficultyLevel   Int                   @default(3)
+  estimatedMinutes  Int                   @default(5)
+  flightContext     Json                  // Aircraft type, route, weather, etc.
+  learningObjectives Json?                // What skills this script teaches
+  prerequisites     Json?                 // Required completed scripts/blocks
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  
+  // Relations
+  transmissions     JoniScriptTransmission[]
+  practices         JoniScriptPractice[]
+  
+  @@index([scriptType])
+  @@index([phase])
+}
+
+// JoniScriptTransmission: Links transmissions into a script with proper sequencing and actor roles
+// Defines who speaks (pilot/ATC), when they speak, and what triggers each transmission
+model JoniScriptTransmission {
+  id                String               @id @default(cuid())
+  scriptId          String
+  script            JoniScript               @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+  transmissionId    String
+  transmission      JoniTransmissionTemplate @relation(fields: [transmissionId], references: [id], onDelete: Cascade)
+  orderInScript     Int
+  actorRole         String               // "pilot", "tower", "ground", "approach"
+  expectedDelay     Int?                 // Seconds before this transmission
+  triggerCondition  String?              // Condition that triggers this transmission
+  
+  @@unique([scriptId, orderInScript])
+  @@index([scriptId])
+  @@index([transmissionId])
+}
+
+// JoniCommBlockProgress: Tracks user mastery of individual communication elements
+// Monitors how well users can properly say altitudes, callsigns, headings, etc.
+model JoniCommBlockProgress {
+  id                String      @id @default(cuid())
+  userId            String
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  blockId           String
+  block             JoniCommBlock  @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  proficiencyScore  Float       @default(0) // 0-100 proficiency
+  practiceCount     Int         @default(0)
+  correctCount      Int         @default(0)
+  lastPracticed     DateTime?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  
+  @@unique([userId, blockId])
+  @@index([userId])
+  @@index([blockId])
+}
+
+// JoniTransmissionPractice: Records user attempts at complete radio transmissions
+// Scores each CommBlock within the transmission for granular feedback
+model JoniTransmissionPractice {
+  id                String               @id @default(cuid())
+  userId            String
+  user              User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transmissionId    String
+  transmission      JoniTransmissionTemplate @relation(fields: [transmissionId], references: [id], onDelete: Cascade)
+  userTranscript    String               @db.Text
+  blockScores       Json                 // Score for each block in the transmission
+  overallScore      Float                // 0-100
+  feedback          Json?                // Detailed feedback per block
+  completedAt       DateTime             @default(now())
+  
+  @@index([userId])
+  @@index([transmissionId])
+  @@index([completedAt])
+}
+
+// JoniScriptPractice: Tracks full scenario practice sessions from start to finish
+// Manages user progress through multi-transmission scenarios with overall scoring
+model JoniScriptPractice {
+  id                String      @id @default(cuid())
+  userId            String
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scriptId          String
+  script            JoniScript      @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+  status            String      @default("in_progress") // "in_progress", "completed", "abandoned"
+  currentTransmissionOrder Int   @default(1)
+  transmissionScores Json       // Scores for each transmission
+  overallScore      Float?      // Final score when completed
+  startedAt         DateTime    @default(now())
+  completedAt       DateTime?
+  sessionRecording  String?     // Optional audio recording URL
+  
+  @@index([userId, scriptId])
+  @@index([status])
 }
