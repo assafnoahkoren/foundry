@@ -6,6 +6,12 @@ import { JoniScenarioGroupManagement } from './pages/JoniScenarioGroupManagement
 import { JoniScenarioGroupEdit } from './pages/JoniScenarioGroupEdit';
 import { JoniScenarioPractice } from './pages/JoniScenarioPractice';
 import { JoniPracticeSession } from './pages/JoniPracticeSession';
+import { CommBlocksManagement } from './pages/comm-blocks/CommBlocksManagement';
+import { CommBlockForm } from './pages/comm-blocks/CommBlockForm';
+import { TransmissionManagement } from './pages/comm-blocks/TransmissionManagement';
+import { TransmissionForm } from './pages/comm-blocks/TransmissionForm';
+import { ScriptManagement } from './pages/comm-blocks/ScriptManagement';
+import { ScriptForm } from './pages/comm-blocks/ScriptForm';
 
 export function JoniApp() {
   return (
@@ -17,6 +23,15 @@ export function JoniApp() {
         <Route path="groups/:groupId" element={<JoniScenarioGroupEdit />} />
         <Route path="practice" element={<JoniScenarioPractice />} />
         <Route path="practice/:scenarioId" element={<JoniPracticeSession />} />
+        <Route path="comm-blocks" element={<CommBlocksManagement />} />
+        <Route path="comm-blocks/new" element={<CommBlockForm />} />
+        <Route path="comm-blocks/:id" element={<CommBlockForm />} />
+        <Route path="transmissions" element={<TransmissionManagement />} />
+        <Route path="transmissions/new" element={<TransmissionForm />} />
+        <Route path="transmissions/:id" element={<TransmissionForm />} />
+        <Route path="scripts" element={<ScriptManagement />} />
+        <Route path="scripts/new" element={<ScriptForm />} />
+        <Route path="scripts/:id" element={<ScriptForm />} />
         <Route path="*" element={<Navigate to="/joni" replace />} />
       </Route>
     </Routes>

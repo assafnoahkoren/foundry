@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { useUserAccess } from '@/hooks/useUserAccess';
 import { cn } from '@/lib/utils';
-import { Home, Tags, Folder, GraduationCap } from 'lucide-react';
+import { Home, Tags, Folder, GraduationCap, Radio, Mic, BookOpen } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 interface JoniSidebarProps {
@@ -17,12 +17,16 @@ export function JoniSidebar({ isOpen, isMobile = false, onItemClick }: JoniSideb
 
   const hasScenarioAccess = hasSubFeatureAccess('backoffice', 'backoffice-scenario');
   const hasPracticeAccess = hasSubFeatureAccess('joni', 'joni-scenario-practice');
+  const hasCommBlocksAccess = hasSubFeatureAccess('joni', 'joni-comm-blocks');
 
   const navigationItems = [
     { path: '/joni', label: 'Dashboard', icon: Home, requiresAccess: false },
     { path: '/joni/groups', label: 'Groups Management', icon: Folder, requiresAccess: true, show: hasScenarioAccess },
     { path: '/joni/subjects', label: 'Subjects Management', icon: Tags, requiresAccess: true, show: hasScenarioAccess },
     { path: '/joni/practice', label: 'Practice', icon: GraduationCap, requiresAccess: true, show: hasPracticeAccess },
+    { path: '/joni/comm-blocks', label: 'Comm Blocks', icon: Radio, requiresAccess: true, show: hasCommBlocksAccess },
+    { path: '/joni/transmissions', label: 'Transmissions', icon: Mic, requiresAccess: true, show: hasCommBlocksAccess },
+    { path: '/joni/scripts', label: 'Scripts', icon: BookOpen, requiresAccess: true, show: hasCommBlocksAccess },
   ].filter(item => !item.requiresAccess || item.show);
 
   const handleNavigate = (path: string) => {

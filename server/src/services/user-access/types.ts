@@ -4,7 +4,7 @@ export type FeatureId = 'ace' | 'joni' | 'backoffice';
 // Type definitions for sub-feature IDs (conditional based on feature)
 export type SubFeatureId<T extends FeatureId> = 
   T extends 'ace' ? 'ace-analytics' | 'ace-api-access' :
-  T extends 'joni' ? 'joni-management' | 'joni-scenario-practice' :
+  T extends 'joni' ? 'joni-management' | 'joni-scenario-practice' | 'joni-comm-blocks' :
   T extends 'backoffice' ? 'backoffice-users' | 'backoffice-user-access' | 'backoffice-scenario' :
   never;
 
