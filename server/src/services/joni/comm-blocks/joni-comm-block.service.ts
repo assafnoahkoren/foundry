@@ -10,6 +10,7 @@ export class JoniCommBlockService {
     category: string;
     description?: string;
     icaoReference?: string;
+    template?: string;
     rules: any;
     examples: any;
     commonErrors?: any;
@@ -71,6 +72,7 @@ export class JoniCommBlockService {
       category?: string;
       description?: string;
       icaoReference?: string;
+      template?: string;
       rules?: any;
       examples?: any;
       commonErrors?: any;
@@ -169,6 +171,61 @@ export class JoniCommBlockService {
         lastPracticed: block.userProgress[0].lastPracticed
       } : undefined
     }));
+  }
+
+  // ===== TEMPLATE UTILITIES =====
+
+  /**
+   * Extract variables from a template string
+   * Variables are in the format {{variableName}}
+   */
+  extractVariablesFromTemplate(template: string): string[] {
+    const regex = /\{\{(\w+)\}\}/g;
+    const variables: string[] = [];
+    let match;
+    
+    while ((match = regex.exec(template)) !== null) {
+      if (!variables.includes(match[1])) {
+        variables.push(match[1]);
+      }
+    }
+    
+    return variables;
+  }
+
+  /**
+   * Replace variables in a template with provided values
+   */
+  renderTemplate(template: string, variables: Record<string, string>): string {
+    let rendered = template;
+    
+    for (const [key, value] of Object.entries(variables)) {
+      const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
+      rendered = rendered.replace(regex, value);
+    }
+    
+    return rendered;
+  }
+
+  /**
+   * Get all variables from blocks in a transmission
+   */
+  async getVariablesFromBlocks(blockIds: string[]): Promise<Record<string, string[]>> {
+    const blocks = await prisma.joniCommBlock.findMany({
+      where: {
+        id: { in: blockIds }
+      }
+    });
+
+    const variablesByBlock: Record<string, string[]> = {};
+    
+    for (const block of blocks) {
+      if (block.template) {
+        variablesByBlock[block.id] = this.extractVariablesFromTemplate(block.template);
+      }
+    }
+    
+    return variablesByBlock;
   }
 
   // ===== STATISTICS =====

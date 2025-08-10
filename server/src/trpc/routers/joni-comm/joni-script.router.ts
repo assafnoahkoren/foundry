@@ -120,6 +120,12 @@ export const joniScriptRouter = router({
       return joniScriptService.validatePrerequisites(ctx.user.userId, input.scriptId);
     }),
 
+  getVariablesFromTransmissions: protectedProcedure
+    .input(z.object({ transmissionIds: z.array(z.string()) }))
+    .query(async ({ input }) => {
+      return joniScriptService.getVariablesFromTransmissions(input.transmissionIds);
+    }),
+
   // ===== ADMIN PROCEDURES (require joni-comm-blocks access) =====
 
   create: requireCommBlockAccess

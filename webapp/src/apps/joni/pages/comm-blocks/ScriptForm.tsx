@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
 import { Save, ArrowLeft, Plus, Trash2, AlertCircle, MoveUp, MoveDown, Mic, Clock, Target, ExternalLink } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -43,6 +44,7 @@ interface ScriptFormData {
     name?: string;
     minScore?: number;
   }>;
+  variables?: Record<string, string>; // Store variable values for the script
 }
 
 export function ScriptForm() {
@@ -69,12 +71,40 @@ export function ScriptForm() {
   const [selectedActorRole, setSelectedActorRole] = useState<ScriptTransmission['actorRole']>('pilot');
   const [expectedDelay, setExpectedDelay] = useState<number>(0);
   const [newObjective, setNewObjective] = useState('');
+  const [scriptVariables, setScriptVariables] = useState<Record<string, string>>({});
+  const [variablesByTransmission, setVariablesByTransmission] = useState<Record<string, { transmissionName: string; blocks: Array<{ blockName: string; variables: string[] }> }>>({});
 
   // Fetch available transmission templates
   const { data: availableTransmissions } = trpc.joniComm.transmissions.list.useQuery({
     orderBy: 'context',
     orderDirection: 'asc'
   });
+
+  // Fetch variables from selected transmissions
+  const transmissionIds = transmissions.map(t => t.transmissionId);
+  const { data: variablesData } = trpc.joniComm.scripts.getVariablesFromTransmissions.useQuery(
+    { transmissionIds },
+    { enabled: transmissionIds.length > 0 }
+  );
+
+  useEffect(() => {
+    if (variablesData) {
+      setVariablesByTransmission(variablesData.variablesByTransmission);
+      // Initialize variables if not already set
+      setScriptVariables(prev => {
+        const newVariables: Record<string, string> = {};
+        variablesData.variables.forEach(variable => {
+          if (!prev[variable]) {
+            newVariables[variable] = '';
+          }
+        });
+        if (Object.keys(newVariables).length > 0) {
+          return { ...prev, ...newVariables };
+        }
+        return prev;
+      });
+    }
+  }, [variablesData]);
 
   // Fetch existing script data if in edit mode
   const { data: existingScript } = trpc.joniComm.scripts.getById.useQuery(
@@ -106,6 +136,12 @@ export function ScriptForm() {
           : []
       });
       setFlightContextJson(JSON.stringify(existingScript.flightContext || {}, null, 2));
+      
+      // Load existing variables from flight context
+      const existingFlightContext = existingScript.flightContext as Record<string, unknown>;
+      if (existingFlightContext?.variables && typeof existingFlightContext.variables === 'object') {
+        setScriptVariables(existingFlightContext.variables as Record<string, string>);
+      }
       
       // Set transmissions if they exist
       if (existingScript.transmissions) {
@@ -191,18 +227,24 @@ export function ScriptForm() {
         return;
       }
 
+      // Add variables to flight context if any exist
+      const finalFlightContext = {
+        ...flightContext,
+        ...(Object.keys(scriptVariables).length > 0 && { variables: scriptVariables })
+      };
+
       if (isEditMode) {
         updateMutation.mutate({
           id: id!,
           data: {
             ...formData,
-            flightContext
+            flightContext: finalFlightContext
           }
         });
       } else {
         createMutation.mutate({
           ...formData,
-          flightContext
+          flightContext: finalFlightContext
         });
       }
     } catch {
@@ -313,9 +355,12 @@ export function ScriptForm() {
       <Card>
         <CardContent className="pt-6">
           <Tabs defaultValue="basic" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="basic">Basic Info</TabsTrigger>
               <TabsTrigger value="transmissions">Transmissions</TabsTrigger>
+              <TabsTrigger value="variables" disabled={!variablesData?.variables.length}>
+                Variables {variablesData?.variables.length ? `(${variablesData.variables.length})` : ''}
+              </TabsTrigger>
               <TabsTrigger value="objectives">Learning Objectives</TabsTrigger>
               <TabsTrigger value="context">Flight Context</TabsTrigger>
             </TabsList>
@@ -571,6 +616,92 @@ export function ScriptForm() {
                   )}
                 </div>
               </div>
+            </TabsContent>
+
+            <TabsContent value="variables" className="space-y-4">
+              {variablesData?.variables.length ? (
+                <>
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      Fill in values for the template variables used in the communication blocks.
+                      These values will be used when rendering the script.
+                    </AlertDescription>
+                  </Alert>
+
+                  <div className="space-y-6">
+                    {/* Show variables grouped by transmission */}
+                    {Object.entries(variablesByTransmission).map(([transmissionId, transmissionData]) => {
+                      const transmission = availableTransmissions?.find(t => t.id === transmissionId);
+                      if (!transmissionData.blocks.length) return null;
+
+                      return (
+                        <div key={transmissionId} className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-medium">{transmissionData.transmissionName}</h4>
+                            <Badge variant="outline" className="text-xs">
+                              {transmission?.context}
+                            </Badge>
+                          </div>
+                          
+                          {transmissionData.blocks.map((block, blockIndex) => (
+                            <div key={blockIndex} className="ml-4 space-y-2">
+                              <p className="text-sm text-muted-foreground">{block.blockName}</p>
+                              <div className="ml-4 grid grid-cols-2 gap-4">
+                                {block.variables.map(variable => (
+                                  <div key={variable} className="space-y-2">
+                                    <Label htmlFor={`var-${variable}`}>
+                                      {`{{${variable}}}`}
+                                    </Label>
+                                    <Input
+                                      id={`var-${variable}`}
+                                      value={scriptVariables[variable] || ''}
+                                      onChange={(e) => setScriptVariables(prev => ({
+                                        ...prev,
+                                        [variable]: e.target.value
+                                      }))}
+                                      placeholder={`Enter value for ${variable}`}
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                          
+                          {Object.keys(variablesByTransmission).indexOf(transmissionId) < 
+                           Object.keys(variablesByTransmission).length - 1 && (
+                            <Separator className="my-4" />
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {/* Show all unique variables in a summary section */}
+                    <div className="mt-6 p-4 bg-secondary rounded">
+                      <h4 className="font-medium mb-3">All Variables Summary</h4>
+                      <div className="grid grid-cols-3 gap-3">
+                        {variablesData.variables.map(variable => (
+                          <div key={variable} className="flex items-center gap-2">
+                            <Badge variant={scriptVariables[variable] ? 'default' : 'outline'}>
+                              {variable}
+                            </Badge>
+                            {scriptVariables[variable] && (
+                              <span className="text-sm text-muted-foreground">
+                                = {scriptVariables[variable]}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>No variables found in the selected transmissions.</p>
+                  <p className="text-sm mt-2">Variables are defined in communication block templates using {`{{variableName}}`} format.</p>
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="objectives" className="space-y-4">

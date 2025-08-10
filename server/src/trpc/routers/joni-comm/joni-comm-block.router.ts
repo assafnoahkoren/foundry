@@ -11,6 +11,7 @@ const createCommBlockSchema = z.object({
   category: z.string().min(1).max(50),
   description: z.string().optional(),
   icaoReference: z.string().optional(),
+  template: z.string().optional(),
   rules: z.any().default({}),
   examples: z.array(z.any()).default([]),
   commonErrors: z.array(z.any()).optional().default([]),
@@ -26,6 +27,7 @@ const updateCommBlockSchema = z.object({
     category: z.string().min(1).max(50).optional(),
     description: z.string().optional(),
     icaoReference: z.string().optional(),
+    template: z.string().optional(),
     rules: z.any().optional(),
     examples: z.array(z.any()).optional(),
     commonErrors: z.array(z.any()).optional(),
@@ -98,6 +100,18 @@ export const joniCommBlockRouter = router({
   getStatistics: protectedProcedure
     .query(async () => {
       return joniCommBlockService.getCommBlockStatistics();
+    }),
+
+  extractVariables: protectedProcedure
+    .input(z.object({ template: z.string() }))
+    .query(async ({ input }) => {
+      return joniCommBlockService.extractVariablesFromTemplate(input.template);
+    }),
+
+  getVariablesFromBlocks: protectedProcedure
+    .input(z.object({ blockIds: z.array(z.string()) }))
+    .query(async ({ input }) => {
+      return joniCommBlockService.getVariablesFromBlocks(input.blockIds);
     }),
 
   // ===== ADMIN PROCEDURES (require joni-comm-blocks access) =====

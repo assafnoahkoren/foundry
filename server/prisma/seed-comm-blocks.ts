@@ -11,6 +11,7 @@ const commBlocks = [
     category: 'identification',
     description: 'Standard format for aircraft callsign communication',
     icaoReference: 'ICAO Doc 9432, Section 2.1',
+    template: '{{callsign}}',
     difficultyLevel: 1,
     orderIndex: 1,
     rules: {
@@ -35,6 +36,7 @@ const commBlocks = [
     category: 'identification',
     description: 'ICAO aircraft type designator',
     icaoReference: 'ICAO Doc 8643',
+    template: '{{aircraft_type}}',
     difficultyLevel: 2,
     orderIndex: 2,
     rules: {
@@ -59,6 +61,7 @@ const commBlocks = [
     category: 'position',
     description: 'Standard altitude reporting format',
     icaoReference: 'ICAO Annex 2, Chapter 3',
+    template: '{{altitude_value}} {{altitude_unit}}',
     difficultyLevel: 1,
     orderIndex: 10,
     rules: {
@@ -83,6 +86,7 @@ const commBlocks = [
     category: 'position',
     description: 'Magnetic heading in degrees',
     icaoReference: 'ICAO Doc 9432, Section 3.2',
+    template: '{{heading_degrees}}',
     difficultyLevel: 1,
     orderIndex: 11,
     rules: {
@@ -107,6 +111,7 @@ const commBlocks = [
     category: 'position',
     description: 'Indicated airspeed or ground speed',
     icaoReference: 'ICAO Doc 9432, Section 3.3',
+    template: '{{speed_value}} knots',
     difficultyLevel: 2,
     orderIndex: 12,
     rules: {
@@ -131,6 +136,7 @@ const commBlocks = [
     category: 'position',
     description: 'Current position using waypoint or coordinates',
     icaoReference: 'ICAO Annex 2, Appendix 2',
+    template: 'Position {{waypoint}} at time {{time}}, {{altitude}}',
     difficultyLevel: 3,
     orderIndex: 13,
     rules: {
@@ -157,6 +163,7 @@ const commBlocks = [
     category: 'clearance',
     description: 'Standard takeoff clearance phraseology',
     icaoReference: 'ICAO Doc 4444, Section 12.3.1',
+    template: 'Runway {{runway}}, cleared for takeoff',
     difficultyLevel: 2,
     orderIndex: 20,
     rules: {
@@ -181,6 +188,7 @@ const commBlocks = [
     category: 'clearance',
     description: 'Standard landing clearance phraseology',
     icaoReference: 'ICAO Doc 4444, Section 12.3.4',
+    template: 'Runway {{runway}}, cleared to land',
     difficultyLevel: 2,
     orderIndex: 21,
     rules: {
@@ -205,6 +213,7 @@ const commBlocks = [
     category: 'clearance',
     description: 'Ground taxi instructions',
     icaoReference: 'ICAO Doc 4444, Section 12.3.1',
+    template: 'Taxi to {{destination}} via {{taxiways}}',
     difficultyLevel: 3,
     orderIndex: 22,
     rules: {
@@ -231,6 +240,7 @@ const commBlocks = [
     category: 'instruction',
     description: 'Climb or descend instructions',
     icaoReference: 'ICAO Doc 4444, Section 12.4.1',
+    template: '{{climb_or_descend}} to {{altitude}}',
     difficultyLevel: 2,
     orderIndex: 30,
     rules: {
@@ -255,6 +265,7 @@ const commBlocks = [
     category: 'instruction',
     description: 'Turn to heading instructions',
     icaoReference: 'ICAO Doc 4444, Section 12.4.2',
+    template: 'Turn {{direction}} heading {{heading}}',
     difficultyLevel: 2,
     orderIndex: 31,
     rules: {
@@ -279,6 +290,7 @@ const commBlocks = [
     category: 'instruction',
     description: 'Speed adjustment instructions',
     icaoReference: 'ICAO Doc 4444, Section 12.4.3',
+    template: '{{reduce_or_increase}} speed to {{speed}} knots',
     difficultyLevel: 2,
     orderIndex: 32,
     rules: {
@@ -305,6 +317,7 @@ const commBlocks = [
     category: 'readback',
     description: 'Proper readback structure',
     icaoReference: 'ICAO Doc 9432, Section 2.6',
+    template: '{{instruction}}, {{callsign}}',
     difficultyLevel: 2,
     orderIndex: 40,
     rules: {
@@ -329,6 +342,7 @@ const commBlocks = [
     category: 'readback',
     description: 'Acknowledgment without readback',
     icaoReference: 'ICAO Doc 9432, Section 2.6.2',
+    template: 'Roger',
     difficultyLevel: 1,
     orderIndex: 41,
     rules: {
@@ -356,6 +370,7 @@ const commBlocks = [
     category: 'information',
     description: 'Weather reporting format',
     icaoReference: 'ICAO Annex 3',
+    template: 'Wind {{wind_direction}} at {{wind_speed}}, visibility {{visibility}}, QNH {{qnh}}',
     difficultyLevel: 3,
     orderIndex: 50,
     rules: {
@@ -380,6 +395,7 @@ const commBlocks = [
     category: 'information',
     description: 'Traffic advisory format',
     icaoReference: 'ICAO Doc 4444, Section 12.4.5',
+    template: 'Traffic {{position}} oclock, {{distance}} miles, {{altitude_reference}}, {{aircraft_type}}',
     difficultyLevel: 3,
     orderIndex: 51,
     rules: {
@@ -404,6 +420,7 @@ const commBlocks = [
     category: 'information',
     description: 'Runway condition and status',
     icaoReference: 'ICAO Doc 4444, Section 7.5',
+    template: 'Runway {{runway}} {{condition}}',
     difficultyLevel: 2,
     orderIndex: 52,
     rules: {
@@ -430,6 +447,7 @@ const commBlocks = [
     category: 'emergency',
     description: 'Distress call format',
     icaoReference: 'ICAO Annex 10, Vol II, Chapter 5',
+    template: 'Mayday, Mayday, Mayday, {{callsign}}, {{position}}, {{emergency_nature}}, {{intentions}}',
     difficultyLevel: 3,
     orderIndex: 60,
     rules: {
@@ -453,6 +471,7 @@ const commBlocks = [
     category: 'emergency',
     description: 'Urgency call format',
     icaoReference: 'ICAO Annex 10, Vol II, Chapter 5',
+    template: 'Pan Pan, Pan Pan, Pan Pan, {{callsign}}, {{position}}, {{urgency_nature}}, {{intentions}}',
     difficultyLevel: 3,
     orderIndex: 61,
     rules: {
@@ -478,6 +497,7 @@ const commBlocks = [
     category: 'instruction',
     description: 'Contact/monitor frequency instructions',
     icaoReference: 'ICAO Doc 9432, Section 2.5',
+    template: 'Contact {{facility}} {{frequency}}',
     difficultyLevel: 1,
     orderIndex: 70,
     rules: {
@@ -504,6 +524,7 @@ const commBlocks = [
     category: 'instruction',
     description: 'Transponder squawk code assignment',
     icaoReference: 'ICAO Doc 4444, Section 8.5.2',
+    template: 'Squawk {{code}}',
     difficultyLevel: 1,
     orderIndex: 80,
     rules: {
@@ -528,6 +549,7 @@ const commBlocks = [
     category: 'instruction',
     description: 'Hold short of runway/taxiway',
     icaoReference: 'ICAO Doc 4444, Section 12.3.1',
+    template: 'Hold short of {{location}}',
     difficultyLevel: 2,
     orderIndex: 81,
     rules: {
@@ -552,6 +574,7 @@ const commBlocks = [
     category: 'instruction',
     description: 'Missed approach/go around instruction',
     icaoReference: 'ICAO Doc 4444, Section 12.3.4',
+    template: '{{callsign}}, go around',
     difficultyLevel: 2,
     orderIndex: 82,
     rules: {
@@ -755,7 +778,17 @@ async function seedCommBlocks() {
           aircraft: 'Cessna 172',
           airport: 'KJFK',
           weather: 'VFR conditions',
-          traffic: 'Moderate'
+          traffic: 'Moderate',
+          variables: {
+            callsign: 'November Seven Eight Nine',
+            runway: 'Two Seven',
+            taxiways: 'Alpha, Bravo',
+            destination: 'runway Two Seven',
+            altitude: 'Three Thousand',
+            heading: 'Two Seven Zero',
+            facility: 'Tower',
+            frequency: 'One One Eight Decimal Three'
+          }
         },
         learningObjectives: [
           'Proper initial contact procedures',
@@ -776,7 +809,17 @@ async function seedCommBlocks() {
           aircraft: 'Cessna 172',
           airport: 'KJFK',
           weather: 'VFR conditions',
-          traffic: 'Moderate'
+          traffic: 'Moderate',
+          variables: {
+            callsign: 'November Seven Eight Nine',
+            runway: 'Two Seven',
+            taxiways: 'Alpha, Bravo',
+            destination: 'runway Two Seven',
+            altitude: 'Three Thousand',
+            heading: 'Two Seven Zero',
+            facility: 'Tower',
+            frequency: 'One One Eight Decimal Three'
+          }
         },
         learningObjectives: [
           'Proper initial contact procedures',

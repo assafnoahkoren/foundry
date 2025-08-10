@@ -322,6 +322,71 @@ export class JoniScriptService {
     };
   }
 
+  // ===== TEMPLATE VARIABLES =====
+
+  async getVariablesFromTransmissions(transmissionIds: string[]): Promise<{
+    variables: string[];
+    variablesByTransmission: Record<string, { transmissionName: string; blocks: Array<{ blockName: string; variables: string[] }> }>;
+  }> {
+    // Get all transmissions with their blocks
+    const transmissions = await prisma.joniTransmissionTemplate.findMany({
+      where: {
+        id: { in: transmissionIds }
+      }
+    });
+
+    const allVariables = new Set<string>();
+    const variablesByTransmission: Record<string, { transmissionName: string; blocks: Array<{ blockName: string; variables: string[] }> }> = {};
+
+    for (const transmission of transmissions) {
+      const blockData = transmission.blocks as any[];
+      if (!blockData || !Array.isArray(blockData)) continue;
+
+      variablesByTransmission[transmission.id] = {
+        transmissionName: transmission.name,
+        blocks: []
+      };
+
+      // Get all block IDs from this transmission
+      const blockIds = blockData.map((b: any) => b.blockId).filter(Boolean);
+      
+      // Get all blocks with their templates
+      const blocks = await prisma.joniCommBlock.findMany({
+        where: {
+          id: { in: blockIds }
+        }
+      });
+
+      // Extract variables from each block's template
+      for (const block of blocks) {
+        if (block.template) {
+          const regex = /\{\{(\w+)\}\}/g;
+          const variables: string[] = [];
+          let match;
+          
+          while ((match = regex.exec(block.template)) !== null) {
+            if (!variables.includes(match[1])) {
+              variables.push(match[1]);
+              allVariables.add(match[1]);
+            }
+          }
+
+          if (variables.length > 0) {
+            variablesByTransmission[transmission.id].blocks.push({
+              blockName: block.name,
+              variables
+            });
+          }
+        }
+      }
+    }
+
+    return {
+      variables: Array.from(allVariables),
+      variablesByTransmission
+    };
+  }
+
   // ===== VALIDATION =====
 
   async validatePrerequisites(userId: string, scriptId: string): Promise<{

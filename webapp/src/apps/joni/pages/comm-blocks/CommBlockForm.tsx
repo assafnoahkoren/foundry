@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { Save, ArrowLeft, Plus, Trash2, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -18,6 +19,7 @@ interface CommBlockFormData {
   category: string;
   description: string;
   icaoReference: string;
+  template: string;
   difficultyLevel: number;
   orderIndex: number;
   rules: Record<string, unknown>;
@@ -46,6 +48,7 @@ export function CommBlockForm() {
     category: 'identification',
     description: '',
     icaoReference: '',
+    template: '',
     difficultyLevel: 1,
     orderIndex: 1,
     rules: {},
@@ -71,6 +74,7 @@ export function CommBlockForm() {
         category: existingBlock.category,
         description: existingBlock.description || '',
         icaoReference: existingBlock.icaoReference || '',
+        template: existingBlock.template || '',
         difficultyLevel: existingBlock.difficultyLevel,
         orderIndex: existingBlock.orderIndex,
         rules: existingBlock.rules,
@@ -204,8 +208,9 @@ export function CommBlockForm() {
       <Card>
         <CardContent className="pt-6">
           <Tabs defaultValue="basic" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="basic">Basic Info</TabsTrigger>
+              <TabsTrigger value="template">Template</TabsTrigger>
               <TabsTrigger value="rules">Rules & Validation</TabsTrigger>
               <TabsTrigger value="examples">Examples</TabsTrigger>
               <TabsTrigger value="errors">Common Errors</TabsTrigger>
@@ -305,6 +310,42 @@ export function CommBlockForm() {
                     min="1"
                   />
                 </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="template" className="space-y-4">
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Define the communication template with variables using {`{{variableName}}`} format.
+                  For example: {`"{{callsign}}, request climb to {{altitude}}"`}
+                </AlertDescription>
+              </Alert>
+              <div className="space-y-2">
+                <Label htmlFor="template">Communication Template</Label>
+                <Textarea
+                  id="template"
+                  value={formData.template}
+                  onChange={(e) => setFormData({ ...formData, template: e.target.value })}
+                  placeholder="e.g., {{callsign}}, turn {{direction}} heading {{heading}}"
+                  rows={5}
+                  className="font-mono"
+                />
+                {formData.template && (
+                  <div className="mt-2 p-3 bg-secondary rounded">
+                    <p className="text-sm font-medium mb-2">Detected Variables:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {Array.from(formData.template.matchAll(/\{\{(\w+)\}\}/g))
+                        .map(match => match[1])
+                        .filter((v, i, a) => a.indexOf(v) === i)
+                        .map(variable => (
+                          <Badge key={variable} variant="outline">
+                            {variable}
+                          </Badge>
+                        ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </TabsContent>
 
