@@ -80,6 +80,9 @@ export function ScriptForm() {
     orderDirection: 'asc'
   });
 
+  // Fetch all comm blocks to get their templates
+  const { data: allCommBlocks } = trpc.joniComm.blocks.list.useQuery({});
+
   // Fetch variables from selected transmissions
   const transmissionIds = transmissions.map(t => t.transmissionId);
   const { data: variablesData } = trpc.joniComm.scripts.getVariablesFromTransmissions.useQuery(
@@ -329,6 +332,35 @@ export function ScriptForm() {
     return role === 'pilot' ? '✈️' : '🎧';
   };
 
+  // Get concatenated template from transmission blocks
+  const getTransmissionTemplate = (transmissionId: string): string | null => {
+    const transmission = availableTransmissions?.find(t => t.id === transmissionId);
+    if (!transmission || !allCommBlocks) return null;
+
+    interface TransmissionBlock {
+      blockId: string;
+      order: number;
+      parameters?: Record<string, unknown>;
+      isOptional?: boolean;
+    }
+    
+    const blocks = transmission.blocks as TransmissionBlock[];
+    if (!blocks || !Array.isArray(blocks)) return null;
+
+    // Sort blocks by order and get their templates
+    const sortedBlocks = [...blocks].sort((a, b) => a.order - b.order);
+    const templates: string[] = [];
+
+    for (const block of sortedBlocks) {
+      const commBlock = allCommBlocks.find(cb => cb.id === block.blockId);
+      if (commBlock?.template) {
+        templates.push(commBlock.template);
+      }
+    }
+
+    return templates.length > 0 ? templates.join(', ') : null;
+  };
+
   return (
     <div className="max-w-4xl mx-auto p-4 space-y-6">
       {/* Header */}
@@ -575,6 +607,15 @@ export function ScriptForm() {
                             <div className="text-sm text-muted-foreground mt-1">
                               Type: {getTransmissionType(trans.transmissionId)}
                             </div>
+                            {(() => {
+                              const template = getTransmissionTemplate(trans.transmissionId);
+                              return template ? (
+                                <div className="mt-2 p-2 bg-muted rounded text-sm">
+                                  <span className="text-muted-foreground">Template: </span>
+                                  <code className="font-mono">{template}</code>
+                                </div>
+                              ) : null;
+                            })()}
                           </div>
                           <div className="flex items-center gap-1">
                             <TooltipProvider>

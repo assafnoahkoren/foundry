@@ -87,7 +87,7 @@ async function seedAdminUser() {
     },
     {
       featureId: 'joni',
-      subFeatures: ['joni-management', 'joni-scenario-practice']
+      subFeatures: ['joni-management', 'joni-scenario-practice', 'joni-comm-blocks']
     },
     {
       featureId: 'backoffice',
