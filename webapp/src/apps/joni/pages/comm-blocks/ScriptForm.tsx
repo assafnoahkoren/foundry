@@ -163,7 +163,7 @@ export function ScriptForm() {
           transmissionId: t.transmissionId || t.transmission?.id,
           orderInScript: t.orderInScript,
           actorRole: t.actorRole,
-          expectedDelay: t.expectedDelay,
+          expectedDelay: t.expectedDelay || undefined,
           triggerCondition: t.triggerCondition || undefined
         }));
         setTransmissions(scriptTransmissions);
@@ -181,6 +181,7 @@ export function ScriptForm() {
             scriptId: script.id,
             transmission: {
               ...transmission,
+              expectedDelay: transmission.expectedDelay || undefined,
               triggerCondition: transmission.triggerCondition || undefined
             }
           });
@@ -213,6 +214,7 @@ export function ScriptForm() {
             scriptId: id!,
             transmissions: transmissions.map(t => ({
               ...t,
+              expectedDelay: t.expectedDelay || undefined,
               triggerCondition: t.triggerCondition || undefined
             }))
           });
@@ -234,7 +236,7 @@ export function ScriptForm() {
         title: 'Success',
         description: 'Script updated successfully'
       });
-      navigate('/joni/scripts');
+      // Don't navigate away - stay on the same page
     },
     onError: (error) => {
       toast({
