@@ -20,8 +20,18 @@ export function editorContentToString(editorContent?: EditorJSONContent): string
       // Regular text content
       parts.push(node.text);
     } else if (node.type === 'commBlock' && node.attrs?.blockCode) {
-      // Communication block - represent as {code}
-      parts.push(`{${node.attrs.blockCode}}`);
+      // Communication block - represent as {code} with spaces around it
+      const blockString = `{${node.attrs.blockCode}}`;
+      
+      // Check if we need to add space before
+      const lastPart = parts[parts.length - 1];
+      if (lastPart && !lastPart.endsWith(' ')) {
+        parts.push(' ');
+      }
+      
+      parts.push(blockString);
+      
+      // We'll add space after the block in the join phase if needed
     } else if (node.content) {
       // Process child nodes
       node.content.forEach(processNode);
@@ -31,7 +41,16 @@ export function editorContentToString(editorContent?: EditorJSONContent): string
   // Process all content nodes
   editorContent.content.forEach(processNode);
 
-  return parts.join('');
+  // Join parts and ensure spaces around blocks
+  let result = parts.join('');
+  
+  // Add space after blocks if the next character isn't a space or punctuation
+  result = result.replace(/(\{[^}]+\})([^ ,.\n])/g, '$1 $2');
+  
+  // Clean up any double spaces
+  result = result.replace(/  +/g, ' ');
+  
+  return result;
 }
 
 /**

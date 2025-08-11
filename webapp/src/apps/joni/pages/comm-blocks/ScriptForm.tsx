@@ -19,6 +19,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { editorContentToString } from '../../utils/editorContentUtils';
+import type { EditorJSONContent } from '../../components/CommBlockEditor';
 
 interface ScriptTransmission {
   transmissionId: string;
@@ -51,6 +53,7 @@ export function ScriptForm() {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEditMode = !!id;
+  const utils = trpc.useUtils();
 
   const [formData, setFormData] = useState<ScriptFormData>({
     code: '',
@@ -161,7 +164,7 @@ export function ScriptForm() {
           orderInScript: t.orderInScript,
           actorRole: t.actorRole,
           expectedDelay: t.expectedDelay,
-          triggerCondition: t.triggerCondition
+          triggerCondition: t.triggerCondition || undefined
         }));
         setTransmissions(scriptTransmissions);
       }
@@ -176,7 +179,10 @@ export function ScriptForm() {
         for (const transmission of transmissions) {
           await addTransmissionMutation.mutateAsync({
             scriptId: script.id,
-            transmission
+            transmission: {
+              ...transmission,
+              triggerCondition: transmission.triggerCondition || undefined
+            }
           });
         }
       }
@@ -198,7 +204,32 @@ export function ScriptForm() {
 
   // Update mutation
   const updateMutation = trpc.joniComm.scripts.update.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
+      // Update transmissions after updating the script
+      if (isEditMode) {
+        try {
+          // Use the new replaceTransmissions endpoint for atomic update
+          await replaceTransmissionsMutation.mutateAsync({
+            scriptId: id!,
+            transmissions: transmissions.map(t => ({
+              ...t,
+              triggerCondition: t.triggerCondition || undefined
+            }))
+          });
+        } catch (error) {
+          console.error('Error updating transmissions:', error);
+          toast({
+            title: 'Error updating transmissions',
+            description: 'Some transmissions may not have been updated correctly',
+            variant: 'destructive'
+          });
+        }
+      }
+      
+      // Invalidate queries to refresh the data
+      await utils.joniComm.scripts.getById.invalidate({ id: id! });
+      await utils.joniComm.scripts.list.invalidate();
+      
       toast({
         title: 'Success',
         description: 'Script updated successfully'
@@ -216,6 +247,9 @@ export function ScriptForm() {
 
   // Add transmission mutation
   const addTransmissionMutation = trpc.joniComm.scripts.addTransmission.useMutation();
+  
+  // Replace all transmissions mutation (for updates)
+  const replaceTransmissionsMutation = trpc.joniComm.scripts.replaceTransmissions.useMutation();
 
   const handleSubmit = () => {
     try {
@@ -262,11 +296,17 @@ export function ScriptForm() {
   const addTransmission = () => {
     if (!selectedTransmissionToAdd) return;
 
+    // Calculate the next order number (max existing order + 1)
+    const maxOrder = transmissions.length > 0 
+      ? Math.max(...transmissions.map(t => t.orderInScript))
+      : 0;
+
     const newTransmission: ScriptTransmission = {
       transmissionId: selectedTransmissionToAdd,
-      orderInScript: transmissions.length + 1,
+      orderInScript: maxOrder + 1,
       actorRole: selectedActorRole,
-      expectedDelay: expectedDelay || undefined
+      expectedDelay: expectedDelay || undefined,
+      triggerCondition: undefined
     };
 
     setTransmissions([...transmissions, newTransmission]);
@@ -332,11 +372,23 @@ export function ScriptForm() {
     return role === 'pilot' ? '✈️' : '🎧';
   };
 
-  // Get concatenated template from transmission blocks
+  // Get transmission template using editor content
   const getTransmissionTemplate = (transmissionId: string): string | null => {
     const transmission = availableTransmissions?.find(t => t.id === transmissionId);
-    if (!transmission || !allCommBlocks) return null;
+    if (!transmission) return null;
 
+    // Check if transmission has editor content in metadata
+    const metadata = transmission.metadata as Record<string, unknown>;
+    const editorContent = metadata?.editorContent as EditorJSONContent | undefined;
+    
+    if (editorContent) {
+      // Use the new editor content to generate the template string
+      return editorContentToString(editorContent);
+    }
+    
+    // Fallback: If no editor content, try to build from blocks
+    if (!allCommBlocks) return null;
+    
     interface TransmissionBlock {
       blockId: string;
       order: number;
@@ -347,18 +399,18 @@ export function ScriptForm() {
     const blocks = transmission.blocks as TransmissionBlock[];
     if (!blocks || !Array.isArray(blocks)) return null;
 
-    // Sort blocks by order and get their templates
+    // Sort blocks by order and get their codes
     const sortedBlocks = [...blocks].sort((a, b) => a.order - b.order);
-    const templates: string[] = [];
+    const blockCodes: string[] = [];
 
     for (const block of sortedBlocks) {
       const commBlock = allCommBlocks.find(cb => cb.id === block.blockId);
-      if (commBlock?.template) {
-        templates.push(commBlock.template);
+      if (commBlock?.code) {
+        blockCodes.push(`{${commBlock.code}}`);
       }
     }
 
-    return templates.length > 0 ? templates.join(', ') : null;
+    return blockCodes.length > 0 ? blockCodes.join(' ') : null;
   };
 
   return (

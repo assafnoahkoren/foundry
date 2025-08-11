@@ -187,6 +187,36 @@ export class JoniScriptService {
     });
   }
 
+  async replaceScriptTransmissions(
+    scriptId: string,
+    transmissions: Array<{
+      transmissionId: string;
+      orderInScript: number;
+      actorRole: string;
+      expectedDelay?: number;
+      triggerCondition?: string;
+    }>
+  ): Promise<void> {
+    // Handle all transmission updates in a single transaction
+    await prisma.$transaction(async (tx) => {
+      // First remove all existing transmissions for this script
+      await tx.joniScriptTransmission.deleteMany({
+        where: { scriptId }
+      });
+
+      // Then create all new transmissions
+      if (transmissions.length > 0) {
+        await tx.joniScriptTransmission.createMany({
+          data: transmissions.map(t => ({
+            scriptId,
+            ...t,
+            triggerCondition: t.triggerCondition || null
+          }))
+        });
+      }
+    });
+  }
+
   // ===== BULK OPERATIONS =====
 
   async createManyScripts(

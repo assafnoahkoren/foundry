@@ -44,6 +44,41 @@ describe('editorContentUtils', () => {
       expect(result).toBe('Tower, {callsign} requesting {landing_clearance} runway 25L');
     });
 
+    it('should add spaces around blocks when missing', () => {
+      const editorContent: EditorJSONContent = {
+        type: 'doc',
+        content: [
+          {
+            type: 'paragraph',
+            content: [
+              { type: 'text', text: 'Tower,' },
+              {
+                type: 'commBlock',
+                attrs: {
+                  blockCode: 'callsign',
+                  blockName: 'Aircraft Callsign',
+                  category: 'identification'
+                }
+              },
+              { type: 'text', text: 'requesting' },
+              {
+                type: 'commBlock',
+                attrs: {
+                  blockCode: 'landing_clearance',
+                  blockName: 'Landing Clearance',
+                  category: 'clearance'
+                }
+              },
+              { type: 'text', text: 'runway 25L' }
+            ]
+          }
+        ]
+      };
+
+      const result = editorContentToString(editorContent);
+      expect(result).toBe('Tower, {callsign} requesting {landing_clearance} runway 25L');
+    });
+
     it('should handle empty content', () => {
       expect(editorContentToString(undefined)).toBe('');
       expect(editorContentToString({})).toBe('');

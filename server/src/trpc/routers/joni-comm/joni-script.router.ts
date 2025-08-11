@@ -289,5 +289,15 @@ export const joniScriptRouter = router({
     .mutation(async ({ input }) => {
       await joniScriptService.reorderScriptTransmissions(input.scriptId, input.newOrder);
       return { success: true };
+    }),
+
+  replaceTransmissions: requireCommBlockAccess
+    .input(z.object({
+      scriptId: z.string(),
+      transmissions: z.array(scriptTransmissionSchema)
+    }))
+    .mutation(async ({ input }) => {
+      await joniScriptService.replaceScriptTransmissions(input.scriptId, input.transmissions);
+      return { success: true };
     })
 });
