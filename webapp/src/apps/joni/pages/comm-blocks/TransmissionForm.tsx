@@ -8,17 +8,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
-import { Save, ArrowLeft, Plus, Trash2, AlertCircle, MoveUp, MoveDown, Radio, Clock, ExternalLink } from 'lucide-react';
+import { Save, ArrowLeft, AlertCircle, Clock } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { CommBlockEditor } from '../../components/CommBlockEditor';
 
 interface TransmissionBlock {
   blockId: string;
@@ -37,6 +30,7 @@ interface TransmissionFormData {
   estimatedSeconds: number;
   blocks: TransmissionBlock[];
   metadata: Record<string, unknown>;
+  editorContent?: string; // Store the full editor content
 }
 
 export function TransmissionForm() {
@@ -53,11 +47,11 @@ export function TransmissionForm() {
     difficultyLevel: 2,
     estimatedSeconds: 10,
     blocks: [],
-    metadata: {}
+    metadata: {},
+    editorContent: undefined
   });
 
   const [metadataJson, setMetadataJson] = useState('{}');
-  const [selectedBlockToAdd, setSelectedBlockToAdd] = useState<string>('');
 
   // Fetch available comm blocks
   const { data: availableBlocks } = trpc.joniComm.blocks.list.useQuery({
@@ -73,6 +67,7 @@ export function TransmissionForm() {
 
   useEffect(() => {
     if (existingTransmission) {
+      const metadata = (existingTransmission.metadata || {}) as Record<string, unknown>;
       setFormData({
         code: existingTransmission.code,
         name: existingTransmission.name,
@@ -82,9 +77,13 @@ export function TransmissionForm() {
         difficultyLevel: existingTransmission.difficultyLevel,
         estimatedSeconds: existingTransmission.estimatedSeconds,
         blocks: Array.isArray(existingTransmission.blocks) ? existingTransmission.blocks as TransmissionBlock[] : [],
-        metadata: (existingTransmission.metadata || {}) as Record<string, unknown>
+        metadata: metadata,
+        editorContent: metadata.editorContent as string | undefined
       });
-      setMetadataJson(JSON.stringify(existingTransmission.metadata || {}, null, 2));
+      // Remove editorContent from display metadata
+      const displayMetadata = { ...metadata };
+      delete displayMetadata.editorContent;
+      setMetadataJson(JSON.stringify(displayMetadata, null, 2));
     }
   }, [existingTransmission]);
 
@@ -106,6 +105,9 @@ export function TransmissionForm() {
     }
   });
 
+  // Get the utils for invalidation
+  const utils = trpc.useUtils();
+
   // Update mutation
   const updateMutation = trpc.joniComm.transmissions.update.useMutation({
     onSuccess: () => {
@@ -113,7 +115,9 @@ export function TransmissionForm() {
         title: 'Success',
         description: 'Transmission template updated successfully'
       });
-      navigate('/joni/transmissions');
+      // Invalidate the query to refetch the updated data
+      utils.joniComm.transmissions.getById.invalidate({ id: id! });
+      utils.joniComm.transmissions.list.invalidate();
     },
     onError: (error) => {
       toast({
@@ -137,18 +141,24 @@ export function TransmissionForm() {
         return;
       }
 
+      // Include editor content in metadata for storage
+      const fullMetadata = {
+        ...metadata,
+        editorContent: formData.editorContent
+      };
+
       if (isEditMode) {
         updateMutation.mutate({
           id: id!,
           data: {
             ...formData,
-            metadata
+            metadata: fullMetadata
           }
         });
       } else {
         createMutation.mutate({
           ...formData,
-          metadata
+          metadata: fullMetadata
         });
       }
     } catch {
@@ -160,72 +170,13 @@ export function TransmissionForm() {
     }
   };
 
-  const addBlock = () => {
-    if (!selectedBlockToAdd) return;
-
-    const newBlock: TransmissionBlock = {
-      blockId: selectedBlockToAdd,
-      order: formData.blocks.length + 1,
-      parameters: {},
-      isOptional: false
-    };
-
+  // Handle blocks update from editor
+  const handleBlocksChange = (newBlocks: TransmissionBlock[], editorContent?: string) => {
     setFormData({
       ...formData,
-      blocks: [...formData.blocks, newBlock]
+      blocks: newBlocks,
+      editorContent: editorContent
     });
-    setSelectedBlockToAdd('');
-  };
-
-  const removeBlock = (index: number) => {
-    const newBlocks = formData.blocks.filter((_, i) => i !== index);
-    // Reorder remaining blocks
-    newBlocks.forEach((block, i) => {
-      block.order = i + 1;
-    });
-    setFormData({
-      ...formData,
-      blocks: newBlocks
-    });
-  };
-
-  const moveBlock = (index: number, direction: 'up' | 'down') => {
-    const newBlocks = [...formData.blocks];
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    
-    if (targetIndex < 0 || targetIndex >= newBlocks.length) return;
-
-    // Swap blocks
-    [newBlocks[index], newBlocks[targetIndex]] = [newBlocks[targetIndex], newBlocks[index]];
-    
-    // Update order numbers
-    newBlocks.forEach((block, i) => {
-      block.order = i + 1;
-    });
-
-    setFormData({
-      ...formData,
-      blocks: newBlocks
-    });
-  };
-
-  const toggleBlockOptional = (index: number) => {
-    const newBlocks = [...formData.blocks];
-    newBlocks[index].isOptional = !newBlocks[index].isOptional;
-    setFormData({
-      ...formData,
-      blocks: newBlocks
-    });
-  };
-
-  const getBlockName = (blockId: string) => {
-    const block = availableBlocks?.find(b => b.id === blockId);
-    return block?.name || 'Unknown Block';
-  };
-
-  const getBlockCategory = (blockId: string) => {
-    const block = availableBlocks?.find(b => b.id === blockId);
-    return block?.category || 'unknown';
   };
 
   return (
@@ -374,127 +325,24 @@ export function TransmissionForm() {
               <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  Add communication blocks in the order they should appear in the transmission.
-                  Mark blocks as optional if they may be omitted in certain situations.
+                  Build your transmission by typing text and dragging communication blocks into the editor.
+                  You can reorder blocks by dragging them within the editor.
                 </AlertDescription>
               </Alert>
 
-              <div className="space-y-4">
-                <div className="flex gap-2">
-                  <Select value={selectedBlockToAdd} onValueChange={setSelectedBlockToAdd}>
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Select a communication block to add" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableBlocks?.map((block) => (
-                        <SelectItem key={block.id} value={block.id}>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-xs">
-                              {block.category}
-                            </Badge>
-                            {block.name}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button onClick={addBlock} disabled={!selectedBlockToAdd}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Block
-                  </Button>
-                </div>
-
-                <div className="space-y-2">
-                  {formData.blocks.length === 0 ? (
-                    <Card>
-                      <CardContent className="text-center py-8 text-muted-foreground">
-                        <Radio className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                        <p>No blocks added yet</p>
-                        <p className="text-sm mt-2">Add communication blocks to build your transmission template</p>
-                      </CardContent>
-                    </Card>
-                  ) : (
-                    formData.blocks.map((block, index) => (
-                      <Card key={index}>
-                        <CardContent className="flex items-center gap-4 p-4">
-                          <div className="flex flex-col gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => moveBlock(index, 'up')}
-                              disabled={index === 0}
-                            >
-                              <MoveUp className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => moveBlock(index, 'down')}
-                              disabled={index === formData.blocks.length - 1}
-                            >
-                              <MoveDown className="w-4 h-4" />
-                            </Button>
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <Badge variant="secondary">{block.order}</Badge>
-                              <Badge variant="outline">{getBlockCategory(block.blockId)}</Badge>
-                              <span className="font-medium">{getBlockName(block.blockId)}</span>
-                              {block.isOptional && (
-                                <Badge variant="outline" className="ml-auto">Optional</Badge>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className="flex items-center gap-2">
-                              <Label htmlFor={`optional-${index}`} className="text-sm">
-                                Optional
-                              </Label>
-                              <Switch
-                                id={`optional-${index}`}
-                                checked={block.isOptional}
-                                onCheckedChange={() => toggleBlockOptional(index)}
-                              />
-                            </div>
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => navigate(`/joni/comm-blocks/${block.blockId}`)}
-                                  >
-                                    <ExternalLink className="w-4 h-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>View/Edit communication block</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => removeBlock(index)}
-                                  >
-                                    <Trash2 className="w-4 h-4 text-destructive" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Remove from transmission</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))
-                  )}
-                </div>
-              </div>
+              {availableBlocks && (
+                <CommBlockEditor
+                  value={formData.blocks}
+                  onChange={handleBlocksChange}
+                  initialContent={formData.editorContent}
+                  availableBlocks={availableBlocks.map(b => ({
+                    id: b.id,
+                    name: b.name,
+                    category: b.category,
+                    code: b.code
+                  }))}
+                />
+              )}
             </TabsContent>
 
             <TabsContent value="metadata" className="space-y-4">
