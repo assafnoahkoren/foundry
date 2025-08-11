@@ -20,7 +20,7 @@ export const Login = () => {
   // Navigate to hub when user is authenticated and auth is not loading
   useEffect(() => {
     if (user && !authLoading) {
-      navigate('/hub');
+      navigate('/');
     }
   }, [user, authLoading, navigate]);
 

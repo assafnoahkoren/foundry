@@ -29,7 +29,7 @@ export const PrivateLayout = () => {
             <div className="flex items-center gap-6">
               <Link 
                 id="hub-nav-link"
-                to="/hub" 
+                to="/" 
                 className="flex items-center gap-2 hover:opacity-80 transition-opacity"
               >
                 <LayoutGrid className="h-4 w-4" />

@@ -24,16 +24,16 @@ function App() {
       <AuthProvider>
         <Routes>
           {/* Public routes */}
-          <Route path="/" element={<PublicLayout />}>
-            <Route index element={<Home />} />
+          <Route element={<PublicLayout />}>
+            <Route path="welcome" element={<Home />} />
             <Route path="login" element={<Login />} />
             <Route path="register" element={<Register />} />
           </Route>
 
           {/* Private routes */}
           <Route element={<PrivateRoute />}>
-            <Route path="/" element={<PrivateLayout />}>
-              <Route path="hub" element={<Hub />} />
+            <Route element={<PrivateLayout />}>
+              <Route path="/" element={<Hub />} />
             </Route>
             
             {/* Joni app with its own layout and nested routes */}
@@ -43,7 +43,7 @@ function App() {
             <Route path="backoffice/*" element={<BackofficeApp />} />
           </Route>
 
-          {/* Catch all - redirect to home */}
+          {/* Catch all - redirect to hub */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>

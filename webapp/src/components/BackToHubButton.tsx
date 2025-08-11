@@ -16,7 +16,7 @@ export function BackToHubButton() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate('/hub')}
+          onClick={() => navigate('/')}
         >
           <LayoutGrid className="h-4 w-4" />
         </Button>

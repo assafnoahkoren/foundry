@@ -15,11 +15,11 @@ export const PublicLayout = () => {
           justifyContent: 'space-between',
           alignItems: 'center'
         }}>
-          <Link to="/" style={{ textDecoration: 'none', color: '#333', fontSize: '1.5rem', fontWeight: 'bold' }}>
+          <Link to="/welcome" style={{ textDecoration: 'none', color: '#333', fontSize: '1.5rem', fontWeight: 'bold' }}>
           Aviaite
           </Link>
           <div style={{ display: 'flex', gap: '1rem' }}>
-            <Link to="/" style={{ textDecoration: 'none', color: '#333' }}>Home</Link>
+            <Link to="/welcome" style={{ textDecoration: 'none', color: '#333' }}>Home</Link>
             <Link to="/login" style={{ textDecoration: 'none', color: '#333' }}>Login</Link>
             <Link to="/register" style={{ textDecoration: 'none', color: '#333' }}>Register</Link>
           </div>
