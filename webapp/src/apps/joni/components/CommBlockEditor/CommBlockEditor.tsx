@@ -7,7 +7,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Radio, Plus } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Radio, Plus, Search } from 'lucide-react';
 import CommBlockNode from './CommBlockExtension';
 import { useState, useEffect, useRef } from 'react';
 import './CommBlockEditor.css';
@@ -176,6 +177,9 @@ export function CommBlockEditor({ value, onChange, availableBlocks, initialConte
     onChange(blocks, jsonContent);
   };
 
+  // State for search
+  const [searchQuery, setSearchQuery] = useState('');
+
   // Handle drag start for available blocks
   const handleDragStart = (e: React.DragEvent, block: CommBlock) => {
     e.dataTransfer.setData('comm-block', JSON.stringify(block));
@@ -193,8 +197,19 @@ export function CommBlockEditor({ value, onChange, availableBlocks, initialConte
     e.dataTransfer.dropEffect = 'copy';
   };
 
-  // Group blocks by category
-  const blocksByCategory = availableBlocks.reduce((acc, block) => {
+  // Filter blocks based on search query
+  const filteredBlocks = availableBlocks.filter(block => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      block.name.toLowerCase().includes(query) ||
+      block.code.toLowerCase().includes(query) ||
+      block.category.toLowerCase().includes(query)
+    );
+  });
+
+  // Group filtered blocks by category
+  const blocksByCategory = filteredBlocks.reduce((acc, block) => {
     if (!acc[block.category]) {
       acc[block.category] = [];
     }
@@ -255,14 +270,34 @@ export function CommBlockEditor({ value, onChange, availableBlocks, initialConte
       <Card>
         <CardContent className="p-0">
           <div className="border-b px-4 py-2 bg-muted/50">
-            <p className="text-sm font-medium">Available Communication Blocks</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Drag blocks to the editor above or click the + button to add them
-            </p>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex-1">
+                <p className="text-sm font-medium">Available Communication Blocks</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Drag blocks to the editor above or click the + button to add them
+                </p>
+              </div>
+              <div className="relative w-64">
+                <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Search blocks..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8 h-8"
+                />
+              </div>
+            </div>
           </div>
           <ScrollArea className="h-[300px]">
             <div className="p-4 space-y-4">
-              {Object.entries(blocksByCategory).map(([category, blocks]) => (
+              {Object.keys(blocksByCategory).length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p className="text-sm">No blocks found matching "{searchQuery}"</p>
+                  <p className="text-xs mt-2">Try a different search term</p>
+                </div>
+              ) : (
+                Object.entries(blocksByCategory).map(([category, blocks]) => (
                 <div key={category}>
                   <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                     {category}
@@ -298,7 +333,8 @@ export function CommBlockEditor({ value, onChange, availableBlocks, initialConte
                     ))}
                   </div>
                 </div>
-              ))}
+              ))
+              )}
             </div>
           </ScrollArea>
         </CardContent>
