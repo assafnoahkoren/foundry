@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
 import { Save, ArrowLeft, AlertCircle, Clock } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CommBlockEditor } from '../../components/CommBlockEditor';
+import { CommBlockEditor, type EditorJSONContent } from '../../components/CommBlockEditor';
 
 interface TransmissionBlock {
   blockId: string;
@@ -30,7 +30,7 @@ interface TransmissionFormData {
   estimatedSeconds: number;
   blocks: TransmissionBlock[];
   metadata: Record<string, unknown>;
-  editorContent?: string; // Store the full editor content
+  editorContent?: EditorJSONContent; // Store the full editor content as JSON
 }
 
 export function TransmissionForm() {
@@ -78,7 +78,7 @@ export function TransmissionForm() {
         estimatedSeconds: existingTransmission.estimatedSeconds,
         blocks: Array.isArray(existingTransmission.blocks) ? existingTransmission.blocks as TransmissionBlock[] : [],
         metadata: metadata,
-        editorContent: metadata.editorContent as string | undefined
+        editorContent: metadata.editorContent as EditorJSONContent | undefined
       });
       // Remove editorContent from display metadata
       const displayMetadata = { ...metadata };
@@ -171,7 +171,7 @@ export function TransmissionForm() {
   };
 
   // Handle blocks update from editor
-  const handleBlocksChange = (newBlocks: TransmissionBlock[], editorContent?: string) => {
+  const handleBlocksChange = (newBlocks: TransmissionBlock[], editorContent?: EditorJSONContent) => {
     setFormData({
       ...formData,
       blocks: newBlocks,

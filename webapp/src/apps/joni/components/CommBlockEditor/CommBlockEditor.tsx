@@ -12,6 +12,18 @@ import CommBlockNode from './CommBlockExtension';
 import { useState, useEffect, useRef } from 'react';
 import './CommBlockEditor.css';
 
+// Define our own type for TipTap editor content
+export interface EditorJSONContent {
+  type?: string;
+  attrs?: Record<string, unknown>;
+  content?: EditorJSONContent[];
+  marks?: {
+    type: string;
+    attrs?: Record<string, unknown>;
+  }[];
+  text?: string;
+}
+
 interface CommBlock {
   id: string;
   name: string;
@@ -28,9 +40,9 @@ interface TransmissionBlock {
 
 interface CommBlockEditorProps {
   value: TransmissionBlock[];
-  onChange: (blocks: TransmissionBlock[], editorContent?: string) => void;
+  onChange: (blocks: TransmissionBlock[], editorContent?: EditorJSONContent) => void;
   availableBlocks: CommBlock[];
-  initialContent?: string;
+  initialContent?: EditorJSONContent;
 }
 
 export function CommBlockEditor({ value, onChange, availableBlocks, initialContent }: CommBlockEditorProps) {
@@ -92,9 +104,9 @@ export function CommBlockEditor({ value, onChange, availableBlocks, initialConte
     },
     onUpdate: ({ editor }) => {
       updateBlocksFromEditor();
-      // Also pass the full editor content as JSON
+      // Pass the full editor content as JSON object
       const jsonContent = editor.getJSON();
-      onChange(extractBlocksFromEditor(), JSON.stringify(jsonContent));
+      onChange(extractBlocksFromEditor(), jsonContent);
     },
   });
 
@@ -104,41 +116,11 @@ export function CommBlockEditor({ value, onChange, availableBlocks, initialConte
     
     // Only set content once when editor is first initialized
     if (initialContent) {
-      try {
-        const content = JSON.parse(initialContent);
-        editor.commands.setContent(content, false);
-        contentLoadedRef.current = true;
-      } catch {
-        // If not valid JSON, create from blocks if available
-        if (value.length > 0) {
-          const content = {
-            type: 'doc',
-            content: [
-              {
-                type: 'paragraph',
-                content: value.map((block) => {
-                  const blockInfo = availableBlocks.find(b => b.id === block.blockId);
-                  return {
-                    type: 'commBlock',
-                    attrs: {
-                      blockId: block.blockId,
-                      blockName: blockInfo?.name || 'Unknown Block',
-                      blockCode: blockInfo?.code || 'unknown',
-                      category: blockInfo?.category || 'unknown',
-                      isOptional: block.isOptional,
-                      order: block.order,
-                    },
-                  };
-                }),
-              },
-            ],
-          };
-          editor.commands.setContent(content, false);
-          contentLoadedRef.current = true;
-        }
-      }
+      // Content is already JSON, no need to parse
+      editor.commands.setContent(initialContent, false);
+      contentLoadedRef.current = true;
     } else if (!initialContent && value.length > 0) {
-      // Fallback to creating content from blocks if no initial content
+      // Create from blocks if no initial content
       const content = {
         type: 'doc',
         content: [
@@ -191,7 +173,7 @@ export function CommBlockEditor({ value, onChange, availableBlocks, initialConte
   const updateBlocksFromEditor = () => {
     const blocks = extractBlocksFromEditor();
     const jsonContent = editor?.getJSON();
-    onChange(blocks, jsonContent ? JSON.stringify(jsonContent) : undefined);
+    onChange(blocks, jsonContent);
   };
 
   // Handle drag start for available blocks
