@@ -14,8 +14,11 @@ import { TransmissionForm } from './pages/comm-blocks/TransmissionForm';
 import { TransmissionsPlayground } from './pages/comm-blocks/TransmissionsPlayground';
 import { ScriptManagement } from './pages/comm-blocks/ScriptManagement';
 import { ScriptForm } from './pages/comm-blocks/ScriptForm';
+import { useJoniBranding } from './hooks/useJoniBranding';
 
 export function JoniApp() {
+  // Apply JONI branding (title and favicon)
+  useJoniBranding();
   return (
     <Routes>
       <Route element={<JoniLayout />}>
