@@ -89,6 +89,23 @@ export interface JoniScenarioData {
   currentStatus: string;
 }
 
+export interface TransmissionValidationResult {
+  score: number; // 0-100
+  isCorrect: boolean;
+  feedback: string;
+  blockAnalysis: Array<{
+    blockCode: string;
+    blockName: string;
+    expected: string;
+    userInput: string;
+    isCorrect: boolean;
+    feedback: string;
+    icaoCompliance: boolean;
+  }>;
+  overallIcaoCompliance: boolean;
+  suggestions: string[];
+}
+
 export class JoniScenarioAiService {
   async generateScenarioFromText(
     description: string,
@@ -631,6 +648,117 @@ Return ONLY valid JSON without any markdown formatting or explanatory text.`;
       console.error('Error evaluating response:', error);
       
       throw new Error(`Failed to evaluate response: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async validateTransmission(
+    userInput: string,
+    transmissionTemplate: {
+      name: string;
+      blocks: Array<{
+        blockId: string;
+        order: number;
+        parameters?: Record<string, any>;
+        isOptional?: boolean;
+      }>;
+    },
+    commBlocks: Array<{
+      id: string;
+      code: string;
+      name: string;
+      template?: string;
+      icaoRules?: any;
+      rules: any;
+    }>,
+    variables: Record<string, string>
+  ): Promise<TransmissionValidationResult> {
+    try {
+      // Build the expected transmission from blocks
+      const blockAnalysisPrompt: string[] = [];
+      const expectedBlocks: string[] = [];
+      
+      for (const blockRef of transmissionTemplate.blocks) {
+        const block = commBlocks.find(b => b.id === blockRef.blockId);
+        if (!block) continue;
+        
+        let expectedText = block.template || '';
+        // Replace variables in template
+        for (const [key, value] of Object.entries(variables)) {
+          expectedText = expectedText.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), value);
+        }
+        
+        expectedBlocks.push(`${block.name}: "${expectedText}"`);
+        
+        const icaoRulesStr = block.icaoRules ? JSON.stringify(block.icaoRules) : 'Standard ICAO phraseology';
+        blockAnalysisPrompt.push(`- ${block.name} (${block.code}): Expected "${expectedText}", ICAO Rules: ${icaoRulesStr}`);
+      }
+
+      const prompt = `You are an expert ICAO aviation communications instructor evaluating a pilot's radio transmission.
+
+TRANSMISSION TEMPLATE: "${transmissionTemplate.name}"
+
+EXPECTED COMM BLOCKS IN ORDER:
+${blockAnalysisPrompt.join('\n')}
+
+USER'S TRANSMISSION:
+"${userInput}"
+
+Evaluate the user's transmission against the expected template and ICAO rules. Consider:
+1. Correct phraseology for each comm block
+2. Proper order of elements
+3. ICAO compliance (standard phraseology, brevity, clarity)
+4. Missing or extra elements
+5. Common errors in aviation communication
+
+Return a JSON object with this exact structure:
+{
+  "score": [0-100 numeric score],
+  "isCorrect": [true if score >= 80],
+  "feedback": "[Overall feedback on the transmission]",
+  "blockAnalysis": [
+    {
+      "blockCode": "[block code]",
+      "blockName": "[block name]",
+      "expected": "[expected text]",
+      "userInput": "[what user said for this block, or 'MISSING']",
+      "isCorrect": [boolean],
+      "feedback": "[specific feedback for this block]",
+      "icaoCompliance": [boolean - follows ICAO standards]
+    }
+  ],
+  "overallIcaoCompliance": [boolean - entire transmission follows ICAO],
+  "suggestions": ["array of specific improvement suggestions"]
+}
+
+Be strict but fair. Aviation communication requires precision for safety.`;
+
+      const response = await openAiService.askLLM(prompt);
+      
+      // Parse the JSON response
+      const cleanedResponse = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      const result = JSON.parse(cleanedResponse) as TransmissionValidationResult;
+      
+      // Validate the response structure
+      if (typeof result.score !== 'number' || 
+          typeof result.isCorrect !== 'boolean' ||
+          !Array.isArray(result.blockAnalysis) ||
+          !Array.isArray(result.suggestions)) {
+        throw new Error('Invalid response structure from AI');
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Error validating transmission:', error);
+      
+      // Return a default error response
+      return {
+        score: 0,
+        isCorrect: false,
+        feedback: 'Failed to validate transmission. Please try again.',
+        blockAnalysis: [],
+        overallIcaoCompliance: false,
+        suggestions: ['Unable to process transmission at this time.']
+      };
     }
   }
 }

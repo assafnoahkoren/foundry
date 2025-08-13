@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { router, protectedProcedure } from '../../trpc';
 import { joniTransmissionTemplateService } from '../../../services/joni/comm-blocks';
+import { joniCommBlockService } from '../../../services/joni/comm-blocks';
+import { joniScenarioAiService } from '../../../services/joni/joni-scenario-ai.service';
 import { TRPCError } from '@trpc/server';
 import { requireFeatureAccess } from '../../../middleware/feature-access.middleware';
 
@@ -115,6 +117,75 @@ export const joniTransmissionRouter = router({
     .input(z.object({ blocks: z.array(transmissionBlockSchema) }))
     .query(async ({ input }) => {
       return joniTransmissionTemplateService.validateTransmissionBlocks(input.blocks);
+    }),
+
+  // Validate user transmission against template with AI
+  validateTransmission: protectedProcedure
+    .input(z.object({
+      userInput: z.string(),
+      transmissionId: z.string(),
+      variables: z.record(z.string())
+    }))
+    .mutation(async ({ input }) => {
+      // Get the transmission template
+      const transmission = await joniTransmissionTemplateService.getTransmissionTemplateById(input.transmissionId);
+      if (!transmission) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Transmission template not found'
+        });
+      }
+
+      // Get all comm blocks used in this transmission
+      const blockIds = (transmission.blocks as any[]).map(b => b.blockId);
+      const commBlocks = await Promise.all(
+        blockIds.map(id => joniCommBlockService.getCommBlockById(id))
+      );
+      
+      const validBlocks = commBlocks.filter(b => b !== null);
+      if (validBlocks.length !== blockIds.length) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Some comm blocks could not be found'
+        });
+      }
+
+      // Validate the transmission with AI
+      const result = await joniScenarioAiService.validateTransmission(
+        input.userInput,
+        {
+          name: transmission.name,
+          blocks: transmission.blocks as any[]
+        },
+        validBlocks as any[],
+        input.variables
+      );
+
+      return result;
+    }),
+
+  // Get transmission with populated blocks for playground
+  getWithBlocks: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ input }) => {
+      const transmission = await joniTransmissionTemplateService.getTransmissionTemplateById(input.id);
+      if (!transmission) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Transmission template not found'
+        });
+      }
+
+      // Get all comm blocks used in this transmission
+      const blockIds = (transmission.blocks as any[]).map(b => b.blockId);
+      const commBlocks = await Promise.all(
+        blockIds.map(id => joniCommBlockService.getCommBlockById(id))
+      );
+      
+      return {
+        ...transmission,
+        populatedBlocks: commBlocks.filter(b => b !== null)
+      };
     }),
 
   // ===== ADMIN PROCEDURES (require joni-comm-blocks access) =====

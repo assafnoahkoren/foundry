@@ -205,6 +205,7 @@ model JoniCommBlock {
   category          String                // "identification", "instruction", "readback", "information"
   description       String?               @db.Text
   icaoReference     String?               // Reference to ICAO Doc 9432 or other standards
+  icaoRules         Json?                 // ICAO rules specific to this comm block
   template          String?               @db.Text // Template with variables like "{{callsign}}, request {{altitude}}"
   rules             Json                  // Validation rules and patterns
   examples          Json                  // Array of correct examples
