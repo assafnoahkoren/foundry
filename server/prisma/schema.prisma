@@ -240,56 +240,44 @@ model JoniTransmissionTemplate {
   updatedAt         DateTime              @updatedAt
   
   // Relations
-  scriptTransmissions JoniScriptTransmission[]
   practices         JoniTransmissionPractice[]
   
   @@index([transmissionType])
   @@index([context])
 }
 
-// JoniScript: A complete training scenario with multiple back-and-forth transmissions
-// Simulates real-world radio exchanges between pilot and ATC from start to finish
-// Examples: "VFR pattern work", "IFR departure from JFK", "Emergency descent procedure"
+// JoniScript: A complete training scenario with DAG-based flow
+// Supports branching paths based on pilot decisions and responses
+// Examples: "Emergency procedures with multiple outcomes", "Weather diversion decisions"
 model JoniScript {
   id                String                @id @default(cuid())
   code              String                @unique
-  name              String                // "IFR Departure from JFK"
+  name              String                // "IFR Departure from JFK with Weather Decisions"
   description       String?               @db.Text
-  scriptType        String                // "training", "evaluation", "scenario"
-  phase             String                // "ground", "departure", "enroute", "approach", "emergency"
+  scriptType        String                // "training", "evaluation", "scenario", "adaptive"
+  
+  // DAG Structure - validated with Zod on application layer
+  dagStructure      Json?                 // Complete DAG with nodes and edges (optional for migration)
+  startNodeId       String?               // Entry point node ID in the DAG (optional for migration)
+  
+  // Metadata
   difficultyLevel   Int                   @default(3)
   estimatedMinutes  Int                   @default(5)
+  tags              String[]              // ["emergency", "weather", "decision-making"]
   flightContext     Json                  // Aircraft type, route, weather, etc.
   learningObjectives Json?                // What skills this script teaches
   prerequisites     Json?                 // Required completed scripts/blocks
+  
   createdAt         DateTime              @default(now())
   updatedAt         DateTime              @updatedAt
   
   // Relations
-  transmissions     JoniScriptTransmission[]
   practices         JoniScriptPractice[]
   
   @@index([scriptType])
-  @@index([phase])
+  @@index([tags])
 }
 
-// JoniScriptTransmission: Links transmissions into a script with proper sequencing and actor roles
-// Defines who speaks (pilot/ATC), when they speak, and what triggers each transmission
-model JoniScriptTransmission {
-  id                String               @id @default(cuid())
-  scriptId          String
-  script            JoniScript               @relation(fields: [scriptId], references: [id], onDelete: Cascade)
-  transmissionId    String
-  transmission      JoniTransmissionTemplate @relation(fields: [transmissionId], references: [id], onDelete: Cascade)
-  orderInScript     Int
-  actorRole         String               // "pilot", "tower", "ground", "approach"
-  expectedDelay     Int?                 // Seconds before this transmission
-  triggerCondition  String?              // Condition that triggers this transmission
-  
-  @@unique([scriptId, orderInScript])
-  @@index([scriptId])
-  @@index([transmissionId])
-}
 
 // JoniCommBlockProgress: Tracks user mastery of individual communication elements
 // Monitors how well users can properly say altitudes, callsigns, headings, etc.
@@ -330,21 +318,31 @@ model JoniTransmissionPractice {
   @@index([completedAt])
 }
 
-// JoniScriptPractice: Tracks full scenario practice sessions from start to finish
-// Manages user progress through multi-transmission scenarios with overall scoring
+// JoniScriptPractice: Tracks user navigation through DAG-based scenarios
+// Records decisions made, paths taken, and performance at each node
 model JoniScriptPractice {
   id                String      @id @default(cuid())
   userId            String
   user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   scriptId          String
   script            JoniScript      @relation(fields: [scriptId], references: [id], onDelete: Cascade)
-  status            String      @default("in_progress") // "in_progress", "completed", "abandoned"
-  currentTransmissionOrder Int   @default(1)
-  transmissionScores Json       // Scores for each transmission
+  
+  // DAG traversal tracking
+  currentNodeId     String?     // Current position in the DAG
+  visitedNodes      Json        // Array of {nodeId, timestamp, response, score, decision}
+  pathTaken         Json        // Sequence of edge IDs taken through the DAG
+  
+  // Scoring
+  nodeScores        Json        // Score per node visited {nodeId: score}
   overallScore      Float?      // Final score when completed
+  decisionQuality   Json?       // Quality metrics for decision nodes
+  
+  // Session management
+  status            String      @default("in_progress") // "in_progress", "completed", "abandoned"
   startedAt         DateTime    @default(now())
   completedAt       DateTime?
   sessionRecording  String?     // Optional audio recording URL
+  sessionMetrics    Json?       // Time per node, retries, help requests, etc.
   
   @@index([userId, scriptId])
   @@index([status])

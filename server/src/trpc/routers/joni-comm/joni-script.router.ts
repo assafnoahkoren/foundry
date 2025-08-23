@@ -9,10 +9,12 @@ const createScriptSchema = z.object({
   code: z.string().min(1).max(50),
   name: z.string().min(1).max(200),
   description: z.string().optional(),
-  scriptType: z.enum(['training', 'evaluation', 'scenario']),
-  phase: z.enum(['ground', 'departure', 'enroute', 'approach', 'emergency']),
+  scriptType: z.enum(['training', 'evaluation', 'scenario', 'adaptive']),
   difficultyLevel: z.number().int().min(1).max(5).default(3),
   estimatedMinutes: z.number().int().min(1).max(120).default(5),
+  dagStructure: z.any().optional(), // Will be validated on service layer
+  startNodeId: z.string().optional(),
+  tags: z.array(z.string()).optional(),
   flightContext: z.record(z.any()),
   learningObjectives: z.array(z.string()).optional(),
   prerequisites: z.array(z.object({
@@ -29,10 +31,12 @@ const updateScriptSchema = z.object({
     code: z.string().min(1).max(50).optional(),
     name: z.string().min(1).max(200).optional(),
     description: z.string().optional(),
-    scriptType: z.enum(['training', 'evaluation', 'scenario']).optional(),
-    phase: z.enum(['ground', 'departure', 'enroute', 'approach', 'emergency']).optional(),
+    scriptType: z.enum(['training', 'evaluation', 'scenario', 'adaptive']).optional(),
     difficultyLevel: z.number().int().min(1).max(5).optional(),
     estimatedMinutes: z.number().int().min(1).max(120).optional(),
+    dagStructure: z.any().optional(),
+    startNodeId: z.string().optional(),
+    tags: z.array(z.string()).optional(),
     flightContext: z.record(z.any()).optional(),
     learningObjectives: z.array(z.string()).optional(),
     prerequisites: z.array(z.object({
@@ -45,19 +49,10 @@ const updateScriptSchema = z.object({
 });
 
 const listScriptsSchema = z.object({
-  scriptType: z.enum(['training', 'evaluation', 'scenario']).optional(),
-  phase: z.enum(['ground', 'departure', 'enroute', 'approach', 'emergency']).optional(),
+  scriptType: z.enum(['training', 'evaluation', 'scenario', 'adaptive']).optional(),
   difficultyLevel: z.number().int().min(1).max(5).optional(),
-  orderBy: z.enum(['code', 'name', 'phase', 'difficultyLevel']).optional(),
+  orderBy: z.enum(['code', 'name', 'difficultyLevel']).optional(),
   orderDirection: z.enum(['asc', 'desc']).optional()
-});
-
-const scriptTransmissionSchema = z.object({
-  transmissionId: z.string(),
-  orderInScript: z.number().int(),
-  actorRole: z.enum(['pilot', 'tower', 'ground', 'approach', 'departure', 'center']),
-  expectedDelay: z.number().int().optional(),
-  triggerCondition: z.string().optional()
 });
 
 // Middleware to check joni-comm-blocks access
@@ -120,11 +115,6 @@ export const joniScriptRouter = router({
       return joniScriptService.validatePrerequisites(ctx.user.userId, input.scriptId);
     }),
 
-  getVariablesFromTransmissions: protectedProcedure
-    .input(z.object({ transmissionIds: z.array(z.string()) }))
-    .query(async ({ input }) => {
-      return joniScriptService.getVariablesFromTransmissions(input.transmissionIds);
-    }),
 
   // ===== ADMIN PROCEDURES (require joni-comm-blocks access) =====
 
@@ -194,110 +184,5 @@ export const joniScriptRouter = router({
     }))
     .mutation(async ({ input }) => {
       return joniScriptService.createManyScripts(input.scripts);
-    }),
-
-  // ===== SCRIPT TRANSMISSIONS MANAGEMENT =====
-
-  addTransmission: requireCommBlockAccess
-    .input(z.object({
-      scriptId: z.string(),
-      transmission: scriptTransmissionSchema
-    }))
-    .mutation(async ({ input }) => {
-      try {
-        return await joniScriptService.addTransmissionToScript({
-          scriptId: input.scriptId,
-          ...input.transmission
-        });
-      } catch (error: any) {
-        if (error.code === 'P2002') {
-          throw new TRPCError({
-            code: 'CONFLICT',
-            message: 'A transmission already exists at this order position'
-          });
-        }
-        if (error.code === 'P2003') {
-          throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: 'Script or transmission template not found'
-          });
-        }
-        throw error;
-      }
-    }),
-
-  updateTransmission: requireCommBlockAccess
-    .input(z.object({
-      scriptId: z.string(),
-      orderInScript: z.number().int(),
-      data: z.object({
-        transmissionId: z.string().optional(),
-        orderInScript: z.number().int().optional(),
-        actorRole: z.enum(['pilot', 'tower', 'ground', 'approach', 'departure', 'center']).optional(),
-        expectedDelay: z.number().int().optional(),
-        triggerCondition: z.string().optional()
-      })
-    }))
-    .mutation(async ({ input }) => {
-      try {
-        return await joniScriptService.updateScriptTransmission(
-          input.scriptId,
-          input.orderInScript,
-          input.data
-        );
-      } catch (error: any) {
-        if (error.code === 'P2025') {
-          throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: 'Script transmission not found'
-          });
-        }
-        throw error;
-      }
-    }),
-
-  removeTransmission: requireCommBlockAccess
-    .input(z.object({
-      scriptId: z.string(),
-      orderInScript: z.number().int()
-    }))
-    .mutation(async ({ input }) => {
-      try {
-        return await joniScriptService.removeTransmissionFromScript(
-          input.scriptId,
-          input.orderInScript
-        );
-      } catch (error: any) {
-        if (error.code === 'P2025') {
-          throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: 'Script transmission not found'
-          });
-        }
-        throw error;
-      }
-    }),
-
-  reorderTransmissions: requireCommBlockAccess
-    .input(z.object({
-      scriptId: z.string(),
-      newOrder: z.array(z.object({
-        transmissionId: z.string(),
-        orderInScript: z.number().int()
-      }))
-    }))
-    .mutation(async ({ input }) => {
-      await joniScriptService.reorderScriptTransmissions(input.scriptId, input.newOrder);
-      return { success: true };
-    }),
-
-  replaceTransmissions: requireCommBlockAccess
-    .input(z.object({
-      scriptId: z.string(),
-      transmissions: z.array(scriptTransmissionSchema)
-    }))
-    .mutation(async ({ input }) => {
-      await joniScriptService.replaceScriptTransmissions(input.scriptId, input.transmissions);
-      return { success: true };
     })
 });

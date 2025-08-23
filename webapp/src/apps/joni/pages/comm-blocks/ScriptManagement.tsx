@@ -1,15 +1,3 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { trpc } from '@/utils/trpc';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
-import { toast } from '@/hooks/use-toast';
-import { Plus, Edit, Trash2, Search, Clock, PlayCircle, Target } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,25 +8,45 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { toast } from '@/hooks/use-toast';
+import { trpc } from '@/utils/trpc';
+import { Clock, Edit, Eye, GitBranch, PlayCircle, Plus, Search, Target, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ScriptDAGEditor } from '../../components/ScriptDAGEditor/ScriptDAGEditor';
+import type { ScriptDAG } from '../../types/script-dag.types';
 
 export function ScriptManagement() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState<string>('all');
-  const [selectedPhase, setSelectedPhase] = useState<string>('all');
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
   const [deleteScriptId, setDeleteScriptId] = useState<string | null>(null);
+  const [previewScript, setPreviewScript] = useState<{ id: string; name: string; dag: ScriptDAG } | null>(null);
 
   // Fetch scripts
   const { data: scripts, isLoading, refetch } = trpc.joniComm.scripts.list.useQuery({
-    scriptType: selectedType === 'all' ? undefined : selectedType as 'training' | 'evaluation' | 'scenario',
-    phase: selectedPhase === 'all' ? undefined : selectedPhase as 'ground' | 'departure' | 'enroute' | 'approach' | 'emergency',
+    scriptType: selectedType === 'all' ? undefined : selectedType as 'training' | 'evaluation' | 'scenario' | 'adaptive',
     difficultyLevel: selectedDifficulty === 'all' ? undefined : parseInt(selectedDifficulty),
     orderBy: 'name',
     orderDirection: 'asc'
@@ -86,20 +94,20 @@ export function ScriptManagement() {
     const colors: Record<string, string> = {
       training: 'bg-blue-500',
       evaluation: 'bg-purple-500',
-      scenario: 'bg-green-500'
+      scenario: 'bg-green-500',
+      adaptive: 'bg-orange-500'
     };
     return colors[type] || 'bg-gray-500';
   };
 
-  const getPhaseColor = (phase: string) => {
-    const colors: Record<string, string> = {
-      ground: 'bg-gray-500',
-      departure: 'bg-green-500',
-      enroute: 'bg-cyan-500',
-      approach: 'bg-yellow-500',
-      emergency: 'bg-red-500'
-    };
-    return colors[phase] || 'bg-gray-500';
+  const getNodeCount = (dag: unknown) => {
+    if (!dag || typeof dag !== 'object') return 0;
+    return (dag as { nodes?: unknown[] }).nodes?.length || 0;
+  };
+
+  const getPathCount = (dag: unknown) => {
+    if (!dag || typeof dag !== 'object') return 0;
+    return (dag as { metadata?: { totalPaths?: number } }).metadata?.totalPaths || 0;
   };
 
   return (
@@ -111,7 +119,7 @@ export function ScriptManagement() {
             <div>
               <CardTitle>Training Scripts</CardTitle>
               <CardDescription>
-                Manage complete training scenarios with multiple transmissions between pilot and ATC
+                Manage dynamic training scenarios with branching paths and decision points
               </CardDescription>
             </div>
             <Button onClick={() => navigate('/joni/scripts/new')}>
@@ -146,19 +154,7 @@ export function ScriptManagement() {
                 <SelectItem value="training">Training</SelectItem>
                 <SelectItem value="evaluation">Evaluation</SelectItem>
                 <SelectItem value="scenario">Scenario</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={selectedPhase} onValueChange={setSelectedPhase}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="All Phases" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Phases</SelectItem>
-                <SelectItem value="ground">Ground</SelectItem>
-                <SelectItem value="departure">Departure</SelectItem>
-                <SelectItem value="enroute">Enroute</SelectItem>
-                <SelectItem value="approach">Approach</SelectItem>
-                <SelectItem value="emergency">Emergency</SelectItem>
+                <SelectItem value="adaptive">Adaptive</SelectItem>
               </SelectContent>
             </Select>
             <Select value={selectedDifficulty} onValueChange={setSelectedDifficulty}>
@@ -194,12 +190,11 @@ export function ScriptManagement() {
                   <TableHead>Code</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Type</TableHead>
-                  <TableHead>Phase</TableHead>
                   <TableHead>Difficulty</TableHead>
                   <TableHead>
                     <div className="flex items-center gap-1">
-                      <PlayCircle className="w-4 h-4" />
-                      Transmissions
+                      <GitBranch className="w-4 h-4" />
+                      Structure
                     </div>
                   </TableHead>
                   <TableHead>
@@ -208,13 +203,17 @@ export function ScriptManagement() {
                       Duration
                     </div>
                   </TableHead>
+                  <TableHead>Tags</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {displayScripts?.map((script) => {
-                  const transmissions = (script as { transmissions?: Array<{ id: string }> }).transmissions || [];
+                  const nodeCount = getNodeCount(script.dagStructure);
+                  const pathCount = getPathCount(script.dagStructure);
+                  const tags = script.tags || [];
                   const learningObjectives = (script.learningObjectives as string[]) || [];
+                  
                   return (
                     <TableRow key={script.id}>
                       <TableCell className="font-mono">{script.code}</TableCell>
@@ -234,33 +233,40 @@ export function ScriptManagement() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge className={getPhaseColor(script.phase)}>
-                          {script.phase}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
                         <Badge className={getDifficultyColor(script.difficultyLevel)}>
                           Level {script.difficultyLevel}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <Badge variant="outline">
-                                {transmissions.length} transmissions
-                              </Badge>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Contains {transmissions.length} transmission exchanges</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">
+                            {nodeCount} nodes
+                          </Badge>
+                          {pathCount > 0 && (
+                            <Badge variant="outline">
+                              {pathCount} paths
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <span className="text-sm text-muted-foreground">
                           {script.estimatedMinutes} min
                         </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1 flex-wrap">
+                          {tags.slice(0, 3).map((tag) => (
+                            <Badge key={tag} variant="secondary" className="text-xs">
+                              {tag}
+                            </Badge>
+                          ))}
+                          {tags.length > 3 && (
+                            <Badge variant="secondary" className="text-xs">
+                              +{tags.length - 3}
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
@@ -286,6 +292,26 @@ export function ScriptManagement() {
                               </Tooltip>
                             </TooltipProvider>
                           )}
+                          {script.dagStructure && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setPreviewScript({
+                                id: script.id,
+                                name: script.name,
+                                dag: script.dagStructure as ScriptDAG
+                              })}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigate(`/joni/practice/script/${script.id}`)}
+                          >
+                            <PlayCircle className="w-4 h-4" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -317,6 +343,26 @@ export function ScriptManagement() {
           )}
         </CardContent>
       </Card>
+
+      {/* Preview Dialog */}
+      <Dialog open={!!previewScript} onOpenChange={() => setPreviewScript(null)}>
+        <DialogContent className="max-w-6xl h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>{previewScript?.name}</DialogTitle>
+            <DialogDescription>
+              Preview of the script's DAG structure
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 mt-4">
+            {previewScript && (
+              <ScriptDAGEditor
+                dag={previewScript.dag}
+                readOnly={true}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteScriptId} onOpenChange={() => setDeleteScriptId(null)}>

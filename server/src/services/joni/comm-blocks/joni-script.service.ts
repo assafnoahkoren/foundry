@@ -1,5 +1,5 @@
 import { prisma } from '../../../lib/prisma';
-import type { JoniScript, JoniScriptTransmission, Prisma } from '@prisma/client';
+import type { JoniScript, Prisma } from '@prisma/client';
 
 export class JoniScriptService {
   // ===== SCRIPTS CRUD =====
@@ -9,7 +9,6 @@ export class JoniScriptService {
     name: string;
     description?: string;
     scriptType: string;
-    phase: string;
     difficultyLevel?: number;
     estimatedMinutes?: number;
     flightContext: any;
@@ -28,19 +27,14 @@ export class JoniScriptService {
 
   async getAllScripts(params?: {
     scriptType?: string;
-    phase?: string;
     difficultyLevel?: number;
-    orderBy?: 'code' | 'name' | 'phase' | 'difficultyLevel';
+    orderBy?: 'code' | 'name' | 'difficultyLevel';
     orderDirection?: 'asc' | 'desc';
   }): Promise<JoniScript[]> {
     const where: Prisma.JoniScriptWhereInput = {};
     
     if (params?.scriptType) {
       where.scriptType = params.scriptType;
-    }
-    
-    if (params?.phase) {
-      where.phase = params.phase;
     }
     
     if (params?.difficultyLevel !== undefined) {
@@ -58,29 +52,13 @@ export class JoniScriptService {
 
   async getScriptById(id: string): Promise<JoniScript | null> {
     return prisma.joniScript.findUnique({
-      where: { id },
-      include: {
-        transmissions: {
-          include: {
-            transmission: true
-          },
-          orderBy: { orderInScript: 'asc' }
-        }
-      }
+      where: { id }
     });
   }
 
   async getScriptByCode(code: string): Promise<JoniScript | null> {
     return prisma.joniScript.findUnique({
-      where: { code },
-      include: {
-        transmissions: {
-          include: {
-            transmission: true
-          },
-          orderBy: { orderInScript: 'asc' }
-        }
-      }
+      where: { code }
     });
   }
 
@@ -91,7 +69,6 @@ export class JoniScriptService {
       name?: string;
       description?: string;
       scriptType?: string;
-      phase?: string;
       difficultyLevel?: number;
       estimatedMinutes?: number;
       flightContext?: any;
@@ -106,114 +83,8 @@ export class JoniScriptService {
   }
 
   async deleteScript(id: string): Promise<JoniScript> {
-    // Delete all related transmissions first
-    await prisma.joniScriptTransmission.deleteMany({
-      where: { scriptId: id }
-    });
-    
     return prisma.joniScript.delete({
       where: { id }
-    });
-  }
-
-  // ===== SCRIPT TRANSMISSIONS =====
-
-  async addTransmissionToScript(data: {
-    scriptId: string;
-    transmissionId: string;
-    orderInScript: number;
-    actorRole: string;
-    expectedDelay?: number;
-    triggerCondition?: string;
-  }): Promise<JoniScriptTransmission> {
-    return prisma.joniScriptTransmission.create({
-      data
-    });
-  }
-
-  async updateScriptTransmission(
-    scriptId: string,
-    orderInScript: number,
-    data: {
-      transmissionId?: string;
-      orderInScript?: number;
-      actorRole?: string;
-      expectedDelay?: number;
-      triggerCondition?: string;
-    }
-  ): Promise<JoniScriptTransmission> {
-    return prisma.joniScriptTransmission.update({
-      where: {
-        scriptId_orderInScript: {
-          scriptId,
-          orderInScript
-        }
-      },
-      data
-    });
-  }
-
-  async removeTransmissionFromScript(
-    scriptId: string,
-    orderInScript: number
-  ): Promise<JoniScriptTransmission> {
-    return prisma.joniScriptTransmission.delete({
-      where: {
-        scriptId_orderInScript: {
-          scriptId,
-          orderInScript
-        }
-      }
-    });
-  }
-
-  async reorderScriptTransmissions(
-    scriptId: string,
-    newOrder: Array<{ transmissionId: string; orderInScript: number }>
-  ): Promise<void> {
-    // Delete all existing transmissions
-    await prisma.joniScriptTransmission.deleteMany({
-      where: { scriptId }
-    });
-
-    // Re-create with new order
-    await prisma.joniScriptTransmission.createMany({
-      data: newOrder.map(item => ({
-        scriptId,
-        transmissionId: item.transmissionId,
-        orderInScript: item.orderInScript,
-        actorRole: 'pilot' // Default, should be updated
-      }))
-    });
-  }
-
-  async replaceScriptTransmissions(
-    scriptId: string,
-    transmissions: Array<{
-      transmissionId: string;
-      orderInScript: number;
-      actorRole: string;
-      expectedDelay?: number;
-      triggerCondition?: string;
-    }>
-  ): Promise<void> {
-    // Handle all transmission updates in a single transaction
-    await prisma.$transaction(async (tx) => {
-      // First remove all existing transmissions for this script
-      await tx.joniScriptTransmission.deleteMany({
-        where: { scriptId }
-      });
-
-      // Then create all new transmissions
-      if (transmissions.length > 0) {
-        await tx.joniScriptTransmission.createMany({
-          data: transmissions.map(t => ({
-            scriptId,
-            ...t,
-            triggerCondition: t.triggerCondition || null
-          }))
-        });
-      }
     });
   }
 
@@ -225,7 +96,6 @@ export class JoniScriptService {
       name: string;
       description?: string;
       scriptType: string;
-      phase: string;
       difficultyLevel?: number;
       estimatedMinutes?: number;
       flightContext: any;
@@ -248,12 +118,6 @@ export class JoniScriptService {
     });
   }
 
-  async getScriptsByPhase(phase: string): Promise<JoniScript[]> {
-    return prisma.joniScript.findMany({
-      where: { phase },
-      orderBy: { name: 'asc' }
-    });
-  }
 
   async searchScripts(searchTerm: string): Promise<JoniScript[]> {
     return prisma.joniScript.findMany({
@@ -263,14 +127,6 @@ export class JoniScriptService {
           { name: { contains: searchTerm, mode: 'insensitive' } },
           { description: { contains: searchTerm, mode: 'insensitive' } }
         ]
-      },
-      include: {
-        transmissions: {
-          include: {
-            transmission: true
-          },
-          orderBy: { orderInScript: 'asc' }
-        }
       },
       orderBy: { name: 'asc' }
     });
@@ -316,39 +172,27 @@ export class JoniScriptService {
   async getScriptStatistics(): Promise<{
     totalScripts: number;
     byType: Record<string, number>;
-    byPhase: Record<string, number>;
     byDifficulty: Record<number, number>;
-    averageTransmissionsPerScript: number;
   }> {
     const scripts = await prisma.joniScript.findMany({
       select: {
         scriptType: true,
-        phase: true,
-        difficultyLevel: true,
-        _count: {
-          select: { transmissions: true }
-        }
+        difficultyLevel: true
       }
     });
 
     const byType: Record<string, number> = {};
-    const byPhase: Record<string, number> = {};
     const byDifficulty: Record<number, number> = {};
-    let totalTransmissions = 0;
 
     scripts.forEach(script => {
       byType[script.scriptType] = (byType[script.scriptType] || 0) + 1;
-      byPhase[script.phase] = (byPhase[script.phase] || 0) + 1;
       byDifficulty[script.difficultyLevel] = (byDifficulty[script.difficultyLevel] || 0) + 1;
-      totalTransmissions += script._count.transmissions;
     });
 
     return {
       totalScripts: scripts.length,
       byType,
-      byPhase,
-      byDifficulty,
-      averageTransmissionsPerScript: scripts.length > 0 ? totalTransmissions / scripts.length : 0
+      byDifficulty
     };
   }
 

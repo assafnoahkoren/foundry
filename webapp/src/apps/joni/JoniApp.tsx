@@ -14,6 +14,7 @@ import { TransmissionForm } from './pages/comm-blocks/TransmissionForm';
 import { TransmissionsPlayground } from './pages/comm-blocks/TransmissionsPlayground';
 import { ScriptManagement } from './pages/comm-blocks/ScriptManagement';
 import { ScriptForm } from './pages/comm-blocks/ScriptForm';
+import { ScriptEdit } from './pages/comm-blocks/ScriptEdit';
 import { useJoniBranding } from './hooks/useJoniBranding';
 
 export function JoniApp() {
@@ -37,8 +38,8 @@ export function JoniApp() {
         <Route path="transmissions/new" element={<TransmissionForm />} />
         <Route path="transmissions/:id" element={<TransmissionForm />} />
         <Route path="scripts" element={<ScriptManagement />} />
-        <Route path="scripts/new" element={<ScriptForm />} />
-        <Route path="scripts/:id" element={<ScriptForm />} />
+        <Route path="scripts/new" element={<ScriptEdit />} />
+        <Route path="scripts/:id" element={<ScriptEdit />} />
         <Route path="*" element={<Navigate to="/joni" replace />} />
       </Route>
     </Routes>
