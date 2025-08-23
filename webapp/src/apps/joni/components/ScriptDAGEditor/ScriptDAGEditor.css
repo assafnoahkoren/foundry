@@ -1,0 +1,51 @@
+/* Custom styles for ScriptDAGEditor */
+
+/* Make edges more visible and selectable */
+.react-flow__edge-path {
+  stroke-width: 3;
+  cursor: pointer;
+}
+
+.react-flow__edge-path:hover {
+  stroke-width: 4;
+  stroke: #3b82f6 !important;
+}
+
+/* Style for selected edges */
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: #3b82f6 !important;
+  stroke-width: 4;
+  animation: dash 0.5s linear infinite;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: -10;
+  }
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke-dasharray: 5;
+}
+
+/* Make edge interaction area larger */
+.react-flow__edge-interaction {
+  stroke-width: 20;
+  cursor: pointer;
+}
+
+/* Style for selected nodes - no visual change */
+.react-flow__node.selected {
+  /* No special styling for selected nodes */
+}
+
+/* Better contrast for edge labels */
+.react-flow__edge-text {
+  fill: #1f2937;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.react-flow__edge-textbg {
+  fill: white;
+}

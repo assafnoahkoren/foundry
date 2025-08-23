@@ -202,6 +202,25 @@ export function ScriptEdit() {
     });
   };
 
+  const handleNodeDelete = (nodeId: string) => {
+    if (!formData.dagStructure) return;
+    
+    // Remove the node and any edges connected to it
+    const updatedNodes = formData.dagStructure.nodes.filter(node => node.id !== nodeId);
+    const updatedEdges = formData.dagStructure.edges.filter(edge => 
+      edge.from !== nodeId && edge.to !== nodeId
+    );
+    
+    handleDAGChange({
+      ...formData.dagStructure,
+      nodes: updatedNodes,
+      edges: updatedEdges
+    });
+    
+    // Clear selection
+    setSelectedNodeId(null);
+  };
+
   const selectedNode = formData.dagStructure?.nodes.find(n => n.id === selectedNodeId);
   
   // Fetch selected transmission with blocks for rendering
@@ -294,14 +313,28 @@ export function ScriptEdit() {
         {/* Node Information */}
         <Card className="h-fit">
           <CardHeader>
-            <CardTitle>
-              {selectedNode ? `Node: ${selectedNode.name}` : 'Script Settings'}
-            </CardTitle>
-            {selectedNode && (
-              <CardDescription>
-                Type: {selectedNode.type.replace('_', ' ')}
-              </CardDescription>
-            )}
+            <div className="flex justify-between items-start">
+              <div>
+                <CardTitle>
+                  {selectedNode ? `Node: ${selectedNode.name}` : 'Script Settings'}
+                </CardTitle>
+                {selectedNode && (
+                  <CardDescription>
+                    Type: {selectedNode.type.replace('_', ' ')}
+                  </CardDescription>
+                )}
+              </div>
+              {selectedNode && (
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => handleNodeDelete(selectedNode.id)}
+                  title="Delete Node"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             {selectedNode ? (
