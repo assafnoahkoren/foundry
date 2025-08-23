@@ -83,7 +83,7 @@ export function ScriptEdit() {
         code: script.code,
         name: script.name,
         description: script.description || '',
-        scriptType: script.scriptType as any,
+        scriptType: script.scriptType as 'training' | 'evaluation' | 'scenario' | 'adaptive',
         difficultyLevel: script.difficultyLevel,
         estimatedMinutes: script.estimatedMinutes,
         tags: script.tags || [],
@@ -273,7 +273,7 @@ export function ScriptEdit() {
               <Label htmlFor="type">Type</Label>
               <Select
                 value={formData.scriptType}
-                onValueChange={(value: any) => setFormData(prev => ({ ...prev, scriptType: value }))}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, scriptType: value as 'training' | 'evaluation' | 'scenario' | 'adaptive' }))}
               >
                 <SelectTrigger>
                   <SelectValue />

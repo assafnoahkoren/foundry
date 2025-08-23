@@ -13,7 +13,6 @@ import { TransmissionManagement } from './pages/comm-blocks/TransmissionManageme
 import { TransmissionForm } from './pages/comm-blocks/TransmissionForm';
 import { TransmissionsPlayground } from './pages/comm-blocks/TransmissionsPlayground';
 import { ScriptManagement } from './pages/comm-blocks/ScriptManagement';
-import { ScriptForm } from './pages/comm-blocks/ScriptForm';
 import { ScriptEdit } from './pages/comm-blocks/ScriptEdit';
 import { useJoniBranding } from './hooks/useJoniBranding';
 
