@@ -34,10 +34,12 @@ const nodeTypes: NodeTypes = {
 interface ScriptDAGEditorProps {
   dag: ScriptDAG | null;
   onChange?: (dag: ScriptDAG) => void;
+  onNodeSelect?: (nodeId: string | null) => void;
+  selectedNodeId?: string | null;
   readOnly?: boolean;
 }
 
-export function ScriptDAGEditor({ dag, onChange, readOnly = false }: ScriptDAGEditorProps) {
+export function ScriptDAGEditor({ dag, onChange, onNodeSelect, selectedNodeId, readOnly = false }: ScriptDAGEditorProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
@@ -49,6 +51,7 @@ export function ScriptDAGEditor({ dag, onChange, readOnly = false }: ScriptDAGEd
       id: node.id,
       type: node.type,
       position: node.position || { x: 0, y: 0 },
+      selected: node.id === selectedNodeId,
       data: {
         label: node.name,
         description: node.description,
@@ -82,7 +85,7 @@ export function ScriptDAGEditor({ dag, onChange, readOnly = false }: ScriptDAGEd
 
     setNodes(flowNodes);
     setEdges(flowEdges);
-  }, [dag, setNodes, setEdges]);
+  }, [dag, selectedNodeId, setNodes, setEdges]);
 
   // Handle connection creation
   const onConnect = useCallback((params: Connection) => {
@@ -116,6 +119,20 @@ export function ScriptDAGEditor({ dag, onChange, readOnly = false }: ScriptDAGEd
       onChange(newDag);
     }
   }, [readOnly, setEdges, onChange, dag]);
+
+  // Handle node click/selection
+  const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
+    if (onNodeSelect) {
+      onNodeSelect(node.id);
+    }
+  }, [onNodeSelect]);
+
+  // Handle clicking on empty space (deselect)
+  const onPaneClick = useCallback(() => {
+    if (onNodeSelect) {
+      onNodeSelect(null);
+    }
+  }, [onNodeSelect]);
 
   // Handle node position changes
   const handleNodesChange = useCallback((changes: Array<{ type: string; id: string; position?: { x: number; y: number } }>) => {
@@ -153,6 +170,8 @@ export function ScriptDAGEditor({ dag, onChange, readOnly = false }: ScriptDAGEd
         onNodesChange={handleNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onNodeClick={onNodeClick}
+        onPaneClick={onPaneClick}
         nodeTypes={nodeTypes}
         fitView
         attributionPosition="bottom-left"
