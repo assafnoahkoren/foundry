@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -65,8 +66,6 @@ export function ScriptEdit() {
 
   // Fetch available transmissions
   const { data: transmissions } = trpc.joniComm.transmissions.list.useQuery({});
-  
-  console.log('Transmissions data:', transmissions);
 
   // Fetch existing script if editing
   const queryResult = isNew 
@@ -204,6 +203,41 @@ export function ScriptEdit() {
   };
 
   const selectedNode = formData.dagStructure?.nodes.find(n => n.id === selectedNodeId);
+  
+  // Fetch selected transmission with blocks for rendering
+  const selectedTransmissionId = selectedNode?.type === 'transmission' && 
+    selectedNode?.content?.type === 'transmission_ref' ? 
+    selectedNode.content.transmissionId : null;
+  
+  const { data: transmissionWithBlocks } = trpc.joniComm.transmissions.getWithBlocks.useQuery(
+    { id: selectedTransmissionId! },
+    { enabled: !!selectedTransmissionId }
+  );
+
+  // Render transmission with variables (or show template)
+  const renderTransmission = () => {
+    if (!transmissionWithBlocks) return '';
+    
+    let rendered = '';
+    const variables = selectedNode?.content?.variables || {};
+    
+    transmissionWithBlocks.blocks?.forEach((blockRef: { blockId: string }, index: number) => {
+      const block = transmissionWithBlocks.populatedBlocks?.find(
+        (b: { id: string; template?: string; name: string }) => b.id === blockRef.blockId
+      );
+      if (block && block.template) {
+        let blockText = block.template;
+        // Replace variables if provided, otherwise show placeholders
+        for (const [key, value] of Object.entries(variables)) {
+          blockText = blockText.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), value as string);
+        }
+        if (index > 0) rendered += ', ';
+        rendered += blockText;
+      }
+    });
+    
+    return rendered || 'No blocks configured';
+  };
 
   console.log('ScriptEdit - Checking loading condition:', { isNew, isLoading, condition: !isNew && isLoading });
   
@@ -310,6 +344,26 @@ export function ScriptEdit() {
                         </SelectContent>
                       </Select>
                     </div>
+                    
+                    {/* Render transmission preview */}
+                    {transmissionWithBlocks && (
+                      <div className="space-y-2">
+                        <Label>Transmission Preview</Label>
+                        <div className="p-3 bg-muted rounded-md">
+                          <p className="text-sm font-mono whitespace-pre-wrap">
+                            {renderTransmission()}
+                          </p>
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {transmissionWithBlocks.populatedBlocks?.map((block: { id: string; name: string }) => (
+                              <Badge key={block.id} variant="secondary" className="text-xs">
+                                {block.name}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
                     <div className="space-y-2">
                       <Label htmlFor="actor-role">Actor Role</Label>
                       <Select
