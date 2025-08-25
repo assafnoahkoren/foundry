@@ -1,31 +1,30 @@
-import { useCallback, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
 import {
-  ReactFlow,
-  Controls,
-  Background,
-  MiniMap,
-  Panel,
-  useNodesState,
-  useEdgesState,
   addEdge,
+  Background,
   BackgroundVariant,
   MarkerType,
-  type Node,
+  MiniMap,
+  Panel,
+  ReactFlow,
+  useEdgesState,
+  useNodesState,
+  type Connection,
   type Edge,
-  type NodeTypes,
-  type Connection
+  type Node,
+  type NodeTypes
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import { AlertTriangle, Bell, GitBranch, Radio, Users } from 'lucide-react';
+import { useCallback, useEffect } from 'react';
 import './ScriptDAGEditor.css';
-import { Button } from '@/components/ui/button';
-import { Radio, AlertTriangle, Users, Bell, GitBranch } from 'lucide-react';
 
-import { TransmissionNode } from './nodes/TransmissionNode';
-import { EventNode } from './nodes/EventNode';
-import { DecisionNode } from './nodes/DecisionNode';
-import { CrewInteractionNode } from './nodes/CrewInteractionNode';
-import { SystemAlertNode } from './nodes/SystemAlertNode';
 import type { ScriptDAG, ScriptEdge } from '../../types/script-dag.types';
+import { CrewInteractionNode } from './nodes/CrewInteractionNode';
+import { DecisionNode } from './nodes/DecisionNode';
+import { EventNode } from './nodes/EventNode';
+import { SystemAlertNode } from './nodes/SystemAlertNode';
+import { TransmissionNode } from './nodes/TransmissionNode';
 
 const nodeTypes: NodeTypes = {
   transmission: TransmissionNode,
@@ -321,7 +320,6 @@ export function ScriptDAGEditor({ dag, onChange, onNodeSelect, selectedNodeId, r
           size={1} 
           className="bg-gray-50 dark:bg-gray-900"
         />
-        <Controls />
         <MiniMap 
           nodeStrokeWidth={3}
           className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700"
