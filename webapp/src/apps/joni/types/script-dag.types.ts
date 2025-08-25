@@ -55,6 +55,15 @@ const DecisionPointSchema = z.object({
   }))
 });
 
+// User response node - waits for user transmission
+const UserResponseSchema = z.object({
+  type: z.literal('user_response'),
+  expectedElements: z.array(z.string()).optional(), // Key phrases/elements expected
+  validationCriteria: z.string().optional(), // Hint for validation service
+  maxRetries: z.number().default(3),
+  timeoutSeconds: z.number().optional()
+});
+
 // Union of all content types
 const NodeContentSchema = z.discriminatedUnion('type', [
   TransmissionRefSchema,
@@ -62,7 +71,8 @@ const NodeContentSchema = z.discriminatedUnion('type', [
   EventContentSchema,
   CrewMessageSchema,
   SystemAlertSchema,
-  DecisionPointSchema
+  DecisionPointSchema,
+  UserResponseSchema
 ]);
 
 // ============= Expected Response Types =============
@@ -86,7 +96,7 @@ const ExpectedResponseSchema = z.object({
 
 const ScriptNodeSchema = z.object({
   id: z.string(),
-  type: z.enum(['transmission', 'event', 'crew_interaction', 'system_alert', 'decision_point']),
+  type: z.enum(['transmission', 'event', 'crew_interaction', 'system_alert', 'decision_point', 'user_response']),
   name: z.string(),
   description: z.string().optional(),
   
@@ -149,13 +159,32 @@ const DecisionConditionSchema = z.object({
   priority: z.number().default(1)
 });
 
+// Validation result conditions for user responses
+const ValidationPassSchema = z.object({
+  type: z.literal('validation_pass'),
+  priority: z.number().default(1)
+});
+
+const ValidationFailSchema = z.object({
+  type: z.literal('validation_fail'),
+  priority: z.number().default(1)
+});
+
+const RetrySchema = z.object({
+  type: z.literal('retry'),
+  priority: z.number().default(1)
+});
+
 const EdgeConditionSchema = z.discriminatedUnion('type', [
   DefaultConditionSchema,
   ScoreConditionSchema,
   KeywordConditionSchema,
   ExactMatchConditionSchema,
   TimeoutConditionSchema,
-  DecisionConditionSchema
+  DecisionConditionSchema,
+  ValidationPassSchema,
+  ValidationFailSchema,
+  RetrySchema
 ]);
 
 // ============= Script Edge =============

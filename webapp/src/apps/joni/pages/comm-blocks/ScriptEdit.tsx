@@ -40,9 +40,6 @@ export function ScriptEdit() {
   const navigate = useNavigate();
   // Check if we're creating a new script (either id is 'new' or undefined/not provided)
   const isNew = !id || id === 'new';
-  
-  console.log('ScriptEdit - id:', id);
-  console.log('ScriptEdit - isNew:', isNew);
 
   const [formData, setFormData] = useState(() => {
     const shouldCreateEmpty = !id || id === 'new';
@@ -57,7 +54,6 @@ export function ScriptEdit() {
       dagStructure: (shouldCreateEmpty ? createEmptyDAG() : null) as ScriptDAG | null,
       startNodeId: shouldCreateEmpty ? 'start' : ''
     };
-    console.log('ScriptEdit - initialData:', initialData);
     return initialData;
   });
 
@@ -75,10 +71,6 @@ export function ScriptEdit() {
       );
   
   const { data: script, isLoading } = queryResult;
-  
-  console.log('ScriptEdit - isLoading:', isLoading);
-  console.log('ScriptEdit - script:', script);
-  console.log('ScriptEdit - formData.dagStructure:', formData.dagStructure);
 
   // Update form when script loads
   useEffect(() => {
@@ -161,11 +153,15 @@ export function ScriptEdit() {
 
 
   const handleDAGChange = (newDAG: ScriptDAG) => {
-    setFormData(prev => ({
-      ...prev,
+    const updatedFormData = {
+      ...formData,
       dagStructure: newDAG,
       startNodeId: newDAG.nodes[0]?.id || 'start'
-    }));
+    };
+    
+    console.log('Script data changed:', updatedFormData);
+    
+    setFormData(updatedFormData);
   };
 
   const handleNodeSelect = (nodeId: string | null) => {
@@ -241,10 +237,7 @@ export function ScriptEdit() {
     return rendered || 'No blocks configured';
   };
 
-  console.log('ScriptEdit - Checking loading condition:', { isNew, isLoading, condition: !isNew && isLoading });
-  
   if (!isNew && isLoading) {
-    console.log('ScriptEdit - Returning Loading screen');
     return (
       <div className="max-w-7xl mx-auto p-4">
         <Card>
@@ -255,8 +248,6 @@ export function ScriptEdit() {
       </div>
     );
   }
-  
-  console.log('ScriptEdit - Rendering main form');
 
   return (
     <div className="w-full p-4 space-y-6">
@@ -444,6 +435,52 @@ export function ScriptEdit() {
                       rows={3}
                     />
                   </div>
+                )}
+
+                {selectedNode.type === 'user_response' && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="validation-criteria">Validation Criteria</Label>
+                      <Input
+                        id="validation-criteria"
+                        value={selectedNode.content?.validationCriteria || ''}
+                        onChange={(e) => handleNodeUpdate(selectedNode.id, {
+                          content: { ...selectedNode.content, validationCriteria: e.target.value }
+                        })}
+                        placeholder="e.g., clearance_readback, simple_acknowledge"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="expected-elements">Expected Elements</Label>
+                      <Textarea
+                        id="expected-elements"
+                        value={selectedNode.content?.expectedElements?.join('\n') || ''}
+                        onChange={(e) => handleNodeUpdate(selectedNode.id, {
+                          content: { 
+                            ...selectedNode.content, 
+                            expectedElements: e.target.value.split('\n').filter(s => s.trim())
+                          }
+                        })}
+                        placeholder="One element per line (e.g., 'ready to copy', 'N9842F')"
+                        rows={3}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="max-retries">Max Retries</Label>
+                      <Input
+                        id="max-retries"
+                        type="number"
+                        value={selectedNode.content?.maxRetries || 3}
+                        onChange={(e) => handleNodeUpdate(selectedNode.id, {
+                          content: { ...selectedNode.content, maxRetries: parseInt(e.target.value) || 3 }
+                        })}
+                        min={1}
+                        max={10}
+                      />
+                    </div>
+                  </>
                 )}
               </>
               </CardContent>

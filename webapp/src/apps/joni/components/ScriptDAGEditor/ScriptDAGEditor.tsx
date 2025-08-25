@@ -15,7 +15,7 @@ import {
   type NodeTypes
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { AlertTriangle, Bell, GitBranch, Radio, Users } from 'lucide-react';
+import { AlertTriangle, Bell, GitBranch, Mic, Radio, Users } from 'lucide-react';
 import { useCallback, useEffect } from 'react';
 import './ScriptDAGEditor.css';
 
@@ -25,6 +25,7 @@ import { DecisionNode } from './nodes/DecisionNode';
 import { EventNode } from './nodes/EventNode';
 import { SystemAlertNode } from './nodes/SystemAlertNode';
 import { TransmissionNode } from './nodes/TransmissionNode';
+import { UserResponseNode } from './nodes/UserResponseNode';
 
 const nodeTypes: NodeTypes = {
   transmission: TransmissionNode,
@@ -32,6 +33,7 @@ const nodeTypes: NodeTypes = {
   decision_point: DecisionNode,
   crew_interaction: CrewInteractionNode,
   system_alert: SystemAlertNode,
+  user_response: UserResponseNode,
 };
 
 interface ScriptDAGEditorProps {
@@ -192,7 +194,7 @@ export function ScriptDAGEditor({ dag, onChange, onNodeSelect, selectedNodeId, r
   }, [readOnly, dag, onChange]);
 
   // Add new node
-  const addNode = useCallback((type: 'transmission' | 'event' | 'crew_interaction' | 'system_alert' | 'decision_point') => {
+  const addNode = useCallback((type: 'transmission' | 'event' | 'crew_interaction' | 'system_alert' | 'decision_point' | 'user_response') => {
     if (readOnly || !dag) return;
     
     // Get the center of the viewport for positioning
@@ -242,6 +244,13 @@ export function ScriptDAGEditor({ dag, onChange, onNodeSelect, selectedNodeId, r
               question: '',
               prompt: '',
               options: []
+            };
+          case 'user_response':
+            return {
+              type: 'user_response' as const,
+              expectedElements: [],
+              validationCriteria: '',
+              maxRetries: 3
             };
           default:
             return { type: 'event' as const, category: 'operational' as const, severity: 'info' as const, title: '', details: '', description: '' };
@@ -375,6 +384,15 @@ export function ScriptDAGEditor({ dag, onChange, onNodeSelect, selectedNodeId, r
                   className="p-2"
                 >
                   <GitBranch className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => addNode('user_response')}
+                  title="Add User Response"
+                  className="p-2"
+                >
+                  <Mic className="w-4 h-4" />
                 </Button>
               </div>
             </div>
