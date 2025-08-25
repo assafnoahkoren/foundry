@@ -3,9 +3,7 @@ import { Mic } from 'lucide-react';
 
 interface UserResponseNodeData {
   label: string;
-  expectedElements?: string[];
-  validationCriteria?: string;
-  maxRetries?: number;
+  transmissionId?: string;
 }
 
 export function UserResponseNode({ data }: { data: UserResponseNodeData }) {
@@ -18,21 +16,9 @@ export function UserResponseNode({ data }: { data: UserResponseNodeData }) {
         <div className="font-semibold text-sm text-blue-900 dark:text-blue-100">{data.label}</div>
       </div>
       
-      {data.validationCriteria && (
+      {data.transmissionId && (
         <div className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-          Validation: {data.validationCriteria}
-        </div>
-      )}
-      
-      {data.expectedElements && data.expectedElements.length > 0 && (
-        <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-          Expected: {data.expectedElements.length} elements
-        </div>
-      )}
-      
-      {data.maxRetries && (
-        <div className="text-xs text-blue-500 dark:text-blue-500 mt-1">
-          Max retries: {data.maxRetries}
+          Has expected transmission
         </div>
       )}
       

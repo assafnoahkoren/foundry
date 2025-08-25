@@ -58,9 +58,7 @@ const DecisionPointSchema = z.object({
 // User response node - waits for user transmission
 const UserResponseSchema = z.object({
   type: z.literal('user_response'),
-  expectedElements: z.array(z.string()).optional(), // Key phrases/elements expected
-  validationCriteria: z.string().optional(), // Hint for validation service
-  maxRetries: z.number().default(3),
+  transmissionId: z.string().optional(), // Reference to expected transmission template
   timeoutSeconds: z.number().optional()
 });
 

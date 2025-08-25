@@ -146,9 +146,7 @@ async function seedScripts() {
         position: { x: 250, y: 150 },
         content: {
           type: 'user_response',
-          expectedElements: ['ready to copy', 'N9842F'],
-          validationCriteria: 'acknowledge_ready',
-          maxRetries: 3
+          transmissionId: ''
         }
       },
       {
@@ -169,18 +167,7 @@ async function seedScripts() {
         position: { x: 250, y: 350 },
         content: {
           type: 'user_response',
-          expectedElements: [
-            'cleared to KBDL',
-            'radar vectors BEENO',
-            'V167 MKDIR',
-            'maintain 3000',
-            'expect 6000',
-            '120.6',
-            'squawk 4721',
-            'N9842F'
-          ],
-          validationCriteria: 'full_clearance_readback',
-          maxRetries: 3
+          transmissionId: ''
         }
       },
       {
@@ -261,9 +248,7 @@ async function seedScripts() {
         position: { x: 250, y: 150 },
         content: {
           type: 'user_response',
-          expectedElements: ['request taxi', 'runway', 'N9842F'],
-          validationCriteria: 'taxi_request',
-          maxRetries: 3
+          transmissionId: ''
         }
       },
       {

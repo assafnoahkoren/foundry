@@ -203,9 +203,15 @@ export function ScriptEdit() {
   const selectedNode = formData.dagStructure?.nodes.find(n => n.id === selectedNodeId);
   
   // Fetch selected transmission with blocks for rendering
-  const selectedTransmissionId = selectedNode?.type === 'transmission' && 
-    selectedNode?.content?.type === 'transmission_ref' ? 
-    selectedNode.content.transmissionId : null;
+  const selectedTransmissionId = (() => {
+    if (selectedNode?.type === 'transmission' && selectedNode?.content?.type === 'transmission_ref') {
+      return selectedNode.content.transmissionId;
+    }
+    if (selectedNode?.type === 'user_response' && selectedNode?.content?.transmissionId) {
+      return selectedNode.content.transmissionId;
+    }
+    return null;
+  })();
   
   const { data: transmissionWithBlocks } = trpc.joniComm.transmissions.getWithBlocks.useQuery(
     { id: selectedTransmissionId! },
@@ -440,46 +446,49 @@ export function ScriptEdit() {
                 {selectedNode.type === 'user_response' && (
                   <>
                     <div className="space-y-2">
-                      <Label htmlFor="validation-criteria">Validation Criteria</Label>
-                      <Input
-                        id="validation-criteria"
-                        value={selectedNode.content?.validationCriteria || ''}
-                        onChange={(e) => handleNodeUpdate(selectedNode.id, {
-                          content: { ...selectedNode.content, validationCriteria: e.target.value }
+                      <Label htmlFor="user-transmission">Expected Transmission</Label>
+                      <Select
+                        value={selectedNode.content?.transmissionId || ''}
+                        onValueChange={(value) => handleNodeUpdate(selectedNode.id, {
+                          content: { ...selectedNode.content, transmissionId: value }
                         })}
-                        placeholder="e.g., clearance_readback, simple_acknowledge"
-                      />
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select expected user transmission" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {transmissions?.map((transmission) => (
+                            <SelectItem key={transmission.id} value={transmission.id}>
+                              <div className="flex flex-col py-1">
+                                <span>{transmission.name}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {transmission.code} • {transmission.transmissionType}
+                                </span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     
-                    <div className="space-y-2">
-                      <Label htmlFor="expected-elements">Expected Elements</Label>
-                      <Textarea
-                        id="expected-elements"
-                        value={selectedNode.content?.expectedElements?.join('\n') || ''}
-                        onChange={(e) => handleNodeUpdate(selectedNode.id, {
-                          content: { 
-                            ...selectedNode.content, 
-                            expectedElements: e.target.value.split('\n').filter(s => s.trim())
-                          }
-                        })}
-                        placeholder="One element per line (e.g., 'ready to copy', 'N9842F')"
-                        rows={3}
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="max-retries">Max Retries</Label>
-                      <Input
-                        id="max-retries"
-                        type="number"
-                        value={selectedNode.content?.maxRetries || 3}
-                        onChange={(e) => handleNodeUpdate(selectedNode.id, {
-                          content: { ...selectedNode.content, maxRetries: parseInt(e.target.value) || 3 }
-                        })}
-                        min={1}
-                        max={10}
-                      />
-                    </div>
+                    {/* Render expected transmission preview */}
+                    {transmissionWithBlocks && selectedNode.content?.transmissionId && (
+                      <div className="space-y-2">
+                        <Label>Expected Transmission Preview</Label>
+                        <div className="p-3 bg-muted rounded-md">
+                          <p className="text-sm font-mono whitespace-pre-wrap">
+                            {renderTransmission()}
+                          </p>
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {transmissionWithBlocks.populatedBlocks?.map((block: { id: string; name: string }) => (
+                              <Badge key={block.id} variant="secondary" className="text-xs">
+                                {block.name}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </>
                 )}
               </>
