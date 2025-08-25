@@ -248,7 +248,8 @@ export function ScriptDAGEditor({ dag, onChange, onNodeSelect, selectedNodeId, r
           case 'user_response':
             return {
               type: 'user_response' as const,
-              transmissionId: ''
+              transmissionId: '',
+              variables: {}
             };
           default:
             return { type: 'event' as const, category: 'operational' as const, severity: 'info' as const, title: '', details: '', description: '' };

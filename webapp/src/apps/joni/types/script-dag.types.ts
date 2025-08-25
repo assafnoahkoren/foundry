@@ -59,6 +59,7 @@ const DecisionPointSchema = z.object({
 const UserResponseSchema = z.object({
   type: z.literal('user_response'),
   transmissionId: z.string().optional(), // Reference to expected transmission template
+  variables: z.record(z.string()).optional(), // Variable values for comm blocks
   timeoutSeconds: z.number().optional()
 });
 

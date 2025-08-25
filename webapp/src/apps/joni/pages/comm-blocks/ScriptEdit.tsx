@@ -89,9 +89,13 @@ export function ScriptEdit() {
     }
   }, [script]);
 
+  const utils = trpc.useUtils();
+
   // Create mutation
   const createMutation = trpc.joniComm.scripts.create.useMutation({
     onSuccess: () => {
+      // Invalidate and refetch scripts data
+      utils.joniComm.scripts.invalidate();
       toast({
         title: 'Success',
         description: 'Script created successfully'
@@ -110,6 +114,8 @@ export function ScriptEdit() {
   // Update mutation
   const updateMutation = trpc.joniComm.scripts.update.useMutation({
     onSuccess: () => {
+      // Invalidate and refetch scripts data
+      utils.joniComm.scripts.invalidate();
       toast({
         title: 'Success',
         description: 'Script updated successfully'
@@ -217,6 +223,26 @@ export function ScriptEdit() {
     { id: selectedTransmissionId! },
     { enabled: !!selectedTransmissionId }
   );
+
+  // Extract variable names from transmission blocks
+  const extractVariables = () => {
+    if (!transmissionWithBlocks) return [];
+    
+    const variableSet = new Set<string>();
+    transmissionWithBlocks.populatedBlocks?.forEach((block: { template?: string }) => {
+      if (block.template) {
+        const matches = block.template.match(/\{\{(\w+)\}\}/g);
+        if (matches) {
+          matches.forEach(match => {
+            const varName = match.replace(/\{\{|\}\}/g, '');
+            variableSet.add(varName);
+          });
+        }
+      }
+    });
+    
+    return Array.from(variableSet);
+  };
 
   // Render transmission with variables (or show template)
   const renderTransmission = () => {
@@ -470,6 +496,39 @@ export function ScriptEdit() {
                         </SelectContent>
                       </Select>
                     </div>
+                    
+                    {/* Comm Block Variables */}
+                    {transmissionWithBlocks && selectedNode.content?.transmissionId && extractVariables().length > 0 && (
+                      <div className="space-y-2">
+                        <Label>Comm Block Variables</Label>
+                        <div className="space-y-2">
+                          {extractVariables().map((varName) => (
+                            <div key={varName} className="flex flex-col space-y-1">
+                              <Label htmlFor={`var-${varName}`} className="text-xs">
+                                {varName}
+                              </Label>
+                              <Input
+                                id={`var-${varName}`}
+                                value={selectedNode.content?.variables?.[varName] || ''}
+                                onChange={(e) => {
+                                  const currentVars = selectedNode.content?.variables || {};
+                                  handleNodeUpdate(selectedNode.id, {
+                                    content: {
+                                      ...selectedNode.content,
+                                      variables: {
+                                        ...currentVars,
+                                        [varName]: e.target.value
+                                      }
+                                    }
+                                  });
+                                }}
+                                placeholder={`Enter value for {{${varName}}}`}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     
                     {/* Render expected transmission preview */}
                     {transmissionWithBlocks && selectedNode.content?.transmissionId && (
