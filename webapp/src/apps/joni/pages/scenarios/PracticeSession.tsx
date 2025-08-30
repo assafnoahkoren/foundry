@@ -12,6 +12,7 @@ import { SituationCard } from '../../components/practice/SituationCard';
 import { TransmissionCard } from '../../components/practice/TransmissionCard';
 import { UserResponseCard } from '../../components/practice/UserResponseCard';
 import { EventCard } from '../../components/practice/EventCard';
+import { NodeNavigation } from '../../components/practice/NodeNavigation';
 
 export function PracticeSession() {
   const { scriptId } = useParams<{ scriptId: string }>();
@@ -176,6 +177,16 @@ export function PracticeSession() {
     }
   };
   
+  // Handle navigation to previous node
+  const handleNodeNavigation = (nodeId: string) => {
+    if (visitedNodes.has(nodeId) || nodeId === currentNodeId) {
+      setCurrentNodeId(nodeId);
+      // Clear any processing state
+      setIsProcessing(false);
+      setUserInput('');
+    }
+  };
+
   // Initialize with start node
   useEffect(() => {
     if (dag && !currentNodeId) {
@@ -250,6 +261,14 @@ export function PracticeSession() {
           <p className="text-xs text-muted-foreground mt-1">
             Progress: {Math.round(progress)}%
           </p>
+          {dag && (
+            <NodeNavigation
+              nodes={dag.nodes}
+              currentNodeId={currentNodeId}
+              visitedNodes={visitedNodes}
+              onNodeClick={handleNodeNavigation}
+            />
+          )}
         </div>
       </div>
       
