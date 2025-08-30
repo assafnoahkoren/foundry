@@ -689,6 +689,34 @@ export function ScriptEdit() {
                   </div>
                 )}
 
+                {selectedNode.type === 'situation' && (
+                  <div className="space-y-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="situation-title">Title (Optional)</Label>
+                      <Input
+                        id="situation-title"
+                        value={selectedNode.content?.title || ''}
+                        onChange={(e) => handleNodeUpdate(selectedNode.id, {
+                          content: { ...selectedNode.content, title: e.target.value }
+                        })}
+                        placeholder="Enter situation title"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="situation-desc">Situation Description</Label>
+                      <Textarea
+                        id="situation-desc"
+                        value={selectedNode.content?.description || ''}
+                        onChange={(e) => handleNodeUpdate(selectedNode.id, {
+                          content: { ...selectedNode.content, description: e.target.value }
+                        })}
+                        placeholder="Describe the situation..."
+                        rows={4}
+                      />
+                    </div>
+                  </div>
+                )}
+
                 {selectedNode.type === 'user_response' && (
                   <>
                     <div className="space-y-2">

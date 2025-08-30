@@ -15,7 +15,7 @@ import {
   type NodeTypes
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { AlertTriangle, Bell, GitBranch, Mic, Radio, Users } from 'lucide-react';
+import { AlertTriangle, Bell, FileText, GitBranch, Mic, Radio, Users } from 'lucide-react';
 import { useCallback, useEffect } from 'react';
 import './ScriptDAGEditor.css';
 
@@ -194,7 +194,7 @@ export function ScriptDAGEditor({ dag, onChange, onNodeSelect, selectedNodeId, r
   }, [readOnly, dag, onChange]);
 
   // Add new node
-  const addNode = useCallback((type: 'transmission' | 'event' | 'crew_interaction' | 'system_alert' | 'decision_point' | 'user_response') => {
+  const addNode = useCallback((type: 'transmission' | 'event' | 'crew_interaction' | 'system_alert' | 'decision_point' | 'user_response' | 'situation') => {
     if (readOnly || !dag) return;
     
     // Get the center of the viewport for positioning
@@ -250,6 +250,12 @@ export function ScriptDAGEditor({ dag, onChange, onNodeSelect, selectedNodeId, r
               type: 'user_response' as const,
               transmissionId: '',
               variables: {}
+            };
+          case 'situation':
+            return {
+              type: 'situation' as const,
+              title: 'New Situation',
+              description: ''
             };
           default:
             return { type: 'event' as const, category: 'operational' as const, severity: 'info' as const, title: '', details: '', description: '' };
@@ -392,6 +398,15 @@ export function ScriptDAGEditor({ dag, onChange, onNodeSelect, selectedNodeId, r
                   className="p-2"
                 >
                   <Mic className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => addNode('situation')}
+                  title="Add Situation"
+                  className="p-2"
+                >
+                  <FileText className="w-4 h-4" />
                 </Button>
               </div>
             </div>

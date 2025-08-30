@@ -63,6 +63,13 @@ const UserResponseSchema = z.object({
   timeoutSeconds: z.number().optional()
 });
 
+// Situation node - describes a general situation
+const SituationSchema = z.object({
+  type: z.literal('situation'),
+  description: z.string(),
+  title: z.string().optional()
+});
+
 // Union of all content types
 const NodeContentSchema = z.discriminatedUnion('type', [
   TransmissionRefSchema,
@@ -71,7 +78,8 @@ const NodeContentSchema = z.discriminatedUnion('type', [
   CrewMessageSchema,
   SystemAlertSchema,
   DecisionPointSchema,
-  UserResponseSchema
+  UserResponseSchema,
+  SituationSchema
 ]);
 
 // ============= Expected Response Types =============
@@ -95,7 +103,7 @@ const ExpectedResponseSchema = z.object({
 
 const ScriptNodeSchema = z.object({
   id: z.string(),
-  type: z.enum(['transmission', 'event', 'crew_interaction', 'system_alert', 'decision_point', 'user_response']),
+  type: z.enum(['transmission', 'event', 'crew_interaction', 'system_alert', 'decision_point', 'user_response', 'situation']),
   name: z.string(),
   description: z.string().optional(),
   
