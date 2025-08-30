@@ -11,7 +11,7 @@ import { ArrowLeft, Edit2, Save, Trash2 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ScriptDAGEditor } from '../../components/ScriptDAGEditor/ScriptDAGEditor';
-import { validateScriptDAG, type ScriptDAG, type ScriptNode } from '../../types/script-dag.types';
+import { type ScriptDAG, type ScriptNode } from '../../types/script-dag.types';
 
 function createEmptyDAG(): ScriptDAG {
   return {
@@ -76,7 +76,7 @@ export function ScriptEdit() {
   // Update form when script loads
   useEffect(() => {
     if (script) {
-      const validatedDAG = script.dagStructure ? validateScriptDAG(script.dagStructure) : createEmptyDAG();
+      const validatedDAG = script.dagStructure ? script.dagStructure as ScriptDAG : createEmptyDAG();
       setFormData({
         code: script.code,
         name: script.name,
