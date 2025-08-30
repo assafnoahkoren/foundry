@@ -95,9 +95,12 @@ export function ScenarioPractice() {
         <CardContent>
           <div className="text-center py-8">
             <p className="text-muted-foreground mb-4">
-              Practice functionality coming soon...
+              Ready to practice this scenario?
             </p>
-            <Button size="lg" disabled>
+            <Button 
+              size="lg" 
+              onClick={() => navigate(`/joni/scenarios/session/${scenarioId}`)}
+            >
               Start Practice Session
             </Button>
           </div>

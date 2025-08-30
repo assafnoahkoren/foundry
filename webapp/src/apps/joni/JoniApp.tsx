@@ -16,6 +16,7 @@ import { ScriptManagement } from './pages/comm-blocks/ScriptManagement';
 import { ScriptEdit } from './pages/comm-blocks/ScriptEdit';
 import { ScenariosList } from './pages/scenarios/ScenariosList';
 import { ScenarioPractice } from './pages/scenarios/ScenarioPractice';
+import { PracticeSession } from './pages/scenarios/PracticeSession';
 import { useJoniBranding } from './hooks/useJoniBranding';
 
 export function JoniApp() {
@@ -43,6 +44,7 @@ export function JoniApp() {
         <Route path="scripts/:id" element={<ScriptEdit />} />
         <Route path="scenarios" element={<ScenariosList />} />
         <Route path="scenarios/practice/:scenarioId" element={<ScenarioPractice />} />
+        <Route path="scenarios/session/:scriptId" element={<PracticeSession />} />
         <Route path="*" element={<Navigate to="/joni" replace />} />
       </Route>
     </Routes>
