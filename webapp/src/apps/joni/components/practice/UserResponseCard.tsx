@@ -1,15 +1,15 @@
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Send, User, Mic, MicOff, Loader2, Variable } from 'lucide-react';
 import { useVoiceInput } from '@/hooks/useVoiceInput';
+import { Loader2, Mic, MicOff, Send, User, Variable } from 'lucide-react';
 
 interface UserResponseCardProps {
   value: string;
@@ -23,6 +23,7 @@ interface UserResponseCardProps {
     populatedBlocks?: Array<{ id: string; template?: string }>;
   } | null;
   variables?: Record<string, string>;
+  hasValidationResult?: boolean;
 }
 
 export function UserResponseCard({ 
@@ -33,7 +34,8 @@ export function UserResponseCard({
   isProcessing,
   expectedResponse,
   transmissionData,
-  variables = {}
+  variables = {},
+  hasValidationResult = false
 }: UserResponseCardProps) {
   const {
     isListening,
@@ -154,9 +156,9 @@ export function UserResponseCard({
                 value={isListening ? (transcript || value) : value}
                 onChange={(e) => onChange(e.target.value)}
                 onKeyPress={onKeyPress}
-                placeholder={isListening ? "Listening..." : "Type your transmission or use voice input..."}
+                placeholder={isListening ? "Listening..." : hasValidationResult ? "Transmission sent" : "Type your transmission or use voice input..."}
                 className="min-h-[80px]"
-                disabled={isProcessing || isListening}
+                disabled={isProcessing || isListening || hasValidationResult}
               />
             </div>
             <div className="flex items-center">
@@ -170,7 +172,7 @@ export function UserResponseCard({
                         isListening ? 'ring-4 ring-red-200 animate-pulse' : 'hover:scale-105'
                       }`}
                       onClick={handleMicToggle}
-                      disabled={isProcessing}
+                      disabled={isProcessing || hasValidationResult}
                       type="button"
                       aria-label={isListening ? "Stop recording" : "Start voice input"}
                     >
@@ -193,13 +195,13 @@ export function UserResponseCard({
           <div className="flex gap-2">
             <Button 
               onClick={onTransmit}
-              disabled={!value.trim() || isProcessing || isListening}
+              disabled={!value.trim() || isProcessing || isListening || hasValidationResult}
               className="flex-1"
             >
               <Send className="w-4 h-4 mr-2" />
-              Transmit
+              {hasValidationResult ? 'Transmitted' : 'Transmit'}
             </Button>
-            {value && !isListening && (
+            {value && !isListening && !hasValidationResult && (
               <Button
                 variant="outline"
                 onClick={() => onChange('')}

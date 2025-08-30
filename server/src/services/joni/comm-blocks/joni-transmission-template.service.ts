@@ -257,6 +257,27 @@ export class JoniTransmissionTemplateService {
       errors
     };
   }
+
+  async getTransmissionWithBlocks(id: string) {
+    const transmission = await prisma.joniTransmissionTemplate.findUnique({
+      where: { id }
+    });
+    
+    if (!transmission) return null;
+    
+    // Parse the blocks JSON field
+    const blocks = transmission.blocks as Array<{
+      blockId: string;
+      order: number;
+      parameters?: Record<string, any>;
+      isOptional?: boolean;
+    }>;
+    
+    return {
+      ...transmission,
+      blocks: blocks || []
+    };
+  }
 }
 
 // Export singleton instance

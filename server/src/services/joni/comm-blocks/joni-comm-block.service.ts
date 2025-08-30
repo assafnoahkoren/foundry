@@ -256,6 +256,16 @@ export class JoniCommBlockService {
       byDifficulty
     };
   }
+
+  async getBlocksByIds(ids: string[]) {
+    return prisma.joniCommBlock.findMany({
+      where: {
+        id: {
+          in: ids
+        }
+      }
+    });
+  }
 }
 
 // Export singleton instance

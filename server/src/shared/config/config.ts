@@ -93,6 +93,11 @@ export const config = {
     apiKey: process.env.OPENAI_API_KEY || '',
   },
   
+  // ElevenLabs
+  elevenlabs: {
+    apiKey: process.env.ELEVENLABS_API_KEY || '',
+  },
+  
   // Helper functions
   isProduction: () => config.server.nodeEnv === 'production',
   isDevelopment: () => config.server.nodeEnv === 'development',
