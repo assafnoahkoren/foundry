@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { hashPassword } from '../src/lib/auth/password';
 import type { ScriptDAG } from '../src/services/joni/comm-blocks/types/script-dag.types';
+import { seedELAL321Scenario } from './seeds/elal321-scenario.seed';
 
 const prisma = new PrismaClient();
 
@@ -372,6 +373,9 @@ async function main() {
   
   // Seed training scripts
   await seedScripts();
+  
+  // Seed EL AL 321 Heavy scenario with comm blocks and transmissions
+  await seedELAL321Scenario(prisma);
 
   console.log('\n✨ Seeding completed!');
 }

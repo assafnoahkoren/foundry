@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { trpc } from '@/utils/trpc';
-import { ArrowLeft, Save, Trash2 } from 'lucide-react';
+import { ArrowLeft, Edit2, Save, Trash2 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ScriptDAGEditor } from '../../components/ScriptDAGEditor/ScriptDAGEditor';
@@ -253,29 +253,29 @@ export function ScriptEdit() {
   })();
   
   const { data: transmissionWithBlocks } = trpc.joniComm.transmissions.getWithBlocks.useQuery(
-    { id: selectedTransmissionId! },
+    { id: selectedTransmissionId || '' },
     { enabled: !!selectedTransmissionId }
   );
   
   // Fetch all transmissions for global variables - using individual queries
   const transmission1 = trpc.joniComm.transmissions.getWithBlocks.useQuery(
-    { id: allUserResponseTransmissionIds[0]! },
+    { id: allUserResponseTransmissionIds[0] || '' },
     { enabled: !!allUserResponseTransmissionIds[0] }
   );
   const transmission2 = trpc.joniComm.transmissions.getWithBlocks.useQuery(
-    { id: allUserResponseTransmissionIds[1]! },
+    { id: allUserResponseTransmissionIds[1] || '' },
     { enabled: !!allUserResponseTransmissionIds[1] }
   );
   const transmission3 = trpc.joniComm.transmissions.getWithBlocks.useQuery(
-    { id: allUserResponseTransmissionIds[2]! },
+    { id: allUserResponseTransmissionIds[2] || '' },
     { enabled: !!allUserResponseTransmissionIds[2] }
   );
   const transmission4 = trpc.joniComm.transmissions.getWithBlocks.useQuery(
-    { id: allUserResponseTransmissionIds[3]! },
+    { id: allUserResponseTransmissionIds[3] || '' },
     { enabled: !!allUserResponseTransmissionIds[3] }
   );
   const transmission5 = trpc.joniComm.transmissions.getWithBlocks.useQuery(
-    { id: allUserResponseTransmissionIds[4]! },
+    { id: allUserResponseTransmissionIds[4] || '' },
     { enabled: !!allUserResponseTransmissionIds[4] }
   );
   
@@ -556,7 +556,19 @@ export function ScriptEdit() {
                 {selectedNode.type === 'transmission' && selectedNode.content?.type === 'transmission_ref' && (
                   <>
                     <div className="space-y-2">
-                      <Label htmlFor="transmission-id">Transmission Template</Label>
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="transmission-id">Transmission Template</Label>
+                        {selectedNode.content?.transmissionId && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => navigate(`/joni/transmissions/${selectedNode.content?.transmissionId}`)}
+                            title="Edit transmission"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
                       <Select
                         value={selectedNode.content.transmissionId || ''}
                         onValueChange={(value) => handleNodeUpdate(selectedNode.id, { 
@@ -720,7 +732,19 @@ export function ScriptEdit() {
                 {selectedNode.type === 'user_response' && (
                   <>
                     <div className="space-y-2">
-                      <Label htmlFor="user-transmission">Expected Transmission</Label>
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="user-transmission">Expected Transmission</Label>
+                        {selectedNode.content?.transmissionId && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => navigate(`/joni/transmissions/${selectedNode.content?.transmissionId}`)}
+                            title="Edit transmission"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
                       <Select
                         value={selectedNode.content?.transmissionId || ''}
                         onValueChange={(value) => handleNodeUpdate(selectedNode.id, {
