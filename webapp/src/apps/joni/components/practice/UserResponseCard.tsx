@@ -8,7 +8,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Send, User, Mic, MicOff, Loader2 } from 'lucide-react';
+import { Send, User, Mic, MicOff, Loader2, Variable } from 'lucide-react';
 import { useVoiceInput } from '@/hooks/useVoiceInput';
 
 interface UserResponseCardProps {
@@ -17,6 +17,12 @@ interface UserResponseCardProps {
   onTransmit: () => void;
   onKeyPress: (e: React.KeyboardEvent) => void;
   isProcessing: boolean;
+  expectedResponse?: string;
+  transmissionData?: {
+    blocks?: Array<{ blockId: string }>;
+    populatedBlocks?: Array<{ id: string; template?: string }>;
+  } | null;
+  variables?: Record<string, string>;
 }
 
 export function UserResponseCard({ 
@@ -24,7 +30,10 @@ export function UserResponseCard({
   onChange, 
   onTransmit, 
   onKeyPress, 
-  isProcessing 
+  isProcessing,
+  expectedResponse,
+  transmissionData,
+  variables = {}
 }: UserResponseCardProps) {
   const {
     isListening,
@@ -55,6 +64,60 @@ export function UserResponseCard({
     }
   };
 
+  // Render template with variable chips
+  const renderTemplateWithChips = () => {
+    if (!transmissionData?.populatedBlocks) return null;
+    
+    return (
+      <div className="flex flex-wrap items-center gap-2">
+        {transmissionData.populatedBlocks.map((block, index) => {
+          if (!block.template) return null;
+          
+          // Split template by variable placeholders
+          const parts = block.template.split(/(\{\{[^}]+\}\})/);
+          
+          return (
+            <div key={block.id} className="flex items-center gap-1">
+              {parts.map((part, partIndex) => {
+                // Check if this is a variable placeholder
+                const varMatch = part.match(/\{\{([^}]+)\}\}/);
+                if (varMatch) {
+                  const varName = varMatch[1];
+                  const varValue = variables[varName];
+                  
+                  return (
+                    <TooltipProvider key={`${block.id}-${partIndex}`}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Badge 
+                            variant="secondary" 
+                            className="px-2 py-1 bg-purple-100 text-purple-800 border-purple-200 cursor-help"
+                          >
+                            <Variable className="w-3 h-3 mr-1" />
+                            {varValue || varName}
+                          </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="font-mono text-xs">{`{{${varName}}}`} = {varValue || 'undefined'}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  );
+                } else if (part) {
+                  return <span key={`${block.id}-${partIndex}`} className="text-sm">{part}</span>;
+                }
+                return null;
+              })}
+              {index < transmissionData.populatedBlocks.length - 1 && (
+                <span className="text-sm text-gray-500">,</span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <div className="flex justify-end">
       <Card className="max-w-lg w-full">
@@ -73,6 +136,18 @@ export function UserResponseCard({
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
+          {expectedResponse && (
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
+              <div>
+                <p className="text-xs font-medium text-blue-700 mb-2">Template:</p>
+                {renderTemplateWithChips()}
+              </div>
+              <div className="pt-2 border-t border-blue-200">
+                <p className="text-xs font-medium text-blue-700 mb-1">Expected Response:</p>
+                <p className="text-sm text-blue-900 font-mono">{expectedResponse}</p>
+              </div>
+            </div>
+          )}
           <div className="flex gap-3 items-stretch">
             <div className="flex-1">
               <Textarea

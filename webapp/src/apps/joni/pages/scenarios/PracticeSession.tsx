@@ -22,6 +22,7 @@ export function PracticeSession() {
   const [currentNodeId, setCurrentNodeId] = useState<string | null>(null);
   const [visitedNodes, setVisitedNodes] = useState<Set<string>>(new Set());
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const [nodeHistoryMap, setNodeHistoryMap] = useState<Map<string, ChatMessage[]>>(new Map());
   const [userInput, setUserInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   
@@ -50,9 +51,11 @@ export function PracticeSession() {
     }
   };
   
-  // Fetch transmission data for current node if it's a transmission
+  // Fetch transmission data for current node
   const transmissionId = currentNode?.content?.type === 'transmission_ref' 
     ? currentNode.content.transmissionId 
+    : currentNode?.type === 'user_response' && currentNode?.content?.transmissionId
+    ? currentNode.content.transmissionId
     : null;
     
   const { data: transmissionData } = trpc.joniComm.transmissions.getWithBlocks.useQuery(
@@ -60,13 +63,19 @@ export function PracticeSession() {
     { enabled: !!transmissionId }
   );
   
-  // Render transmission content with variables
-  const renderTransmissionContent = () => {
-    if (!transmissionData) return '[Loading transmission...]';
+  // Helper to render transmission content with variables
+  const renderTransmissionWithVariables = (
+    transmissionData: { 
+      blocks?: Array<{ blockId: string }>;
+      populatedBlocks?: Array<{ id: string; template?: string }>;
+    } | null, 
+    nodeVariables?: Record<string, string>
+  ) => {
+    if (!transmissionData) return '';
     
     const variables = { 
       ...dag?.globalVariables, 
-      ...currentNode?.content?.variables 
+      ...nodeVariables 
     };
     
     let content = '';
@@ -85,7 +94,13 @@ export function PracticeSession() {
       }
     });
     
-    return content || '[Transmission content]';
+    return content || '';
+  };
+
+  // Render transmission content for current node
+  const renderTransmissionContent = () => {
+    if (!transmissionData) return '[Loading transmission...]';
+    return renderTransmissionWithVariables(transmissionData, currentNode?.content?.variables) || '[Transmission content]';
   };
   
   
@@ -134,8 +149,13 @@ export function PracticeSession() {
       timestamp: new Date()
     };
     
-    setChatHistory(prev => [...prev, userMessage]);
+    const newHistory = [...chatHistory, userMessage];
+    setChatHistory(newHistory);
     setVisitedNodes(prev => new Set([...prev, currentNode.id]));
+    
+    // Save history snapshot for this node
+    setNodeHistoryMap(prev => new Map(prev).set(currentNode.id, newHistory));
+    
     setUserInput('');
     
     // TODO: Send to LLM for validation
@@ -167,8 +187,12 @@ export function PracticeSession() {
         timestamp: new Date()
       };
       
-      setChatHistory(prev => [...prev, message]);
+      const newHistory = [...chatHistory, message];
+      setChatHistory(newHistory);
       setVisitedNodes(prev => new Set([...prev, node.id]));
+      
+      // Save history snapshot for this node
+      setNodeHistoryMap(prev => new Map(prev).set(node.id, newHistory));
       
       // Auto-advance to next node after a short delay
       setTimeout(() => {
@@ -184,6 +208,33 @@ export function PracticeSession() {
       // Clear any processing state
       setIsProcessing(false);
       setUserInput('');
+      
+      // Restore chat history to the state at this node
+      const nodeHistory = nodeHistoryMap.get(nodeId);
+      if (nodeHistory) {
+        setChatHistory(nodeHistory);
+      } else {
+        // If no history exists for this node, find the previous node's history
+        const nodeIndex = dag?.nodes.findIndex(n => n.id === nodeId) || 0;
+        if (nodeIndex > 0 && dag) {
+          // Find the closest previous node with history
+          for (let i = nodeIndex - 1; i >= 0; i--) {
+            const prevNodeId = dag.nodes[i].id;
+            const prevHistory = nodeHistoryMap.get(prevNodeId);
+            if (prevHistory) {
+              setChatHistory(prevHistory);
+              break;
+            }
+          }
+          // If no previous history found, clear the chat
+          if (!nodeHistoryMap.has(dag.nodes[Math.max(0, nodeIndex - 1)].id)) {
+            setChatHistory([]);
+          }
+        } else {
+          // Clear history if we're at the first node
+          setChatHistory([]);
+        }
+      }
     }
   };
 
@@ -312,6 +363,12 @@ export function PracticeSession() {
                         onTransmit={handleTransmit}
                         onKeyPress={handleKeyPress}
                         isProcessing={isProcessing}
+                        expectedResponse={transmissionData ? renderTransmissionWithVariables(transmissionData, currentNode.content?.variables) : undefined}
+                        transmissionData={transmissionData}
+                        variables={{
+                          ...dag?.globalVariables,
+                          ...currentNode.content?.variables
+                        }}
                       />
                     )}
                     
