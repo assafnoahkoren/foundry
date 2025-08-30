@@ -34,7 +34,7 @@ export function UserResponseCard({
     },
     contextPrompt: 'Aviation radio communication, pilot transmission, ATC phraseology',
     streaming: true,  // Enable streaming for live transcription
-    streamingInterval: 3000,  // Transcribe every 3 seconds
+    streamingInterval: 1500,  // Transcribe every 1.5 seconds for faster updates
   });
 
   // No need for useEffect since onTranscription callback handles updates

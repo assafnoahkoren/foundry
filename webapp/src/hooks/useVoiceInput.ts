@@ -30,6 +30,7 @@ export function useVoiceInput(options?: UseVoiceInputOptions) {
   const lastSoundTimeRef = useRef<number>(Date.now());
   const accumulatedTranscriptRef = useRef<string>('');
   const mimeTypeRef = useRef<string>('audio/webm');
+  const lastTranscriptionTimeRef = useRef<number>(0);
   
   // Transcription mutation
   const transcribeMutation = trpc.speech.transcribeAudio.useMutation({
@@ -72,9 +73,14 @@ export function useVoiceInput(options?: UseVoiceInputOptions) {
     // to ensure we have a valid audio file with proper headers
     if (audioChunksRef.current.length === 0 || isTranscribing) return;
     
-    // Skip if we haven't accumulated enough new data (at least 3 chunks)
+    // Skip if we haven't accumulated enough new data (at least 1 chunk)
     const newChunksCount = audioChunksRef.current.length - processedChunksRef.current;
-    if (newChunksCount < 3 && isListening) return;
+    if (newChunksCount < 1 && isListening) return;
+    
+    // Debounce: Skip if we transcribed very recently (within 1 second)
+    const now = Date.now();
+    if (now - lastTranscriptionTimeRef.current < 1000) return;
+    lastTranscriptionTimeRef.current = now;
     
     setIsTranscribing(true);
     
@@ -136,7 +142,7 @@ export function useVoiceInput(options?: UseVoiceInputOptions) {
     startRecording: startAudioRecording,
     stopRecording: stopAudioRecording,
   } = useAudioRecording({
-    timeSlice: 100, // Get chunks every 100ms
+    timeSlice: 500, // Get chunks every 500ms for good balance between frequency and chunk size
     onDataAvailable: (blob) => {
       if (blob.size === 0) return;
       
