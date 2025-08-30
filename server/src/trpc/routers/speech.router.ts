@@ -1,6 +1,7 @@
 import { router, protectedProcedure } from '../trpc';
 import { z } from 'zod';
 import { openAISpeechService } from '../../services/ai/openai-speech.service';
+import { elevenLabsService } from '../../services/ai/elevenlabs.service';
 
 const transcribeAudioSchema = z.object({
   audioData: z.string(), // Base64 encoded audio data
@@ -30,7 +31,67 @@ const transcribeAudioProcedure = protectedProcedure
     });
   });
 
+// Text to speech schema
+const textToSpeechSchema = z.object({
+  text: z.string(),
+  voice: z.enum(['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer']).optional(),
+  model: z.enum(['tts-1', 'tts-1-hd']).optional(),
+  speed: z.number().min(0.25).max(4.0).optional(),
+  format: z.enum(['mp3', 'opus', 'aac', 'flac', 'wav', 'pcm']).optional(),
+});
+
+// Convert text to speech
+const textToSpeechProcedure = protectedProcedure
+  .input(textToSpeechSchema)
+  .mutation(async ({ input }) => {
+    try {
+      // Generate speech using ElevenLabs and return as base64 data URL
+      const audioBase64 = await elevenLabsService.textToSpeechBase64(input.text, {
+        voice: input.voice,
+        model: input.model,
+        speed: input.speed,
+        format: input.format,
+      });
+      
+      return {
+        audio: audioBase64,
+        format: input.format || 'mp3',
+      };
+    } catch (error) {
+      console.error('Error generating speech:', error);
+      throw new Error('Failed to generate speech');
+    }
+  });
+
+// Aviation radio transmission TTS schema
+const radioTransmissionSchema = z.object({
+  text: z.string(),
+  role: z.enum(['pilot', 'atc']).optional().default('atc'),
+});
+
+// Generate aviation radio transmission audio
+const generateRadioTransmissionProcedure = protectedProcedure
+  .input(radioTransmissionSchema)
+  .mutation(async ({ input }) => {
+    try {
+      const audioBase64 = await elevenLabsService.generateRadioTransmission(
+        input.text,
+        input.role
+      );
+      
+      return {
+        audio: audioBase64,
+        format: 'mp3',
+      };
+    } catch (error) {
+      console.error('Error generating radio transmission:', error);
+      throw new Error('Failed to generate radio transmission audio');
+    }
+  });
+
 // Compose the router
 export const speechRouter = router({
   transcribeAudio: transcribeAudioProcedure,
+  textToSpeech: textToSpeechProcedure,
+  generateRadioTransmission: generateRadioTransmissionProcedure,
 });

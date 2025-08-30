@@ -451,6 +451,7 @@ export function PracticeSession() {
                         speaker={getActorLabel(currentNode.content?.actorRole)}
                         content={renderTransmissionContent()}
                         actorRole={currentNode.content?.actorRole}
+                        autoPlay={true} // Enable auto-play for transmissions
                       />
                     )}
                     

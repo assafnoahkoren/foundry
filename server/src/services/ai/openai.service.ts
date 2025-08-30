@@ -93,6 +93,15 @@ export class OpenAiService implements AiService {
       throw new Error('Failed to get structured response from LLM');
     }
   }
+
+  // TTS functionality is now handled by ElevenLabs service
+  async textToSpeech(): Promise<Buffer> {
+    throw new Error('TTS functionality has been moved to ElevenLabs service');
+  }
+
+  async textToSpeechBase64(): Promise<string> {
+    throw new Error('TTS functionality has been moved to ElevenLabs service');
+  }
 }
 
 // Export a singleton instance
