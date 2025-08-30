@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { trpc } from '@/utils/trpc';
 import { ArrowLeft, Save, Trash2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ScriptDAGEditor } from '../../components/ScriptDAGEditor/ScriptDAGEditor';
 import { validateScriptDAG, type ScriptDAG, type ScriptNode } from '../../types/script-dag.types';
@@ -52,7 +52,8 @@ export function ScriptEdit() {
       estimatedMinutes: 5,
       tags: [] as string[],
       dagStructure: (shouldCreateEmpty ? createEmptyDAG() : null) as ScriptDAG | null,
-      startNodeId: shouldCreateEmpty ? 'start' : ''
+      startNodeId: shouldCreateEmpty ? 'start' : '',
+      globalVariables: {} as Record<string, string>
     };
     return initialData;
   });
@@ -75,6 +76,7 @@ export function ScriptEdit() {
   // Update form when script loads
   useEffect(() => {
     if (script) {
+      const validatedDAG = script.dagStructure ? validateScriptDAG(script.dagStructure) : createEmptyDAG();
       setFormData({
         code: script.code,
         name: script.name,
@@ -83,8 +85,9 @@ export function ScriptEdit() {
         difficultyLevel: script.difficultyLevel,
         estimatedMinutes: script.estimatedMinutes,
         tags: script.tags || [],
-        dagStructure: script.dagStructure ? validateScriptDAG(script.dagStructure) : createEmptyDAG(),
-        startNodeId: script.startNodeId || 'start'
+        dagStructure: validatedDAG,
+        startNodeId: script.startNodeId || 'start',
+        globalVariables: validatedDAG?.globalVariables || {}
       });
     }
   }, [script]);
@@ -93,14 +96,15 @@ export function ScriptEdit() {
 
   // Create mutation
   const createMutation = trpc.joniComm.scripts.create.useMutation({
-    onSuccess: () => {
+    onSuccess: (newScript) => {
       // Invalidate and refetch scripts data
       utils.joniComm.scripts.invalidate();
       toast({
         title: 'Success',
         description: 'Script created successfully'
       });
-      navigate('/joni/scripts');
+      // Navigate to edit page with the new script ID
+      navigate(`/joni/scripts/${newScript.id}`, { replace: true });
     },
     onError: (error) => {
       toast({
@@ -120,7 +124,7 @@ export function ScriptEdit() {
         title: 'Success',
         description: 'Script updated successfully'
       });
-      navigate('/joni/scripts');
+      // Stay on the same page - no navigation
     },
     onError: (error) => {
       toast({
@@ -159,10 +163,16 @@ export function ScriptEdit() {
 
 
   const handleDAGChange = (newDAG: ScriptDAG) => {
+    // Preserve globalVariables when DAG changes
+    const updatedDAG = {
+      ...newDAG,
+      globalVariables: formData.dagStructure?.globalVariables || {}
+    };
+    
     const updatedFormData = {
       ...formData,
-      dagStructure: newDAG,
-      startNodeId: newDAG.nodes[0]?.id || 'start'
+      dagStructure: updatedDAG,
+      startNodeId: updatedDAG.nodes[0]?.id || 'start'
     };
     
     console.log('Script data changed:', updatedFormData);
@@ -208,6 +218,29 @@ export function ScriptEdit() {
 
   const selectedNode = formData.dagStructure?.nodes.find(n => n.id === selectedNodeId);
   
+  // Get all unique transmission IDs from user_response nodes
+  const allUserResponseTransmissionIds = React.useMemo(() => {
+    console.log('[VARS-DEBUG] DAG nodes:', formData.dagStructure?.nodes);
+    const userResponseNodes = formData.dagStructure?.nodes
+      .filter(node => node.type === 'user_response') || [];
+    console.log('[VARS-DEBUG] User response nodes found:', userResponseNodes.length, userResponseNodes);
+    
+    const nodesWithTransmissions = userResponseNodes
+      .filter(node => node.content?.transmissionId);
+    console.log('[VARS-DEBUG] User response nodes content:', userResponseNodes.map(n => n.content));
+    console.log('[VARS-DEBUG] User response nodes with transmissions:', nodesWithTransmissions.length, nodesWithTransmissions);
+    
+    const ids = nodesWithTransmissions
+      .map(node => node.content.transmissionId)
+      .filter((id): id is string => !!id) || [];
+    console.log('[VARS-DEBUG] Transmission IDs before dedup:', ids);
+    
+    // Remove duplicates
+    const uniqueIds = [...new Set(ids)];
+    console.log('[VARS-DEBUG] Unique transmission IDs:', uniqueIds);
+    return uniqueIds;
+  }, [formData.dagStructure?.nodes]);
+  
   // Fetch selected transmission with blocks for rendering
   const selectedTransmissionId = (() => {
     if (selectedNode?.type === 'transmission' && selectedNode?.content?.type === 'transmission_ref') {
@@ -223,6 +256,35 @@ export function ScriptEdit() {
     { id: selectedTransmissionId! },
     { enabled: !!selectedTransmissionId }
   );
+  
+  // Fetch all transmissions for global variables - using individual queries
+  const transmission1 = trpc.joniComm.transmissions.getWithBlocks.useQuery(
+    { id: allUserResponseTransmissionIds[0]! },
+    { enabled: !!allUserResponseTransmissionIds[0] }
+  );
+  const transmission2 = trpc.joniComm.transmissions.getWithBlocks.useQuery(
+    { id: allUserResponseTransmissionIds[1]! },
+    { enabled: !!allUserResponseTransmissionIds[1] }
+  );
+  const transmission3 = trpc.joniComm.transmissions.getWithBlocks.useQuery(
+    { id: allUserResponseTransmissionIds[2]! },
+    { enabled: !!allUserResponseTransmissionIds[2] }
+  );
+  const transmission4 = trpc.joniComm.transmissions.getWithBlocks.useQuery(
+    { id: allUserResponseTransmissionIds[3]! },
+    { enabled: !!allUserResponseTransmissionIds[3] }
+  );
+  const transmission5 = trpc.joniComm.transmissions.getWithBlocks.useQuery(
+    { id: allUserResponseTransmissionIds[4]! },
+    { enabled: !!allUserResponseTransmissionIds[4] }
+  );
+  
+  // Collect all transmission queries that have data
+  const allTransmissions = [transmission1, transmission2, transmission3, transmission4, transmission5]
+    .filter(t => t.data)
+    .map(t => t.data!);
+  
+  console.log('[VARS-DEBUG] All fetched transmissions:', allTransmissions.length, allTransmissions);
 
   // Extract variable names from transmission blocks
   const extractVariables = () => {
@@ -243,13 +305,47 @@ export function ScriptEdit() {
     
     return Array.from(variableSet);
   };
+  
+  // Extract all global variables from all user_response transmissions
+  const extractAllGlobalVariables = () => {
+    const globalVariableSet = new Set<string>();
+    
+    console.log('[VARS-DEBUG] Extracting global variables from transmissions:', allTransmissions.length);
+    
+    allTransmissions.forEach((transmission, index) => {
+      console.log(`[VARS-DEBUG] Transmission ${index}:`, transmission);
+      if (transmission?.populatedBlocks) {
+        console.log(`[VARS-DEBUG] Transmission ${index} blocks:`, transmission.populatedBlocks);
+        transmission.populatedBlocks.forEach((block: { template?: string }) => {
+          if (block.template) {
+            console.log(`[VARS-DEBUG] Block template:`, block.template);
+            const matches = block.template.match(/\{\{(\w+)\}\}/g);
+            if (matches) {
+              console.log(`[VARS-DEBUG] Found variable matches:`, matches);
+              matches.forEach(match => {
+                const varName = match.replace(/\{\{|\}\}/g, '');
+                globalVariableSet.add(varName);
+              });
+            }
+          }
+        });
+      }
+    });
+    
+    const result = Array.from(globalVariableSet);
+    console.log('[VARS-DEBUG] Final global variables:', result);
+    return result;
+  };
 
   // Render transmission with variables (or show template)
   const renderTransmission = () => {
     if (!transmissionWithBlocks) return '';
     
     let rendered = '';
-    const variables = selectedNode?.content?.variables || {};
+    // Use node-specific variables if available, otherwise use global variables
+    const nodeVariables = selectedNode?.content?.variables || {};
+    const globalVariables = formData.dagStructure?.globalVariables || {};
+    const variables = { ...globalVariables, ...nodeVariables }; // Node variables override global
     
     transmissionWithBlocks.blocks?.forEach((blockRef: { blockId: string }, index: number) => {
       const block = transmissionWithBlocks.populatedBlocks?.find(
@@ -334,6 +430,94 @@ export function ScriptEdit() {
               </div>
             </CardContent>
           </Card>
+          
+          {/* Global Variables - Only when no node is selected */}
+          {(() => {
+            const globalVars = extractAllGlobalVariables();
+            const userResponseNodes = formData.dagStructure?.nodes
+              .filter(node => node.type === 'user_response') || [];
+            const nodesWithoutTransmissions = userResponseNodes.filter(
+              node => !node.content?.transmissionId
+            );
+            
+            console.log('[VARS-DEBUG] Checking Variables card render:', {
+              selectedNode: selectedNode,
+              globalVarsLength: globalVars.length,
+              globalVars: globalVars,
+              shouldRender: !selectedNode && globalVars.length > 0,
+              userResponseNodesCount: userResponseNodes.length,
+              nodesWithoutTransmissionsCount: nodesWithoutTransmissions.length
+            });
+            
+            if (!selectedNode) {
+              if (globalVars.length > 0) {
+                return (
+                  <Card className="h-fit">
+                    <CardHeader>
+                      <CardTitle>Variables</CardTitle>
+                      <CardDescription>
+                        Global variables used across all scenarios
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      {globalVars.map((varName) => (
+                        <div key={varName} className="flex flex-col space-y-1">
+                          <Label htmlFor={`global-var-${varName}`} className="text-sm">
+                            {varName}
+                          </Label>
+                          <Input
+                            id={`global-var-${varName}`}
+                            value={formData.dagStructure?.globalVariables?.[varName] || ''}
+                            onChange={(e) => {
+                              const currentGlobalVars = formData.dagStructure?.globalVariables || {};
+                              setFormData(prev => ({
+                          ...prev,
+                          dagStructure: prev.dagStructure ? {
+                            ...prev.dagStructure,
+                            globalVariables: {
+                              ...currentGlobalVars,
+                              [varName]: e.target.value
+                            }
+                          } : null
+                        }));
+                      }}
+                      placeholder={`Enter value for {{${varName}}}`}
+                    />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+              );
+            } else if (userResponseNodes.length > 0 && nodesWithoutTransmissions.length > 0) {
+              // Show helpful message when there are user_response nodes without transmissions
+              return (
+                <Card className="h-fit">
+                  <CardHeader>
+                    <CardTitle>Variables</CardTitle>
+                    <CardDescription>
+                      Global variables used across all scenarios
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-sm text-muted-foreground space-y-2">
+                      <p>No variables found yet.</p>
+                      <p>
+                        {nodesWithoutTransmissions.length === userResponseNodes.length 
+                          ? `All ${userResponseNodes.length}` 
+                          : `${nodesWithoutTransmissions.length} of ${userResponseNodes.length}`} user response 
+                        node{nodesWithoutTransmissions.length !== 1 ? 's' : ''} need transmissions assigned.
+                      </p>
+                      <p className="text-xs">
+                        Click on each user response node and select a transmission template with variables.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            }
+            }
+            return null;
+          })()}
           
           {/* Node Information - Only when node is selected */}
           {selectedNode && (
@@ -436,6 +620,42 @@ export function ScriptEdit() {
                         </SelectContent>
                       </Select>
                     </div>
+                    
+                    {/* Comm Block Variables for transmission nodes */}
+                    {transmissionWithBlocks && selectedNode.content?.transmissionId && extractVariables().length > 0 && (
+                      <div className="space-y-2">
+                        <Label>Comm Block Variables</Label>
+                        <div className="space-y-2">
+                          {extractVariables().map((varName) => {
+                            const globalValue = formData.dagStructure?.globalVariables?.[varName];
+                            return (
+                              <div key={varName} className="flex flex-col space-y-1">
+                                <Label htmlFor={`var-${varName}`} className="text-xs">
+                                  {varName}
+                                </Label>
+                                <Input
+                                  id={`var-${varName}`}
+                                  value={selectedNode.content?.variables?.[varName] || ''}
+                                  onChange={(e) => {
+                                    const currentVars = selectedNode.content?.variables || {};
+                                    handleNodeUpdate(selectedNode.id, {
+                                      content: {
+                                        ...selectedNode.content,
+                                        variables: {
+                                          ...currentVars,
+                                          [varName]: e.target.value
+                                        }
+                                      }
+                                    });
+                                  }}
+                                  placeholder={globalValue ? `Global: ${globalValue}` : `Enter value for {{${varName}}}`}
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </>
                 )}
 
@@ -502,30 +722,33 @@ export function ScriptEdit() {
                       <div className="space-y-2">
                         <Label>Comm Block Variables</Label>
                         <div className="space-y-2">
-                          {extractVariables().map((varName) => (
-                            <div key={varName} className="flex flex-col space-y-1">
-                              <Label htmlFor={`var-${varName}`} className="text-xs">
-                                {varName}
-                              </Label>
-                              <Input
-                                id={`var-${varName}`}
-                                value={selectedNode.content?.variables?.[varName] || ''}
-                                onChange={(e) => {
-                                  const currentVars = selectedNode.content?.variables || {};
-                                  handleNodeUpdate(selectedNode.id, {
-                                    content: {
-                                      ...selectedNode.content,
-                                      variables: {
-                                        ...currentVars,
-                                        [varName]: e.target.value
+                          {extractVariables().map((varName) => {
+                            const globalValue = formData.dagStructure?.globalVariables?.[varName];
+                            return (
+                              <div key={varName} className="flex flex-col space-y-1">
+                                <Label htmlFor={`var-${varName}`} className="text-xs">
+                                  {varName}
+                                </Label>
+                                <Input
+                                  id={`var-${varName}`}
+                                  value={selectedNode.content?.variables?.[varName] || ''}
+                                  onChange={(e) => {
+                                    const currentVars = selectedNode.content?.variables || {};
+                                    handleNodeUpdate(selectedNode.id, {
+                                      content: {
+                                        ...selectedNode.content,
+                                        variables: {
+                                          ...currentVars,
+                                          [varName]: e.target.value
+                                        }
                                       }
-                                    }
-                                  });
-                                }}
-                                placeholder={`Enter value for {{${varName}}}`}
-                              />
-                            </div>
-                          ))}
+                                    });
+                                  }}
+                                  placeholder={globalValue ? `Global: ${globalValue}` : `Enter value for {{${varName}}}`}
+                                />
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     )}

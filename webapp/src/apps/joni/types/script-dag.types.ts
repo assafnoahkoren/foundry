@@ -209,6 +209,8 @@ export const ScriptDAGSchema = z.object({
   nodes: z.array(ScriptNodeSchema),
   edges: z.array(ScriptEdgeSchema),
   
+  globalVariables: z.record(z.string()).optional(), // Global variables for the entire script
+  
   metadata: z.object({
     version: z.string().default('1.0.0'),
     totalPaths: z.number().optional(),
