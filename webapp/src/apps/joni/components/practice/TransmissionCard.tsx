@@ -1,9 +1,14 @@
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Radio, Volume2, VolumeX, Loader2 } from 'lucide-react';
+import { Radio, Volume2, VolumeX, Loader2, Waves } from 'lucide-react';
 import { useTextToSpeech } from '@/hooks/useTextToSpeech';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from '@/hooks/use-toast';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface TransmissionCardProps {
   speaker: string;
@@ -13,7 +18,12 @@ interface TransmissionCardProps {
 }
 
 export function TransmissionCard({ speaker, content, actorRole, autoPlay = false }: TransmissionCardProps) {
-  // Use TTS hook with auto-fetch enabled
+  const [radioEffectEnabled, setRadioEffectEnabled] = useState(true);
+  
+  // Don't fetch audio if content is just a loading placeholder
+  const isContentReady = content && !content.includes('[Loading transmission...]');
+  
+  // Use TTS hook with auto-fetch enabled only when content is ready
   const {
     isLoading,
     isPlaying,
@@ -24,7 +34,8 @@ export function TransmissionCard({ speaker, content, actorRole, autoPlay = false
   } = useTextToSpeech({
     text: content,
     role: 'atc', // All transmission cards are from ATC perspective
-    autoFetch: true, // Fetch audio on render
+    autoFetch: isContentReady, // Only fetch when we have real content
+    applyRadioEffect: radioEffectEnabled,
     onError: (err) => {
       toast({
         title: 'Audio Error',
@@ -34,12 +45,12 @@ export function TransmissionCard({ speaker, content, actorRole, autoPlay = false
     },
   });
 
-  // Auto-play when audio is ready (if enabled)
+  // Auto-play when audio is ready (if enabled and content is ready)
   useEffect(() => {
-    if (autoPlay && audioUrl && !isLoading && !error && !isPlaying) {
+    if (autoPlay && isContentReady && audioUrl && !isLoading && !error && !isPlaying) {
       play();
     }
-  }, [autoPlay, audioUrl, isLoading, error]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [autoPlay, isContentReady, audioUrl, isLoading, error]); // eslint-disable-line react-hooks/exhaustive-deps
   const getSpeakerColor = (role?: string): string => {
     switch (role) {
       case 'tower': return 'bg-blue-500/10 border-blue-500/20 text-blue-900';
@@ -66,23 +77,51 @@ export function TransmissionCard({ speaker, content, actorRole, autoPlay = false
             <div className="flex items-center gap-2">
               <Radio className="w-4 h-4" />
               <span className="font-semibold">{speaker}</span>
-            </div>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={handlePlayPause}
-              disabled={isLoading || !!error}
-              className="h-8 w-8 p-0"
-              aria-label={isPlaying ? 'Stop audio' : 'Play audio'}
-            >
-              {isLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : isPlaying ? (
-                <VolumeX className="w-4 h-4" />
-              ) : (
-                <Volume2 className="w-4 h-4" />
+              {radioEffectEnabled && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Waves className="w-3 h-3 text-blue-500 animate-pulse" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">Radio effect enabled</p>
+                  </TooltipContent>
+                </Tooltip>
               )}
-            </Button>
+            </div>
+            <div className="flex items-center gap-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setRadioEffectEnabled(!radioEffectEnabled)}
+                    className="h-8 w-8 p-0"
+                    aria-label={radioEffectEnabled ? 'Disable radio effect' : 'Enable radio effect'}
+                  >
+                    <Waves className={`w-4 h-4 ${radioEffectEnabled ? 'text-blue-500' : 'text-gray-400'}`} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs">{radioEffectEnabled ? 'Disable' : 'Enable'} radio effect</p>
+                </TooltipContent>
+              </Tooltip>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handlePlayPause}
+                disabled={!isContentReady || isLoading || !!error}
+                className="h-8 w-8 p-0"
+                aria-label={isPlaying ? 'Stop audio' : 'Play audio'}
+              >
+                {isLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : isPlaying ? (
+                  <VolumeX className="w-4 h-4" />
+                ) : (
+                  <Volume2 className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>

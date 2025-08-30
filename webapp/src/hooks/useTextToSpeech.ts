@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { trpc } from '@/utils/trpc';
+import { useRadioEffect } from './useRadioEffect';
 
 interface UseTextToSpeechOptions {
   text: string;
   role?: 'pilot' | 'atc';
   autoFetch?: boolean;
   onError?: (error: Error) => void;
+  applyRadioEffect?: boolean;
 }
 
 interface UseTextToSpeechReturn {
@@ -24,6 +26,7 @@ export function useTextToSpeech({
   role = 'atc',
   autoFetch = true,
   onError,
+  applyRadioEffect = true,
 }: UseTextToSpeechOptions): UseTextToSpeechReturn {
   const [isLoading, setIsLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -32,10 +35,20 @@ export function useTextToSpeech({
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const isMountedRef = useRef(true);
+  const radioEffectAppliedRef = useRef(false);
+  
+  const { applyRadioEffect: applyRadioEffectFn, stopNoise, cleanup: cleanupRadioEffect } = useRadioEffect({
+    lowFrequency: 300,
+    highFrequency: 3400,
+    distortion: 15,
+    noiseLevel: 0.008,  // Reduced from 0.015 for subtler background noise
+    compressionRatio: 10,
+    compressionThreshold: -20
+  });
   
   // Mutation for generating radio transmission audio
   const generateAudioMutation = trpc.speech.generateRadioTransmission.useMutation({
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       if (isMountedRef.current) {
         setAudioUrl(data.audio);
         setIsLoading(false);
@@ -52,6 +65,17 @@ export function useTextToSpeech({
           audio.addEventListener('play', handleAudioPlay);
           audio.addEventListener('pause', handleAudioPause);
           audio.addEventListener('error', handleAudioError);
+          
+          // Apply radio effect if enabled
+          if (applyRadioEffect && !radioEffectAppliedRef.current) {
+            try {
+              await applyRadioEffectFn(audio);
+              radioEffectAppliedRef.current = true;
+            } catch (err) {
+              console.error('Failed to apply radio effect:', err);
+              // Continue without the effect
+            }
+          }
         }
       }
     },
@@ -69,8 +93,12 @@ export function useTextToSpeech({
   const handleAudioEnded = useCallback(() => {
     if (isMountedRef.current) {
       setIsPlaying(false);
+      // Stop radio noise when audio ends
+      if (applyRadioEffect && radioEffectAppliedRef.current) {
+        stopNoise();
+      }
     }
-  }, []);
+  }, [applyRadioEffect, stopNoise]);
   
   const handleAudioPlay = useCallback(() => {
     if (isMountedRef.current) {
@@ -135,6 +163,17 @@ export function useTextToSpeech({
       audio.addEventListener('pause', handleAudioPause);
       audio.addEventListener('error', handleAudioError);
       
+      // Apply radio effect if enabled and not already applied
+      if (applyRadioEffect && !radioEffectAppliedRef.current) {
+        try {
+          await applyRadioEffectFn(audio);
+          radioEffectAppliedRef.current = true;
+        } catch (err) {
+          console.error('Failed to apply radio effect:', err);
+          // Continue without the effect
+        }
+      }
+      
       try {
         await audio.play();
       } catch (err) {
@@ -143,7 +182,7 @@ export function useTextToSpeech({
         onError?.(error);
       }
     }
-  }, [audioUrl, isLoading, fetchAudio, handleAudioEnded, handleAudioPlay, handleAudioPause, handleAudioError, onError]);
+  }, [audioUrl, isLoading, fetchAudio, handleAudioEnded, handleAudioPlay, handleAudioPause, handleAudioError, onError, applyRadioEffect, applyRadioEffectFn]);
   
   // Pause audio
   const pause = useCallback(() => {
@@ -158,8 +197,12 @@ export function useTextToSpeech({
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
       setIsPlaying(false);
+      // Stop radio noise when stopping audio
+      if (applyRadioEffect && radioEffectAppliedRef.current) {
+        stopNoise();
+      }
     }
-  }, []);
+  }, [applyRadioEffect, stopNoise]);
   
   // Auto-fetch audio on mount or text change
   useEffect(() => {
@@ -184,6 +227,10 @@ export function useTextToSpeech({
         audioRef.current.pause();
         audioRef.current = null;
       }
+      
+      // Clean up radio effect
+      cleanupRadioEffect();
+      radioEffectAppliedRef.current = false;
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   
