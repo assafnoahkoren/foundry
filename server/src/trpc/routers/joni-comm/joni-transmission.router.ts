@@ -287,5 +287,55 @@ export const joniTransmissionRouter = router({
       }
       
       return joniTransmissionTemplateService.createManyTransmissionTemplates(input.templates);
+    }),
+
+  validateUserTransmission: protectedProcedure
+    .input(z.object({
+      userInput: z.string(),
+      transmissionId: z.string(),
+      variables: z.record(z.string())
+    }))
+    .mutation(async ({ input }) => {
+      // Get the transmission template with blocks
+      const transmission = await joniTransmissionTemplateService.getTransmissionWithBlocks(input.transmissionId);
+      
+      if (!transmission) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Transmission template not found'
+        });
+      }
+
+      // Get the comm blocks details
+      const blockIds = transmission.blocks.map((b: any) => b.blockId);
+      const commBlocksRaw = await joniCommBlockService.getBlocksByIds(blockIds);
+      
+      // Map the comm blocks to the expected format
+      const commBlocks = commBlocksRaw.map(block => ({
+        id: block.id,
+        code: block.code,
+        name: block.name,
+        template: block.template || undefined,
+        icaoRules: block.icaoRules,
+        rules: block.rules
+      }));
+      
+      // Call the AI service to validate
+      const result = await joniScenarioAiService.validateTransmission(
+        input.userInput,
+        {
+          name: transmission.name,
+          blocks: transmission.blocks as Array<{
+            blockId: string;
+            order: number;
+            parameters?: Record<string, any>;
+            isOptional?: boolean;
+          }>
+        },
+        commBlocks,
+        input.variables
+      );
+      
+      return result;
     })
 });

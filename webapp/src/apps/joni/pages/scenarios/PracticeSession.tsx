@@ -13,6 +13,8 @@ import { TransmissionCard } from '../../components/practice/TransmissionCard';
 import { UserResponseCard } from '../../components/practice/UserResponseCard';
 import { EventCard } from '../../components/practice/EventCard';
 import { NodeNavigation } from '../../components/practice/NodeNavigation';
+import { TransmissionValidation } from '../../components/practice/TransmissionValidation';
+import { TransmissionValidationSkeleton } from '../../components/practice/TransmissionValidationSkeleton';
 
 export function PracticeSession() {
   const { scriptId } = useParams<{ scriptId: string }>();
@@ -25,6 +27,24 @@ export function PracticeSession() {
   const [nodeHistoryMap, setNodeHistoryMap] = useState<Map<string, ChatMessage[]>>(new Map());
   const [userInput, setUserInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [validationResult, setValidationResult] = useState<{
+    score: number;
+    isCorrect: boolean;
+    feedback: string;
+    blockAnalysis: Array<{
+      blockCode: string;
+      blockName: string;
+      expected: string;
+      userInput: string;
+      isCorrect: boolean;
+      feedback: string;
+      icaoCompliance: boolean;
+    }>;
+    overallIcaoCompliance: boolean;
+    suggestions: string[];
+  } | null>(null);
+  const [showValidation, setShowValidation] = useState(false);
   
   // Fetch script data
   const { data: script, isLoading } = trpc.joniComm.scripts.getById.useQuery(
@@ -62,6 +82,28 @@ export function PracticeSession() {
     { id: transmissionId || '' },
     { enabled: !!transmissionId }
   );
+  
+  // Validation mutation
+  const validateTransmissionMutation = trpc.joniComm.transmissions.validateUserTransmission.useMutation({
+    onSuccess: (result) => {
+      setValidationResult(result);
+      setShowValidation(true);
+      setIsProcessing(false);
+      setIsEvaluating(false);
+      // Don't auto-advance - wait for user to click continue
+    },
+    onError: (error) => {
+      toast({
+        title: 'Validation Error',
+        description: error.message || 'Failed to validate transmission',
+        variant: 'destructive'
+      });
+      setIsProcessing(false);
+      setIsEvaluating(false);
+      setShowValidation(false);
+      // Don't auto-advance on error either
+    }
+  });
   
   // Helper to render transmission content with variables
   const renderTransmissionWithVariables = (
@@ -139,6 +181,7 @@ export function PracticeSession() {
     if (!userInput.trim() || !currentNode) return;
     
     setIsProcessing(true);
+    setShowValidation(false);
     
     // Add user message to chat
     const userMessage: ChatMessage = {
@@ -156,19 +199,42 @@ export function PracticeSession() {
     // Save history snapshot for this node
     setNodeHistoryMap(prev => new Map(prev).set(currentNode.id, newHistory));
     
+    const savedInput = userInput;
     setUserInput('');
     
-    // TODO: Send to LLM for validation
-    // For now, just move to next node
-    setTimeout(() => {
+    // If we have a transmission ID, validate with LLM
+    if (transmissionId && transmissionData) {
+      const variables = {
+        ...dag?.globalVariables,
+        ...currentNode.content?.variables
+      };
+      
+      setIsEvaluating(true);
+      setShowValidation(true);
+      
+      validateTransmissionMutation.mutate({
+        userInput: savedInput,
+        transmissionId,
+        variables
+      });
+    } else {
+      // No transmission to validate against, show simple feedback
       setIsProcessing(false);
-      moveToNextNode('validation_pass');
-    }, 500);
+      setShowValidation(true);
+      setValidationResult({
+        score: 100,
+        isCorrect: true,
+        feedback: 'Response recorded.',
+        blockAnalysis: [],
+        overallIcaoCompliance: true,
+        suggestions: []
+      });
+    }
   };
   
   // Handle Enter key
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey && !showValidation) {
       e.preventDefault();
       handleTransmit();
     }
@@ -207,7 +273,10 @@ export function PracticeSession() {
       setCurrentNodeId(nodeId);
       // Clear any processing state
       setIsProcessing(false);
+      setIsEvaluating(false);
       setUserInput('');
+      setShowValidation(false);
+      setValidationResult(null);
       
       // Restore chat history to the state at this node
       const nodeHistory = nodeHistoryMap.get(nodeId);
@@ -236,6 +305,24 @@ export function PracticeSession() {
         }
       }
     }
+  };
+
+  // Handle validation continue
+  const handleValidationContinue = () => {
+    setShowValidation(false);
+    setValidationResult(null);
+    if (validationResult?.isCorrect) {
+      moveToNextNode('validation_pass');
+    } else {
+      moveToNextNode('validation_fail');
+    }
+  };
+
+  // Handle validation retry
+  const handleValidationRetry = () => {
+    setShowValidation(false);
+    setValidationResult(null);
+    // Stay on the same node for retry
   };
 
   // Initialize with start node
@@ -357,19 +444,40 @@ export function PracticeSession() {
                     
                     {/* User response node */}
                     {currentNode.type === 'user_response' && (
-                      <UserResponseCard
-                        value={userInput}
-                        onChange={setUserInput}
-                        onTransmit={handleTransmit}
-                        onKeyPress={handleKeyPress}
-                        isProcessing={isProcessing}
-                        expectedResponse={transmissionData ? renderTransmissionWithVariables(transmissionData, currentNode.content?.variables) : undefined}
-                        transmissionData={transmissionData}
-                        variables={{
-                          ...dag?.globalVariables,
-                          ...currentNode.content?.variables
-                        }}
-                      />
+                      <>
+                        <UserResponseCard
+                          value={userInput}
+                          onChange={setUserInput}
+                          onTransmit={handleTransmit}
+                          onKeyPress={handleKeyPress}
+                          isProcessing={isProcessing}
+                          expectedResponse={transmissionData ? renderTransmissionWithVariables(transmissionData, currentNode.content?.variables) : undefined}
+                          transmissionData={transmissionData}
+                          variables={{
+                            ...dag?.globalVariables,
+                            ...currentNode.content?.variables
+                          }}
+                          hasValidationResult={showValidation}
+                        />
+                        
+                        {/* Show skeleton while evaluating, or validation result when ready */}
+                        {showValidation && (
+                          isEvaluating ? (
+                            <TransmissionValidationSkeleton />
+                          ) : validationResult ? (
+                            <TransmissionValidation
+                              score={validationResult.score}
+                              isCorrect={validationResult.isCorrect}
+                              feedback={validationResult.feedback}
+                              blockAnalysis={validationResult.blockAnalysis}
+                              overallIcaoCompliance={validationResult.overallIcaoCompliance}
+                              suggestions={validationResult.suggestions}
+                              onContinue={handleValidationContinue}
+                              onRetry={handleValidationRetry}
+                            />
+                          ) : null
+                        )}
+                      </>
                     )}
                     
                     {/* Event node */}
