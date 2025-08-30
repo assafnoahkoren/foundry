@@ -2,6 +2,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { Send, User, Mic, MicOff, Loader2 } from 'lucide-react';
 import { useVoiceInput } from '@/hooks/useVoiceInput';
 
@@ -67,37 +73,48 @@ export function UserResponseCard({
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="relative">
-            <Textarea
-              value={isListening ? (transcript || value) : value}
-              onChange={(e) => onChange(e.target.value)}
-              onKeyPress={onKeyPress}
-              placeholder={isListening ? "Listening..." : "Type your transmission or use voice input..."}
-              className="min-h-[80px] pr-12"
-              disabled={isProcessing || isListening}
-            />
-            <Button
-              size="icon"
-              variant={isListening ? "destructive" : "ghost"}
-              className="absolute right-2 top-2 h-8 w-8"
-              onClick={handleMicToggle}
-              disabled={isProcessing}
-              type="button"
-            >
-              {isListening && isTranscribing ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : isListening ? (
-                <MicOff className="w-4 h-4" />
-              ) : (
-                <Mic className="w-4 h-4" />
-              )}
-            </Button>
+          <div className="flex gap-3 items-stretch">
+            <div className="flex-1">
+              <Textarea
+                value={isListening ? (transcript || value) : value}
+                onChange={(e) => onChange(e.target.value)}
+                onKeyPress={onKeyPress}
+                placeholder={isListening ? "Listening..." : "Type your transmission or use voice input..."}
+                className="min-h-[80px]"
+                disabled={isProcessing || isListening}
+              />
+            </div>
+            <div className="flex items-center">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant={isListening ? "destructive" : "secondary"}
+                      className={`h-[80px] w-[80px] rounded-full shadow-lg transition-all ${
+                        isListening ? 'ring-4 ring-red-200 animate-pulse' : 'hover:scale-105'
+                      }`}
+                      onClick={handleMicToggle}
+                      disabled={isProcessing}
+                      type="button"
+                      aria-label={isListening ? "Stop recording" : "Start voice input"}
+                    >
+                      {isListening && isTranscribing ? (
+                        <Loader2 className="w-8 h-8 animate-spin" />
+                      ) : isListening ? (
+                        <MicOff className="w-8 h-8" />
+                      ) : (
+                        <Mic className="w-8 h-8" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{isListening ? 'Stop recording' : 'Start voice input (Push to talk)'}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </div>
-          {isListening && isTranscribing && (
-            <p className="text-xs text-blue-600 animate-pulse">
-              Transcribing...
-            </p>
-          )}
           <div className="flex gap-2">
             <Button 
               onClick={onTransmit}
