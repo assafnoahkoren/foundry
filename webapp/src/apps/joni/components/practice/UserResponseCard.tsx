@@ -1,15 +1,15 @@
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Send, User, Mic, MicOff, Loader2, Variable } from 'lucide-react';
 import { useVoiceInput } from '@/hooks/useVoiceInput';
+import { Loader2, Mic, MicOff, Send, User, Variable } from 'lucide-react';
 
 interface UserResponseCardProps {
   value: string;

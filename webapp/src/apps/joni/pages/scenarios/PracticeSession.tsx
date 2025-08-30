@@ -28,6 +28,7 @@ export function PracticeSession() {
   const [userInput, setUserInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isEvaluating, setIsEvaluating] = useState(false);
+  const [showContinue, setShowContinue] = useState(false);
   const [validationResult, setValidationResult] = useState<{
     score: number;
     isCorrect: boolean;
@@ -159,6 +160,7 @@ export function PracticeSession() {
     
     if (edge) {
       setCurrentNodeId(edge.to);
+      setShowContinue(false); // Clear continue button when moving to next node
     } else {
       // No more nodes - scenario complete
       toast({
@@ -260,10 +262,8 @@ export function PracticeSession() {
       // Save history snapshot for this node
       setNodeHistoryMap(prev => new Map(prev).set(node.id, newHistory));
       
-      // Auto-advance to next node after a short delay
-      setTimeout(() => {
-        moveToNextNode('default');
-      }, 1000);
+      // Show continue button instead of auto-advancing
+      setShowContinue(true);
     }
   };
   
@@ -277,6 +277,7 @@ export function PracticeSession() {
       setUserInput('');
       setShowValidation(false);
       setValidationResult(null);
+      setShowContinue(false);
       
       // Restore chat history to the state at this node
       const nodeHistory = nodeHistoryMap.get(nodeId);
@@ -325,6 +326,12 @@ export function PracticeSession() {
     // Stay on the same node for retry
   };
 
+  // Handle generic continue for non-user-response nodes
+  const handleGenericContinue = () => {
+    setShowContinue(false);
+    moveToNextNode('default');
+  };
+
   // Initialize with start node
   useEffect(() => {
     if (dag && !currentNodeId) {
@@ -336,10 +343,15 @@ export function PracticeSession() {
     }
   }, [dag, currentNodeId]);
   
-  // Auto-process transmission nodes
+  // Process nodes and show continue button for non-user-response nodes
   useEffect(() => {
-    if (currentNode?.type === 'transmission' && transmissionData) {
-      processTransmissionNode(currentNode);
+    if (currentNode) {
+      if (currentNode.type === 'transmission' && transmissionData) {
+        processTransmissionNode(currentNode);
+      } else if (currentNode.type !== 'user_response') {
+        // For all other node types (situation, event, etc.), show continue button
+        setShowContinue(true);
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentNode, transmissionData]);
@@ -488,6 +500,16 @@ export function PracticeSession() {
                         description={currentNode.content?.description}
                         onAcknowledge={handleContinue}
                       />
+                    )}
+                    
+                    {/* Continue button for non-user-response nodes */}
+                    {currentNode.type !== 'user_response' && showContinue && (
+                      <div className="mt-4">
+                        <Button onClick={handleGenericContinue} className="w-full">
+                          Continue
+                          <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
+                        </Button>
+                      </div>
                     )}
                   </>
                 )}
