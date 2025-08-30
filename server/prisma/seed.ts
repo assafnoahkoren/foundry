@@ -1,5 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { hashPassword } from '../src/lib/auth/password';
+import type { ScriptDAG } from '../src/services/joni/comm-blocks/types/script-dag.types';
+import { seedELAL321Scenario } from './seeds/elal321-scenario.seed';
 
 const prisma = new PrismaClient();
 
@@ -87,7 +89,7 @@ async function seedAdminUser() {
     },
     {
       featureId: 'joni',
-      subFeatures: ['joni-management', 'joni-scenario-practice']
+      subFeatures: ['joni-management', 'joni-scenario-practice', 'joni-comm-blocks']
     },
     {
       featureId: 'backoffice',
@@ -121,6 +123,245 @@ async function seedAdminUser() {
   console.log('  ✅ All features and sub-features granted');
 }
 
+async function seedScripts() {
+  console.log('🌱 Seeding training scripts...');
+
+  // IFR Departure Clearance Script
+  const ifrDepartureDAG: ScriptDAG = {
+    nodes: [
+      {
+        id: 'start',
+        type: 'transmission',
+        name: 'ATC Initial Contact',
+        position: { x: 250, y: 50 },
+        content: {
+          type: 'transmission_ref',
+          transmissionId: '',
+          actorRole: 'ground'
+        }
+      },
+      {
+        id: 'pilot_ready',
+        type: 'user_response',
+        name: 'Pilot Ready to Copy',
+        position: { x: 250, y: 150 },
+        content: {
+          type: 'user_response',
+          transmissionId: ''
+        }
+      },
+      {
+        id: 'clearance_delivery',
+        type: 'transmission',
+        name: 'ATC Delivers Clearance',
+        position: { x: 250, y: 250 },
+        content: {
+          type: 'transmission_ref',
+          transmissionId: '',
+          actorRole: 'ground'
+        }
+      },
+      {
+        id: 'pilot_readback',
+        type: 'user_response',
+        name: 'Pilot Clearance Readback',
+        position: { x: 250, y: 350 },
+        content: {
+          type: 'user_response',
+          transmissionId: ''
+        }
+      },
+      {
+        id: 'atc_confirm',
+        type: 'transmission',
+        name: 'ATC Confirmation',
+        position: { x: 250, y: 450 },
+        content: {
+          type: 'transmission_ref',
+          transmissionId: '',
+          actorRole: 'ground'
+        }
+      },
+      {
+        id: 'complete',
+        type: 'event',
+        name: 'Scenario Complete',
+        position: { x: 250, y: 550 },
+        content: {
+          type: 'event',
+          category: 'operational',
+          severity: 'info',
+          title: 'Training Complete',
+          details: 'IFR clearance successfully received and acknowledged'
+        }
+      }
+    ],
+    edges: [
+      {
+        from: 'start',
+        to: 'pilot_ready',
+        condition: { type: 'default', priority: 0 }
+      },
+      {
+        from: 'pilot_ready',
+        to: 'clearance_delivery',
+        condition: { type: 'validation_pass', priority: 1 }
+      },
+      {
+        from: 'clearance_delivery',
+        to: 'pilot_readback',
+        condition: { type: 'default', priority: 0 }
+      },
+      {
+        from: 'pilot_readback',
+        to: 'atc_confirm',
+        condition: { type: 'validation_pass', priority: 1 }
+      },
+      {
+        from: 'atc_confirm',
+        to: 'complete',
+        condition: { type: 'default', priority: 0 }
+      }
+    ],
+    metadata: {
+      version: '1.0.0'
+    }
+  };
+
+  // Taxi and Takeoff Script (simplified)
+  const taxiTakeoffDAG: ScriptDAG = {
+    nodes: [
+      {
+        id: 'start',
+        type: 'transmission',
+        name: 'Ground Control Initial',
+        position: { x: 250, y: 50 },
+        content: {
+          type: 'transmission_ref',
+          transmissionId: '',
+          actorRole: 'ground'
+        }
+      },
+      {
+        id: 'request_taxi',
+        type: 'user_response',
+        name: 'Request Taxi',
+        position: { x: 250, y: 150 },
+        content: {
+          type: 'user_response',
+          transmissionId: ''
+        }
+      },
+      {
+        id: 'taxi_clearance',
+        type: 'transmission',
+        name: 'Taxi Instructions',
+        position: { x: 250, y: 250 },
+        content: {
+          type: 'transmission_ref',
+          transmissionId: '',
+          actorRole: 'ground'
+        }
+      },
+      {
+        id: 'complete',
+        type: 'event',
+        name: 'Ready for Takeoff',
+        position: { x: 250, y: 350 },
+        content: {
+          type: 'event',
+          category: 'operational',
+          severity: 'info',
+          title: 'Training Complete',
+          details: 'Aircraft ready for takeoff'
+        }
+      }
+    ],
+    edges: [
+      {
+        from: 'start',
+        to: 'request_taxi',
+        condition: { type: 'default', priority: 0 }
+      },
+      {
+        from: 'request_taxi',
+        to: 'taxi_clearance',
+        condition: { type: 'validation_pass', priority: 1 }
+      },
+      {
+        from: 'taxi_clearance',
+        to: 'complete',
+        condition: { type: 'default', priority: 0 }
+      }
+    ],
+    metadata: {
+      version: '1.0.0'
+    }
+  };
+
+  const scripts = [
+    {
+      code: 'SCRIPT-IFR-001',
+      name: 'IFR Departure Clearance',
+      description: 'Practice receiving and reading back IFR departure clearance from ATC',
+      scriptType: 'training',
+      difficultyLevel: 2,
+      estimatedMinutes: 10,
+      tags: ['IFR', 'clearance', 'departure', 'readback'],
+      dagStructure: ifrDepartureDAG,
+      startNodeId: 'start'
+    },
+    {
+      code: 'SCRIPT-TAXI-001',
+      name: 'Taxi and Takeoff',
+      description: 'Complete taxi instructions and takeoff clearance procedures',
+      scriptType: 'training',
+      difficultyLevel: 1,
+      estimatedMinutes: 8,
+      tags: ['taxi', 'takeoff', 'ground', 'tower'],
+      dagStructure: taxiTakeoffDAG,
+      startNodeId: 'start'
+    }
+  ];
+
+  for (const script of scripts) {
+    const created = await prisma.joniScript.upsert({
+      where: { code: script.code },
+      update: {
+        ...script,
+        dagStructure: script.dagStructure as any,
+        flightContext: {
+          aircraft: 'Cessna 172',
+          callsign: 'N9842F',
+          airport: 'KBOS',
+          conditions: 'VFR'
+        },
+        learningObjectives: [
+          'Proper radio phraseology',
+          'Clearance readback accuracy',
+          'Communication efficiency'
+        ]
+      },
+      create: {
+        ...script,
+        dagStructure: script.dagStructure as any,
+        flightContext: {
+          aircraft: 'Cessna 172',
+          callsign: 'N9842F',
+          airport: 'KBOS',
+          conditions: 'VFR'
+        },
+        learningObjectives: [
+          'Proper radio phraseology',
+          'Clearance readback accuracy',
+          'Communication efficiency'
+        ]
+      }
+    });
+    console.log(`  ✅ Script: ${created.name}`);
+  }
+}
+
 async function main() {
   console.log('🌱 Starting database seed...\n');
 
@@ -129,6 +370,12 @@ async function main() {
   
   // Seed scenario subjects
   await seedScenarioSubjects();
+  
+  // Seed training scripts
+  await seedScripts();
+  
+  // Seed EL AL 321 Heavy scenario with comm blocks and transmissions
+  await seedELAL321Scenario(prisma);
 
   console.log('\n✨ Seeding completed!');
 }

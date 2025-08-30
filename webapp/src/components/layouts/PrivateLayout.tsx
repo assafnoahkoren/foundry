@@ -1,7 +1,7 @@
-import { Outlet, Link } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { User, LogOut, Shield, LayoutGrid } from 'lucide-react';
+import { LayoutGrid, LogOut, Shield, User } from 'lucide-react';
+import { Link, Outlet } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
 import { ThemeToggle } from '../ThemeToggle';
 
 export const PrivateLayout = () => {
@@ -13,7 +13,7 @@ export const PrivateLayout = () => {
     <div id="private-layout" className="h-[100dvh] flex flex-col">
       <header 
         id="private-header" 
-        className="bg-primary text-primary-foreground border-b"
+        className="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-800"
         style={{ height: HEADER_HEIGHT }}
       >
         <nav className="h-full">
@@ -29,7 +29,7 @@ export const PrivateLayout = () => {
             <div className="flex items-center gap-6">
               <Link 
                 id="hub-nav-link"
-                to="/hub" 
+                to="/" 
                 className="flex items-center gap-2 hover:opacity-80 transition-opacity"
               >
                 <LayoutGrid className="h-4 w-4" />

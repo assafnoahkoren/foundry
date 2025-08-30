@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
@@ -14,8 +14,15 @@ export const Login = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
-  const { login } = useAuth();
+  const { login, user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
+
+  // Navigate to hub when user is authenticated and auth is not loading
+  useEffect(() => {
+    if (user && !authLoading) {
+      navigate('/');
+    }
+  }, [user, authLoading, navigate]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -24,10 +31,9 @@ export const Login = () => {
 
     try {
       await login(email, password);
-      navigate('/hub');
+      // Don't navigate here - let the useEffect handle it
     } catch (err) {
       setError((err as Error).message || 'Failed to login');
-    } finally {
       setIsLoading(false);
     }
   };

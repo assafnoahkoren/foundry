@@ -3,7 +3,11 @@
     "allow": [
       "Bash(claude mcp:*)",
       "Bash(npx @context-labs/context:*)",
-      "Bash(npm search:*)"
+      "Bash(npm search:*)",
+      "Bash(mkdir:*)",
+      "Bash(npx ts-node:*)",
+      "Bash(npm run check:*)",
+      "Bash(npx prisma migrate dev:*)"
     ],
     "deny": []
   }

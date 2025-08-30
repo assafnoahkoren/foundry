@@ -1,6 +1,6 @@
 import { Feature } from '../types';
 
-export type JoniSubFeatureId = 'joni-management' | 'joni-scenario-practice';
+export type JoniSubFeatureId = 'joni-management' | 'joni-scenario-practice' | 'joni-comm-blocks';
 
 export const joniFeature: Feature<'joni'> = {
   id: 'joni',
@@ -17,6 +17,12 @@ export const joniFeature: Feature<'joni'> = {
       id: 'joni-scenario-practice',
       name: 'Scenario Practice',
       description: 'Access to aviation scenario practice and training'
+      // No metadata - simple boolean access control
+    },
+    'joni-comm-blocks': {
+      id: 'joni-comm-blocks',
+      name: 'Communication Blocks Management',
+      description: 'Access to manage ICAO communication blocks, transmissions, and scripts'
       // No metadata - simple boolean access control
     }
   }

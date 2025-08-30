@@ -24,7 +24,8 @@ export function FeatureCard({
   return (
     <div
       className={cn(
-        "relative overflow-hidden transition-all duration-200 rounded-lg border p-10 aspect-square flex items-center justify-center",
+        "relative overflow-hidden transition-all duration-200 rounded-lg border p-6 w-48 h-48 flex items-center justify-center",
+        "bg-white dark:bg-gray-800/50",
         hasAccess 
           ? "border-primary/20 shadow-sm hover:shadow-md cursor-pointer hover:border-primary/40" 
           : "border-muted/50 opacity-60 cursor-not-allowed"

@@ -40,16 +40,8 @@ const updateGroupSchema = z.object({
 const moveScenarioToGroupSchema = z.object({
   scenarioId: z.string(),
   groupId: z.string(),
-  orderInGroup: z.number().int().min(0).optional(),
 });
 
-const reorderScenariosSchema = z.object({
-  groupId: z.string(),
-  scenarioOrders: z.array(z.object({
-    scenarioId: z.string(),
-    orderInGroup: z.number().int().min(0),
-  })),
-});
 
 export const joniScenarioGroupRouter = router({
   // ===== CREATE =====
@@ -151,8 +143,7 @@ export const joniScenarioGroupRouter = router({
       try {
         return await joniScenarioGroupService.moveScenarioToGroup(
           input.scenarioId,
-          input.groupId,
-          input.orderInGroup
+          input.groupId
         );
       } catch (error: any) {
         if (error.code === 'P2025') {
@@ -168,22 +159,6 @@ export const joniScenarioGroupRouter = router({
       }
     }),
 
-  reorderScenariosInGroup: requireBackofficeScenario
-    .input(reorderScenariosSchema)
-    .mutation(async ({ input }) => {
-      try {
-        await joniScenarioGroupService.reorderScenariosInGroup(
-          input.groupId,
-          input.scenarioOrders
-        );
-        return { success: true };
-      } catch {
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to reorder scenarios'
-        });
-      }
-    }),
 
   // ===== UTILITIES =====
   duplicateGroup: requireBackofficeScenario

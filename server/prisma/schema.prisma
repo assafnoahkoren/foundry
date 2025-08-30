@@ -29,6 +29,10 @@ model User {
   userAccess   UserAccess[] @relation("UserAccess")
   grantedAccess UserAccess[] @relation("GrantedBy")
   joniScenarioResponses JoniScenarioResponse[]
+  joniScenarioPractices JoniScenarioPractice[]
+  joniCommBlockProgress JoniCommBlockProgress[]
+  joniTransmissionPractices JoniTransmissionPractice[]
+  joniScriptPractices JoniScriptPractice[]
 }
 
 model UserAccess {
@@ -53,20 +57,25 @@ model UserAccess {
 }
 
 // Joni Scenario Practice Models
+// Subject represents high-level training areas (e.g., "Radio Communications", "Emergency Procedures")
 model JoniScenarioSubject {
   id          String              @id @default(cuid())
   name        String              @unique
   description String?
+  icon        String?             // Optional icon identifier for UI
+  orderIndex  Int                 @default(1) // Display order
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
-  scenarios   JoniScenario[]
-  groups      JoniScenarioGroup[]
+  scenarios   JoniScenario[]      // Direct scenarios without groups
+  groups      JoniScenarioGroup[] // Grouped scenarios
 }
 
 model JoniScenarioGroup {
   id          String         @id @default(cuid())
   name        String
   description String?
+  groupType   String         @default("module") // "module", "difficulty", "training_program", "category"
+  orderInSubject Int         @default(1) // Order of this group within the subject
   subjectId   String
   subject     JoniScenarioSubject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   createdAt   DateTime       @default(now())
@@ -74,26 +83,39 @@ model JoniScenarioGroup {
   scenarios   JoniScenario[]
   
   @@index([subjectId])
+  @@index([subjectId, orderInSubject])
 }
 
+// A scenario represents a complete training exercise with multiple steps
 model JoniScenario {
   id                String                 @id @default(cuid())
-  name              String
+  name              String                 // e.g., "Medical Emergency Over Atlantic"
+  shortDescription  String?                // Brief overview of the scenario
   subjectId         String
   subject           JoniScenarioSubject    @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  groupId           String
-  group             JoniScenarioGroup      @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  orderInGroup      Int
+  groupId           String?                // Optional - scenarios can exist without groups
+  group             JoniScenarioGroup?     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  difficulty        String                 @default("intermediate") // "beginner", "intermediate", "advanced"
+  estimatedMinutes  Int                    @default(15) // Estimated completion time
+  // Keep old field for migration
   flightInformation String                 @db.Text
-  expectedAnswer    String                 @db.Text
-  currentStatus     String                 @db.Text
+  // New fields for dynamic scenarios
+  flightInformationJson Json?              // Flexible flight data (aircraft, route, weather, etc.)
+  scenarioType      String                 @default("standard") // "standard", "emergency", "crm", "technical", "weather"
+  initialContext    String?                @db.Text // Sets the scene for the pilot
+  // Legacy fields - kept for backward compatibility
+  expectedAnswer    String?                @db.Text
+  currentStatus     String?                @db.Text
   createdAt         DateTime               @default(now())
   updatedAt         DateTime               @updatedAt
-  responses         JoniScenarioResponse[]
+  steps             JoniScenarioStep[]     // The sequence of events in this scenario
+  responses         JoniScenarioResponse[] // Legacy single responses
+  practices         JoniScenarioPractice[] // Practice sessions for this scenario
   
   @@index([subjectId])
   @@index([groupId])
-  @@index([groupId, orderInGroup])
+  @@index([scenarioType])
+  @@index([difficulty])
 }
 
 model JoniScenarioResponse {
@@ -111,4 +133,217 @@ model JoniScenarioResponse {
   @@index([scenarioId])
   @@index([userId])
   @@index([createdAt])
+}
+
+model JoniScenarioStep {
+  id                    String                     @id @default(cuid())
+  scenarioId            String
+  scenario              JoniScenario               @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  stepOrder             Int
+  eventType             String                     // "atc", "crew", "emergency", "technical", etc.
+  actorRole             String?                    // "tower", "ground", "flightAttendant", "copilot", etc.
+  eventDescription      String                     @db.Text
+  eventMessage          String                     @db.Text
+  expectedComponents    Json                       // Array of required response components
+  correctResponseExample String                    @db.Text
+  nextStepCondition     String?                    // For branching logic
+  createdAt             DateTime                   @default(now())
+  updatedAt             DateTime                   @updatedAt
+  stepResponses         JoniScenarioStepResponse[]
+  
+  @@index([scenarioId, stepOrder])
+  @@unique([scenarioId, stepOrder])
+}
+
+model JoniScenarioPractice {
+  id                String                      @id @default(cuid())
+  scenarioId        String
+  scenario          JoniScenario                @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  userId            String
+  user              User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status            String                      @default("in_progress") // "in_progress", "completed", "abandoned"
+  currentStepOrder  Int                         @default(1)
+  startedAt         DateTime                    @default(now())
+  completedAt       DateTime?
+  totalScore        Float?
+  stepResponses     JoniScenarioStepResponse[]
+  
+  @@index([userId, scenarioId])
+  @@index([status])
+}
+
+model JoniScenarioStepResponse {
+  id                String               @id @default(cuid())
+  practiceId        String
+  practice          JoniScenarioPractice @relation(fields: [practiceId], references: [id], onDelete: Cascade)
+  stepId            String
+  step              JoniScenarioStep     @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  userResponse      String               @db.Text
+  responseAnalysis  Json
+  correctness       Float                // 0 to 10 score
+  attempts          Int                  @default(1)
+  createdAt         DateTime             @default(now())
+  
+  @@index([practiceId, stepId])
+  @@unique([practiceId, stepId])
+}
+
+// ============================================
+// MODULAR ICAO-COMPLIANT COMMUNICATION TRAINING SYSTEM
+// ============================================
+// This system breaks down aviation radio communications into modular, reusable components
+// following ICAO phraseology standards. The hierarchy is:
+// 1. CommBlocks: Atomic units (e.g., how to say altitude, callsign, heading)
+// 2. Transmissions: Complete radio calls composed of multiple blocks
+// 3. Scripts: Full scenarios with back-and-forth transmissions between pilot and ATC
+
+// JoniCommBlock: Atomic ICAO phraseology unit - the smallest teachable element of radio communication
+model JoniCommBlock {
+  id                String                @id @default(cuid())
+  code              String                @unique // e.g., "callsign", "altitude", "heading", "speed"
+  name              String                // Human-readable name: "Aircraft Callsign"
+  category          String                // "identification", "instruction", "readback", "information"
+  description       String?               @db.Text
+  icaoReference     String?               // Reference to ICAO Doc 9432 or other standards
+  icaoRules         Json?                 // ICAO rules specific to this comm block
+  template          String?               @db.Text // Template with variables like "{{callsign}}, request {{altitude}}"
+  rules             Json                  // Validation rules and patterns
+  examples          Json                  // Array of correct examples
+  commonErrors      Json?                 // Common mistakes to watch for
+  difficultyLevel   Int                   @default(1) // 1-5 difficulty scale
+  orderIndex        Int                   @default(1) // Display order within category
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  
+  // Relations
+  userProgress      JoniCommBlockProgress[]
+  
+  @@index([category])
+  @@index([code])
+}
+
+// JoniTransmissionTemplate: A complete radio transmission composed of ordered CommBlocks
+// Examples: "Initial contact with tower", "Request for altitude change", "Landing clearance readback"
+// Each transmission combines multiple CommBlocks in a specific order with parameters
+model JoniTransmissionTemplate {
+  id                String                @id @default(cuid())
+  code              String                @unique // e.g., "initial_contact", "altitude_change"
+  name              String                // "Initial Contact with Tower"
+  description       String?               @db.Text
+  transmissionType  String                // "pilot_to_atc", "atc_to_pilot"
+  context           String                // "ground", "tower", "departure", "approach", "enroute"
+  difficultyLevel   Int                   @default(2)
+  estimatedSeconds  Int                   @default(10) // Typical transmission duration
+  blocks            Json                  // Array of {blockId, order, parameters, isOptional}
+  metadata          Json?                 // Additional context (weather, traffic, etc.)
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  
+  // Relations
+  practices         JoniTransmissionPractice[]
+  
+  @@index([transmissionType])
+  @@index([context])
+}
+
+// JoniScript: A complete training scenario with DAG-based flow
+// Supports branching paths based on pilot decisions and responses
+// Examples: "Emergency procedures with multiple outcomes", "Weather diversion decisions"
+model JoniScript {
+  id                String                @id @default(cuid())
+  code              String                @unique
+  name              String                // "IFR Departure from JFK with Weather Decisions"
+  description       String?               @db.Text
+  scriptType        String                // "training", "evaluation", "scenario", "adaptive"
+  
+  // DAG Structure - validated with Zod on application layer
+  dagStructure      Json?                 // Complete DAG with nodes and edges (optional for migration)
+  startNodeId       String?               // Entry point node ID in the DAG (optional for migration)
+  
+  // Metadata
+  difficultyLevel   Int                   @default(3)
+  estimatedMinutes  Int                   @default(5)
+  tags              String[]              // ["emergency", "weather", "decision-making"]
+  flightContext     Json                  // Aircraft type, route, weather, etc.
+  learningObjectives Json?                // What skills this script teaches
+  prerequisites     Json?                 // Required completed scripts/blocks
+  
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  
+  // Relations
+  practices         JoniScriptPractice[]
+  
+  @@index([scriptType])
+  @@index([tags])
+}
+
+
+// JoniCommBlockProgress: Tracks user mastery of individual communication elements
+// Monitors how well users can properly say altitudes, callsigns, headings, etc.
+model JoniCommBlockProgress {
+  id                String      @id @default(cuid())
+  userId            String
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  blockId           String
+  block             JoniCommBlock  @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  proficiencyScore  Float       @default(0) // 0-100 proficiency
+  practiceCount     Int         @default(0)
+  correctCount      Int         @default(0)
+  lastPracticed     DateTime?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  
+  @@unique([userId, blockId])
+  @@index([userId])
+  @@index([blockId])
+}
+
+// JoniTransmissionPractice: Records user attempts at complete radio transmissions
+// Scores each CommBlock within the transmission for granular feedback
+model JoniTransmissionPractice {
+  id                String               @id @default(cuid())
+  userId            String
+  user              User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transmissionId    String
+  transmission      JoniTransmissionTemplate @relation(fields: [transmissionId], references: [id], onDelete: Cascade)
+  userTranscript    String               @db.Text
+  blockScores       Json                 // Score for each block in the transmission
+  overallScore      Float                // 0-100
+  feedback          Json?                // Detailed feedback per block
+  completedAt       DateTime             @default(now())
+  
+  @@index([userId])
+  @@index([transmissionId])
+  @@index([completedAt])
+}
+
+// JoniScriptPractice: Tracks user navigation through DAG-based scenarios
+// Records decisions made, paths taken, and performance at each node
+model JoniScriptPractice {
+  id                String      @id @default(cuid())
+  userId            String
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scriptId          String
+  script            JoniScript      @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+  
+  // DAG traversal tracking
+  currentNodeId     String?     // Current position in the DAG
+  visitedNodes      Json        // Array of {nodeId, timestamp, response, score, decision}
+  pathTaken         Json        // Sequence of edge IDs taken through the DAG
+  
+  // Scoring
+  nodeScores        Json        // Score per node visited {nodeId: score}
+  overallScore      Float?      // Final score when completed
+  decisionQuality   Json?       // Quality metrics for decision nodes
+  
+  // Session management
+  status            String      @default("in_progress") // "in_progress", "completed", "abandoned"
+  startedAt         DateTime    @default(now())
+  completedAt       DateTime?
+  sessionRecording  String?     // Optional audio recording URL
+  sessionMetrics    Json?       // Time per node, retries, help requests, etc.
+  
+  @@index([userId, scriptId])
+  @@index([status])
 }

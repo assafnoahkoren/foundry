@@ -4,10 +4,11 @@
   "private": true,
   "workspaces": [
     "server",
-    "webapp"
+    "webapp",
+    "docusaurus"
   ],
   "scripts": {
-    "dev": "npm run dev --workspaces",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:webapp\"",
     "build": "npm run build --workspaces",
     "start:server": "npm run start -w server",
     "dev:server": "npm run dev -w server",
@@ -20,6 +21,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "concurrently": "^8.2.2",
     "typescript": "^5.0.0"
   }
 }
