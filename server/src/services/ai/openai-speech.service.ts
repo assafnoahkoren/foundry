@@ -26,10 +26,21 @@ export class OpenAISpeechService implements SpeechAIService {
     }
 
     try {
-      // Log buffer size for debugging
+      // Log buffer size and first bytes for debugging
       console.log('Audio buffer size:', audioBuffer.length, 'bytes');
       
-      // Use the toFile utility to convert buffer to file without saving to disk
+      // Check if the buffer starts with valid WebM signature
+      const isWebM = audioBuffer.length > 4 && 
+                     audioBuffer[0] === 0x1a && 
+                     audioBuffer[1] === 0x45 && 
+                     audioBuffer[2] === 0xdf && 
+                     audioBuffer[3] === 0xa3;
+      
+      console.log('Is valid WebM format:', isWebM);
+      console.log('First 4 bytes:', audioBuffer.slice(0, 4).toString('hex'));
+      
+      // OpenAI requires specific file format and extension
+      // Using toFile with proper parameters
       const file = await toFile(audioBuffer, 'audio.webm', {
         type: 'audio/webm',
       });

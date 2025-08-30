@@ -37,11 +37,13 @@ export function useAudioRecording(options?: UseAudioRecordingOptions) {
       let mimeType = options?.mimeType;
       if (!mimeType) {
         // Try different mime types in order of preference
+        // OpenAI Whisper supports: webm, mp4, mpeg, mpga, m4a, wav, ogg
         const mimeTypes = [
+          'audio/webm;codecs=opus',  // Preferred for browser recording
           'audio/webm',
-          'audio/webm;codecs=opus',
           'audio/ogg;codecs=opus',
           'audio/mp4',
+          'audio/mpeg',
         ];
         
         for (const type of mimeTypes) {

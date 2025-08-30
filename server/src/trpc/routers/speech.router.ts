@@ -13,7 +13,16 @@ const transcribeAudioProcedure = protectedProcedure
   .input(transcribeAudioSchema)
   .mutation(async ({ input }) => {
     // Convert base64 to buffer
-    const audioBuffer = Buffer.from(input.audioData, 'base64');
+    // Remove data URL prefix if present (e.g., "data:audio/webm;base64,")
+    const base64Data = input.audioData.includes(',') 
+      ? input.audioData.split(',')[1] 
+      : input.audioData;
+    
+    const audioBuffer = Buffer.from(base64Data, 'base64');
+    
+    console.log('Received audio data length:', input.audioData.length);
+    console.log('Base64 data length after cleanup:', base64Data.length);
+    console.log('Buffer size:', audioBuffer.length);
     
     return openAISpeechService.transcribeAudio(audioBuffer, {
       language: input.language,

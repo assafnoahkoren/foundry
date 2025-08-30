@@ -29,6 +29,7 @@ export function useVoiceInput(options?: UseVoiceInputOptions) {
   const streamingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastSoundTimeRef = useRef<number>(Date.now());
   const accumulatedTranscriptRef = useRef<string>('');
+  const mimeTypeRef = useRef<string>('audio/webm');
   
   // Transcription mutation
   const transcribeMutation = trpc.speech.transcribeAudio.useMutation({
@@ -36,19 +37,16 @@ export function useVoiceInput(options?: UseVoiceInputOptions) {
       const text = result.text.trim();
       if (!text) return;
       
-      // For streaming, accumulate the transcript
+      // For streaming, we get the complete transcription each time
       if (options?.streaming && isListening) {
-        // This is an interim result
+        // Update the interim transcript with the latest complete transcription
         setInterimTranscript(text);
+        setTranscript(text);
         options?.onTranscription?.(text, false);
       } else {
         // This is the final result
-        const finalText = accumulatedTranscriptRef.current 
-          ? `${accumulatedTranscriptRef.current} ${text}` 
-          : text;
-        setTranscript(finalText);
-        accumulatedTranscriptRef.current = finalText;
-        options?.onTranscription?.(finalText, true);
+        setTranscript(text);
+        options?.onTranscription?.(text, true);
       }
       setIsTranscribing(false);
     },
@@ -70,13 +68,19 @@ export function useVoiceInput(options?: UseVoiceInputOptions) {
   
   // Process audio chunks for streaming transcription
   const processStreamingChunks = useCallback(async () => {
-    const unprocessedChunks = audioChunksRef.current.slice(processedChunksRef.current);
-    if (unprocessedChunks.length === 0 || isTranscribing) return;
+    // For streaming, we need to send ALL chunks from the beginning
+    // to ensure we have a valid audio file with proper headers
+    if (audioChunksRef.current.length === 0 || isTranscribing) return;
+    
+    // Skip if we haven't accumulated enough new data (at least 3 chunks)
+    const newChunksCount = audioChunksRef.current.length - processedChunksRef.current;
+    if (newChunksCount < 3 && isListening) return;
     
     setIsTranscribing(true);
     
-    // Create a blob from unprocessed chunks
-    const audioBlob = new Blob(unprocessedChunks, { type: 'audio/webm' });
+    // Create a blob from ALL chunks (not just unprocessed)
+    // This ensures we always have a valid WebM file with headers
+    const audioBlob = new Blob(audioChunksRef.current, { type: mimeTypeRef.current });
     
     // Convert to base64
     const reader = new FileReader();
@@ -84,10 +88,8 @@ export function useVoiceInput(options?: UseVoiceInputOptions) {
       const base64data = reader.result as string;
       const base64Audio = base64data.split(',')[1];
       
-      // Send for transcription with context about previous transcript
-      const contextPrompt = options?.contextPrompt 
-        ? `${options.contextPrompt}. Previous context: ${accumulatedTranscriptRef.current}`
-        : `Previous context: ${accumulatedTranscriptRef.current}`;
+      // Send for transcription with context
+      const contextPrompt = options?.contextPrompt || 'Transcribe this audio';
       
       transcribeMutation.mutate({
         audioData: base64Audio,
@@ -95,11 +97,11 @@ export function useVoiceInput(options?: UseVoiceInputOptions) {
         prompt: contextPrompt,
       });
       
-      // Mark these chunks as processed
+      // Mark current position as processed
       processedChunksRef.current = audioChunksRef.current.length;
     };
     reader.readAsDataURL(audioBlob);
-  }, [isTranscribing, transcribeMutation, options?.contextPrompt, options?.language]);
+  }, [isTranscribing, isListening, transcribeMutation, options?.contextPrompt, options?.language]);
   
   // Process all audio chunks for final transcription
   const processFinalAudio = useCallback(async () => {
@@ -108,7 +110,7 @@ export function useVoiceInput(options?: UseVoiceInputOptions) {
     setIsTranscribing(true);
     
     // Combine all audio chunks for final transcription
-    const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+    const audioBlob = new Blob(audioChunksRef.current, { type: mimeTypeRef.current });
     
     // Convert to base64
     const reader = new FileReader();
@@ -138,8 +140,12 @@ export function useVoiceInput(options?: UseVoiceInputOptions) {
     onDataAvailable: (blob) => {
       if (blob.size === 0) return;
       
-      // Store chunk
+      // Store chunk and capture MIME type from first chunk
       audioChunksRef.current.push(blob);
+      if (audioChunksRef.current.length === 1 && blob.type) {
+        mimeTypeRef.current = blob.type;
+        console.log('Recording MIME type:', blob.type);
+      }
       
       // Update last sound time (simple size-based detection)
       if (blob.size > 100) { // Threshold for "sound"
