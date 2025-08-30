@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { useUserAccess } from '@/hooks/useUserAccess';
 import { cn } from '@/lib/utils';
-import { BookOpen, Gamepad2, Home, Mic, Radio, ChevronDown } from 'lucide-react';
+import { BookOpen, Gamepad2, Home, Mic, Radio, ChevronDown, PlayCircle } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 
@@ -48,6 +48,7 @@ export function JoniSidebar({ isOpen, isMobile = false, onItemClick }: JoniSideb
     // { path: '/joni/groups', label: 'Groups Management', icon: Folder, requiresAccess: true, show: hasScenarioAccess },
     // { path: '/joni/subjects', label: 'Subjects Management', icon: Tags, requiresAccess: true, show: hasScenarioAccess },
     // { path: '/joni/practice', label: 'Practice', icon: GraduationCap, requiresAccess: true, show: hasPracticeAccess },
+    { path: '/joni/scenarios', label: 'Scenarios', icon: PlayCircle, requiresAccess: false, show: true },
     { path: '/joni/comm-blocks', label: 'Comm Blocks', icon: Radio, requiresAccess: true, show: hasCommBlocksAccess },
     { path: '/joni/comm-blocks/playground', label: 'Playground', icon: Gamepad2, requiresAccess: true, show: hasCommBlocksAccess, isSubItem: true, parentPath: '/joni/comm-blocks' },
     { path: '/joni/transmissions', label: 'Transmissions', icon: Mic, requiresAccess: true, show: hasCommBlocksAccess },
